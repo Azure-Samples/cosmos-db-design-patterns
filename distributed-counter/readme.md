@@ -53,7 +53,7 @@ This sample is implemented as a C#/.NET application with three projects. The thr
   
   - The web application polls the `DistributedCounterManagementService` for the data rendered in the chart.
 
-  ![Screenshot of the Blazor web application with a chart visualizing the various distributed counters.](../media/distributed-counter-chart-visualization.png)
+  ![Screenshot of the Blazor web application with a chart visualizing the various distributed counters.](media/distributed-counter-chart-visualization.png)
 
 - **Consumers** console application:
 
@@ -120,11 +120,11 @@ This option requires only a [GitHub account](https://github.com/join) to run the
 
 1. In the web application, create a new counter using the default settings.
 
-    ![Screenshot of the new distributed counter configuration settings.](../media/distributed-counter-configuration-settings.png)
+    ![Screenshot of the new distributed counter configuration settings.](media/distributed-counter-configuration-settings.png)
 
 1. Record the value of the **Counter ID** field in the web application.
 
-    ![Screenshot of the distributed counter starting page with the identifier rendered.](../media/distributed-counter-identifier.png)
+    ![Screenshot of the distributed counter starting page with the identifier rendered.](media/distributed-counter-identifier.png)
 
 1. Back in the codespace, open a second terminal and run the console application. The console application prompts you for the counter's unique identifier and a count of worker threads to use.
 
@@ -149,7 +149,7 @@ This option requires only a [GitHub account](https://github.com/join) to run the
 
 1. Go back to the web application and observe the counters values change over time.
 
-    ![Screenshot of the dynamic graph updated with distributed counter values.](../media/distributed-counter-graph.png)
+    ![Screenshot of the dynamic graph updated with distributed counter values.](media/distributed-counter-graph.png)
 
 ### Zero-touch
 
