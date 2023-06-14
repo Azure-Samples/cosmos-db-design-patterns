@@ -64,22 +64,13 @@ This sample is implemented as a C#/.NET application with three projects. The thr
   - The console application uses the `DistributedCounterOperationalService` to update the counters.
 
   ```output
-  Running Distributed Counter Consumer ... 
-  Enter the Counter ID 
-  037ed9de-6855-44f9-af9d-442bf8e65834 
-  Getting Counter... 
-  Enter the number of worker threads required 
-  4 
+  Running Distributed Counter Consumer ...
+  Enter the Counter ID
+  41b78ede-e06f-43f1-9443-1d939d26ca03
+  Getting Counter...
+  Enter the number of worker threads required
+  4
   4 worker threads are running... ,hit any key to exit
-  Sucess: Decrement by 1
-  Sucess: Decrement by 3
-  Sucess: Decrement by 2
-  Sucess: Decrement by 1
-  Sucess: Decrement by 2
-  Sucess: Decrement by 3
-  Sucess: Decrement by 3
-  Sucess: Decrement by 1
-  Sucess: Decrement by 1
   ```
 
 ## Try this implementation
@@ -94,47 +85,83 @@ You can try out this implementation by either:
 
 This option requires only a [GitHub account](https://github.com/join) to run the codespace and create a free Azure Cosmos DB account.
 
-- Create a free Azure Cosmos DB for NoSQL account: (<https://cosmos.azure.com/try>)
+1. Create a free Azure Cosmos DB for NoSQL account: (<https://cosmos.azure.com/try>)
 
-- Open the new account in the Azure portal and record the **URI** and **PRIMARY KEY** fields. These fields can be found in the **Keys** section of the account's page within the portal.
+1. Open the new account in the Azure portal and record the **URI** and **PRIMARY KEY** fields. These fields can be found in the **Keys** section of the account's page within the portal.
 
-- Open the application code in a GitHub Codespace:
+1. In the Data Explorer, create a new database and container with the following values:
 
-  [![Illustration of a button with the GitHub icon and the text "Open in GitHub Codespaces."](../media/open-github-codespace-button.svg)](https://github.com/codespaces/new?hide_repo_select=true&ref=main&repo=613998360&devcontainer_path=.devcontainer%2Fdistributed-counter%2Fdevcontainer.json)
+    | | Value |
+    | --- | --- |
+    | **Database name** | `CounterDB` |
+    | **Container name** | `Counters` |
+    | **Partition key path** | `/pk` |
+    | **Throughput** | `400` (*Manual*) |
 
-- In the codespace, open a terminal and run the web application. The web application opens in a new browser window.
+1. Open the application code in a GitHub Codespace:
+
+    [![Illustration of a button with the GitHub icon and the text "Open in GitHub Codespaces."](../media/open-github-codespace-button.svg)](https://github.com/codespaces/new?hide_repo_select=true&ref=main&repo=613998360&devcontainer_path=.devcontainer%2Fdistributed-counter%2Fdevcontainer.json)
+
+1. In the codespace, create an **appsettings.Development.json** file in both the **/visualizer** and **/consumerapp** folders. In each of the files, create a JSON object with **CosmosUri** and **CosmosKey** properties. Use the URI and primary key you recorded earlier for these values:
+
+    ```json
+    {
+      "CosmosUri": "<endpoint>",
+      "CosmosKey": "<primary-key>"
+    }
+    ```
+
+1. In the codespace, open a terminal and run the web application. The web application opens in a new browser window.
 
     ```bash
-    cd visualizer
+    cd Visualizer
     dotnet run
     ```
 
-- In the web application, create a new counter using the default settings. Record the value of the **Counter ID** field in the web application.
+1. In the web application, create a new counter using the default settings.
 
-- Back in the codespace, open a second terminal and run the console application. The console application prompts you for the counter's unique identifier and a count of worker threads to use.
+    ![Screenshot of the new distributed counter configuration settings.](../media/distributed-counter-configuration-settings.png)
 
-  ```output
-  Running Distributed Counter Consumer ... 
-  Enter the Counter ID 
-  037ed9de-6855-44f9-af9d-442bf8e65834 
-  Getting Counter... 
-  Enter the number of worker threads required 
-  4
-  ```
+1. Record the value of the **Counter ID** field in the web application.
+
+    ![Screenshot of the distributed counter starting page with the identifier rendered.](../media/distributed-counter-identifier.png)
+
+1. Back in the codespace, open a second terminal and run the console application. The console application prompts you for the counter's unique identifier and a count of worker threads to use.
+
+    ```bash
+    cd ConsumerApp
+    dotnet run
+    ```
+
+    ```output
+    Running Distributed Counter Consumer ...
+    Enter the Counter ID
+    41b78ede-e06f-43f1-9443-1d939d26ca03
+    Getting Counter...
+    Enter the number of worker threads required
+    4
+    4 worker threads are running... ,hit any key to exit
+    Success: Decrement by 3
+    Success: Decrement by 1
+    Success: Decrement by 2
+    ...
+    ```
 
 - Go back to the web application and observe the counters values change over time.
 
+    ![Screenshot of the dynamic graph updated with distributed counter values.](../media/distributed-counter-graph.png)
+
 ### Zero-touch
 
-- Select **Deploy to Azure** to open this Azure Resource Manager template in the Azure portal
+1. Select **Deploy to Azure** to open this Azure Resource Manager template in the Azure portal
 
   [![Illustration of a button with the Azure icon and the text "Deploy to Azure."](../media/deploy-to-azure-button.svg)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fazurecosmosdb%2Fdesign-patterns%2Fmain%2Fdistributed-counter%2Fsource%2Fazuredeploy.json)
 
-- Accept the default template parameters and select **** to deploy the template.
+1. Accept the default template parameters and select **** to deploy the template.
 
-- Wait for the deployment to complete. The deployment can take **10-15** minutes.
+1. Wait for the deployment to complete. The deployment can take **10-15** minutes.
 
-- After the deployment finishes, open the web application and create a counter.
+1. After the deployment finishes, open the web application and create a counter.
 
 ## Next steps
 
