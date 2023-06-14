@@ -1,0 +1,125 @@
+---
+page_type: sample
+languages:
+- csharp
+products:
+- azure-cosmos-db
+name: |
+  Azure Cosmos DB design pattern: Distributed counter
+urlFragment: distributed-counter
+description: Review this example of the distributed counter pattern to keep track of a number in a high concurrency environment.
+azureDeploy: https://raw.githubusercontent.com/AzureCosmosDB/design-patterns/main/distributed-counter/source/azuredeploy.json
+---
+
+# Azure Cosmos DB design pattern: Distributed counter
+
+In a high concurrency application, many client applications may need to update a counter property within a single item in real-time. Typically, this update operation would cause a concurrency issues or contention. The distributed counter pattern solves this problem by managing the increment/decrement of a counter separately from the impacted item.
+
+> This sample demonstrates:
+>
+> - ✅ Creation of multiple distributed counters using the value of a primary counter.
+> - ✅ On-demand splitting and merging of distributed counters.
+> - ✅ Calculation of an aggregated value from the distributed counters at any given time.
+> - ✅ Modifying the distributed counters randomly using a large number of worker threads.
+>
+
+## Common scenario
+
+Consider a high-traffic website that tracks the inventory of a product in real-time for customers and internal services. In this high concurrency environment, updating a single document continuously causes significant contention.
+
+Typically, you can avoid concurrency issues by implementing optimistic concurrency control, but this strategy may cause scenarios where the latest inventory isn't accurate in real-time. It's important for all aspects of the application to be able to update the count quickly and read a highly accurate count value in real-time.
+
+## Solution
+
+In a distributed counter solution, a group of distributed counter items are used to keep track of the number. By having the solution distribute the counter across multiple items, update operations can be performed on a random item without causing contention. Even more, the solution can calculate the total of all counters at any time using an aggregation of the values from each individual counter.
+
+## Sample implementation
+
+This sample is implemented as a C#/.NET application with three projects. The three projects are described here:
+
+- **Counter** class library:
+
+  - This class library implements the distributed counter pattern using two services.
+
+  - The `DistributedCounterManagementService` creates the counter and manages on-demand splitting or merging.
+
+  - The `DistributedCounterOperationalService` updates the counters in a high traffic workload. This service picks a random distributed counter from the pool of available counters and updates the counter using a partial document update (or HTTP PATCH request). This service's implementation ensures that there are no conflicts to updating the counter and each counter update is an atomic transaction.
+
+- **Visualizer** web application:
+
+  - This Blazor web application renders a visual interface for the distributed counters.
+
+  - The web application uses graphical charts to illustrate how the counters are performing in real-time.
+  
+  - The web application polls the `DistributedCounterManagementService` for the data rendered in the chart.
+
+  ![Screenshot of the Blazor web application with a chart visualizing the various distributed counters.](media/chart-visualization.png)
+
+- **Consumers** console application:
+
+  - This console application mimics a high traffic workload.
+
+  - The console application creates multiple concurrent threads. Each thread runs in a loop to update the distributed counters quickly.
+
+  - The console application uses the `DistributedCounterOperationalService` to update the counters.
+
+  ```output
+  Running Distributed Counter Consumer ... 
+  Enter the Counter ID 
+  037ed9de-6855-44f9-af9d-442bf8e65834 
+  Getting Counter... 
+  Enter the number of worker threads required 
+  4 
+  4 worker threads are running... ,hit any key to exit
+  Sucess: Decrement by 1
+  Sucess: Decrement by 3
+  Sucess: Decrement by 2
+  Sucess: Decrement by 1
+  Sucess: Decrement by 2
+  Sucess: Decrement by 3
+  Sucess: Decrement by 3
+  Sucess: Decrement by 1
+  Sucess: Decrement by 1
+  ```
+
+## Try this implementation
+
+You can try out this implementation by either:
+
+- **Codespace**: Running the code in GitHub Codespaces with a [free Azure Cosmos DB account](https://learn.microsoft.com/azure/cosmos-db/try-free). (*This option doesn't require an Azure subscription, just a GitHub account.*)
+
+- **Zero-touch**: Deploying the Azure Cosmos DB account and other relevant resources to your Azure Cosmos DB subscription using an Azure Resource Manager template.
+
+### Codespace
+
+This option requires only a [GitHub account](https://github.com/join) to run the codespace and create a free Azure Cosmos DB account.
+
+- Create a free Azure Cosmos DB for NoSQL account: (<https://cosmos.azure.com/try>)
+
+- Open the new account in the Azure portal and retrieve the **connection string**.
+
+- Open the application code in a GitHub Codespace:
+
+  [![Illustration of a button with the GitHub icon and the text "Open in GitHub Codespaces."](../media/open-github-codespace-button.svg)](about:blank)
+
+- Review the codespace's settings and then select **Create codespace**.
+
+- In the codespace, open a terminal and run the application with `dotnet run`.
+
+### Zero-touch
+
+- Select **Deploy to Azure** to open this Azure Resource Manager template in the Azure portal
+
+  [![Illustration of a button with the Azure icon and the text "Deploy to Azure."](../media/deploy-to-azure-button.svg)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fazurecosmosdb%2Fdesign-patterns%2Fmain%2Fdistributed-counter%2Fsource%2Fazuredeploy.json)
+
+- Accept the default template parameters and select **** to deploy the template.
+
+- Wait for the deployment to complete. The deployment can take **10-15** minutes.
+
+- After the deployment finishes, ~~<about:blank>~~
+
+## Next steps
+
+Learn more about the features of Azure Cosmos DB showcased in this example.
+
+- [Partial document update](https://learn.microsoft.com/azure/cosmos-db/partial-document-update)
