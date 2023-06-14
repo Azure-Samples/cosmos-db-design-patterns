@@ -53,7 +53,7 @@ This sample is implemented as a C#/.NET application with three projects. The thr
   
   - The web application polls the `DistributedCounterManagementService` for the data rendered in the chart.
 
-  ![Screenshot of the Blazor web application with a chart visualizing the various distributed counters.](../media/chart-visualization.png)
+  ![Screenshot of the Blazor web application with a chart visualizing the various distributed counters.](../media/distributed-counter-chart-visualization.png)
 
 - **Consumers** console application:
 
@@ -155,7 +155,7 @@ This option requires only a [GitHub account](https://github.com/join) to run the
 
 1. Select **Deploy to Azure** to open this Azure Resource Manager template in the Azure portal
 
-  [![Illustration of a button with the Azure icon and the text "Deploy to Azure."](../media/deploy-to-azure-button.svg)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fazurecosmosdb%2Fdesign-patterns%2Fmain%2Fdistributed-counter%2Fsource%2Fazuredeploy.json)
+    [![Illustration of a button with the Azure icon and the text "Deploy to Azure."](../media/deploy-to-azure-button.svg)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fazurecosmosdb%2Fdesign-patterns%2Fmain%2Fdistributed-counter%2Fsource%2Fazuredeploy.json)
 
 1. Accept the default template parameters and select **** to deploy the template.
 
