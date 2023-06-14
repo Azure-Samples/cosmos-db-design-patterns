@@ -147,7 +147,7 @@ This option requires only a [GitHub account](https://github.com/join) to run the
     ...
     ```
 
-- Go back to the web application and observe the counters values change over time.
+1. Go back to the web application and observe the counters values change over time.
 
     ![Screenshot of the dynamic graph updated with distributed counter values.](../media/distributed-counter-graph.png)
 
