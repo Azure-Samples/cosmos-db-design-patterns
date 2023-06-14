@@ -53,7 +53,7 @@ This sample is implemented as a C#/.NET application with three projects. The thr
   
   - The web application polls the `DistributedCounterManagementService` for the data rendered in the chart.
 
-  ![Screenshot of the Blazor web application with a chart visualizing the various distributed counters.](media/chart-visualization.png)
+  ![Screenshot of the Blazor web application with a chart visualizing the various distributed counters.](../media/chart-visualization.png)
 
 - **Consumers** console application:
 
