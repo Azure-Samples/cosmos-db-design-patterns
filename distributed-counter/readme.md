@@ -96,15 +96,33 @@ This option requires only a [GitHub account](https://github.com/join) to run the
 
 - Create a free Azure Cosmos DB for NoSQL account: (<https://cosmos.azure.com/try>)
 
-- Open the new account in the Azure portal and retrieve the **connection string**.
+- Open the new account in the Azure portal and record the **URI** and **PRIMARY KEY** fields. These fields can be found in the **Keys** section of the account's page within the portal.
 
 - Open the application code in a GitHub Codespace:
 
-  [![Illustration of a button with the GitHub icon and the text "Open in GitHub Codespaces."](../media/open-github-codespace-button.svg)](about:blank)
+  [![Illustration of a button with the GitHub icon and the text "Open in GitHub Codespaces."](../media/open-github-codespace-button.svg)](https://github.com/codespaces/new?hide_repo_select=true&ref=main&repo=613998360&devcontainer_path=.devcontainer%2Fdistributed-counter%2Fdevcontainer.json)
 
-- Review the codespace's settings and then select **Create codespace**.
+- In the codespace, open a terminal and run the web application. The web application opens in a new browser window.
 
-- In the codespace, open a terminal and run the application with `dotnet run`.
+    ```bash
+    cd visualizer
+    dotnet run
+    ```
+
+- In the web application, create a new counter using the default settings. Record the value of the **Counter ID** field in the web application.
+
+- Back in the codespace, open a second terminal and run the console application. The console application prompts you for the counter's unique identifier and a count of worker threads to use.
+
+  ```output
+  Running Distributed Counter Consumer ... 
+  Enter the Counter ID 
+  037ed9de-6855-44f9-af9d-442bf8e65834 
+  Getting Counter... 
+  Enter the number of worker threads required 
+  4
+  ```
+
+- Go back to the web application and observe the counters values change over time.
 
 ### Zero-touch
 
@@ -116,7 +134,7 @@ This option requires only a [GitHub account](https://github.com/join) to run the
 
 - Wait for the deployment to complete. The deployment can take **10-15** minutes.
 
-- After the deployment finishes, ~~<about:blank>~~
+- After the deployment finishes, open the web application and create a counter.
 
 ## Next steps
 
