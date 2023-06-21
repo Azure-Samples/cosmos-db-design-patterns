@@ -8,20 +8,18 @@ name: |
   Azure Cosmos DB design pattern: Distributed counter
 urlFragment: distributed-counter
 description: Review this example of the distributed counter pattern to keep track of a number in a high concurrency environment.
-azureDeploy: https://raw.githubusercontent.com/AzureCosmosDB/design-patterns/main/distributed-counter/source/azuredeploy.json
 ---
 
 # Azure Cosmos DB design pattern: Distributed counter
 
 In a high concurrency application, many client applications may need to update a counter property within a single item in real-time. Typically, this update operation would cause a concurrency issues or contention. The distributed counter pattern solves this problem by managing the increment/decrement of a counter separately from the impacted item.
 
-> This sample demonstrates:
->
-> - ✅ Creation of multiple distributed counters using the value of a primary counter.
-> - ✅ On-demand splitting and merging of distributed counters.
-> - ✅ Calculation of an aggregated value from the distributed counters at any given time.
-> - ✅ Modifying the distributed counters randomly using a large number of worker threads.
->
+This sample demonstrates:
+
+- ✅ Creation of multiple distributed counters using the value of a primary counter.
+- ✅ On-demand splitting and merging of distributed counters.
+- ✅ Calculation of an aggregated value from the distributed counters at any given time.
+- ✅ Modifying the distributed counters randomly using a large number of worker threads.
 
 ## Common scenario
 
@@ -64,26 +62,17 @@ This sample is implemented as a C#/.NET application with three projects. The thr
   - The console application uses the `DistributedCounterOperationalService` to update the counters.
 
   ```output
-  Running Distributed Counter Consumer ...
-  Enter the Counter ID
-  41b78ede-e06f-43f1-9443-1d939d26ca03
-  Getting Counter...
-  Enter the number of worker threads required
-  4
-  4 worker threads are running... ,hit any key to exit
+  ── Starting distributed counter consumer... ───────────────────────────────
+  What is the counter ID? ecfd48fc-002e-49cc-a355-40eaf1ea69c3
+  What are the number of worker threads required? 3
+  ── 3 worker threads are running... ────────────────────────────────────────
+  Success         Decrement by 2
+  ...
   ```
 
 ## Try this implementation
 
-You can try out this implementation by either:
-
-- **Codespace**: Running the code in GitHub Codespaces with a [free Azure Cosmos DB account](https://learn.microsoft.com/azure/cosmos-db/try-free). (*This option doesn't require an Azure subscription, just a GitHub account.*)
-
-- **Zero-touch**: Deploying the Azure Cosmos DB account and other relevant resources to your Azure Cosmos DB subscription using an Azure Resource Manager template.
-
-### Codespace
-
-This option requires only a [GitHub account](https://github.com/join) to run the codespace and create a free Azure Cosmos DB account.
+You can try out this implementation by running the code in [GitHub Codespaces](https://docs.github.com/codespaces/overview) with a [free Azure Cosmos DB account](https://learn.microsoft.com/azure/cosmos-db/try-free). (*This option doesn't require an Azure subscription, just a GitHub account.*)
 
 1. Create a free Azure Cosmos DB for NoSQL account: (<https://cosmos.azure.com/try>)
 
@@ -134,34 +123,30 @@ This option requires only a [GitHub account](https://github.com/join) to run the
     ```
 
     ```output
-    Running Distributed Counter Consumer ...
-    Enter the Counter ID
-    41b78ede-e06f-43f1-9443-1d939d26ca03
-    Getting Counter...
-    Enter the number of worker threads required
-    4
-    4 worker threads are running... ,hit any key to exit
-    Success: Decrement by 3
-    Success: Decrement by 1
-    Success: Decrement by 2
+    ── Starting distributed counter consumer... ───────────────────────────────
+    What is the counter ID? ecfd48fc-002e-49cc-a355-40eaf1ea69c3
+    What are the number of worker threads required? 3
+    ── 3 worker threads are running... ────────────────────────────────────────
+    Success         Decrement by 2
+    Success         Decrement by 3
+    Success         Decrement by 3
+    Success         Decrement by 1
+    Success         Decrement by 1
+    Success         Decrement by 2
+    Success         Decrement by 3
+    Success         Decrement by 2
+    Success         Decrement by 1
+    Success         Decrement by 1
+    Success         Decrement by 3
     ...
+    Failed          Attemped to decrement by 2
+    Failed          Attemped to decrement by 3
+    Failed          Attemped to decrement by 2
     ```
 
 1. Go back to the web application and observe the counters values change over time.
 
     ![Screenshot of the dynamic graph updated with distributed counter values.](media/distributed-counter-graph.png)
-
-### Zero-touch
-
-1. Select **Deploy to Azure** to open this Azure Resource Manager template in the Azure portal
-
-    [![Illustration of a button with the Azure icon and the text "Deploy to Azure."](../media/deploy-to-azure-button.svg)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fazurecosmosdb%2Fdesign-patterns%2Fmain%2Fdistributed-counter%2Fsource%2Fazuredeploy.json)
-
-1. Accept the default template parameters and select **** to deploy the template.
-
-1. Wait for the deployment to complete. The deployment can take **10-15** minutes.
-
-1. After the deployment finishes, open the web application and create a counter.
 
 ## Next steps
 
