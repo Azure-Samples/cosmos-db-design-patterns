@@ -300,13 +300,34 @@ You can try out this implementation by running the code in [GitHub Codespaces](h
     - Query for products using attribute properties:
 
         ```sql
-        SELECT VALUE p FROM products p WHERE p.sizeSmall >= 75 OR p.sizeMedium >= 75 OR p.sizeLarge >= 75
+        SELECT 
+            p.id,
+            p.name,
+            p.sizeSmall,
+            p.sizeMedium,
+            p.sizeLarge
+        FROM 
+            products p
+        WHERE
+            p.sizeSmall >= 75 OR 
+            p.sizeMedium >= 75 OR 
+            p.sizeLarge >= 75
         ```
 
     - Query for products using attribute arrays:
 
         ```sql
-        SELECT VALUE p FROM products p JOIN s IN p.sizes WHERE s.count >= 75
+        SELECT
+            p.id,
+            p.name AS productName,
+            s.name AS size,
+            s.count
+        FROM
+            products p
+        JOIN
+            s IN p.sizes
+        WHERE
+            s.count >= 75
         ```
 
 1. Now, select the **Hotels** container, and then select **New SQL Query**.
@@ -316,27 +337,66 @@ You can try out this implementation by running the code in [GitHub Codespaces](h
     - Query for hotels
 
         ```sql
-        SELECT VALUE r FROM room r WHERE r.entityType = 'Hotel'
+        SELECT VALUE 
+            r.id
+        FROM
+            room r
+        WHERE
+            r.entityType = 'Hotel'
         ```
 
     - Query for hotel rooms using attribute properties:
 
         ```sql
-        SELECT VALUE r FROM rooms r WHERE r.priceEUR >= 750 OR r.priceUSD >= 750
+        SELECT 
+            r.id,
+            r.priceEUR,
+            r.priceUSD
+        FROM
+            rooms r
+        WHERE 
+            r.priceUSD >= 750 OR
+            r.priceEUR >= 750
         ```
 
         ```sql
-        SELECT VALUE r FROM rooms r WHERE r.sizeSquareMeters >= 200 OR r.sizeSquareFeet >= 200
+        SELECT 
+            r.id,
+            r.sizeSquareFeet,
+            r.sizeSquareMeters
+        FROM
+            rooms r
+        WHERE 
+            r.sizeSquareFeet >= 200 OR
+            r.sizeSquareMeters >= 200
         ```
 
     - Query for hotel rooms using attribute arrays:
 
         ```sql
-        SELECT VALUE r FROM room r JOIN p IN r.prices WHERE p.price >= 750
+        SELECT
+            r.id,
+            p.currency,
+            p.price
+        FROM 
+            room r 
+        JOIN 
+            p IN r.prices
+        WHERE
+            p.price >= 750
         ```
 
         ```sql
-        SELECT VALUE r FROM room r JOIN s IN r.sizes WHERE s.size >= 200
+        SELECT 
+            r.id,
+            s.unitMeasurement,
+            s.size
+        FROM 
+            room r 
+        JOIN 
+            s IN r.sizes 
+        WHERE
+            s.size >= 200
         ```
 
 ## Summary
