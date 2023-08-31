@@ -3,7 +3,7 @@
     "image": "ghcr.io/azure-samples/cosmos-db-design-patterns/devcontainer:latest",
     "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
     "workspaceFolder": "/workspace/data-binning/source/",
-    "updateContentCommand": "dotnet build Cosmos_Patterns_Bucketing.csproj",
+    "postAttachCommand": "dotnet build Cosmos_Patterns_Bucketing.csproj",
     "customizations": {
         "codespaces": {
             "openFiles": [

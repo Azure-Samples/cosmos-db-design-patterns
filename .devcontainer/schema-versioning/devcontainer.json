@@ -3,7 +3,7 @@
     "image": "ghcr.io/azure-samples/cosmos-db-design-patterns/devcontainer:latest",
     "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
     "workspaceFolder": "/workspace/schema-versioning/source/",
-    "updateContentCommand": "dotnet build data-generator/data-generator.csproj && dotnet build website/website.csproj",
+    "postAttachCommand": "dotnet build data-generator/data-generator.csproj && dotnet build website/website.csproj",
     "customizations": {
         "codespaces": {
             "openFiles": [

@@ -3,7 +3,7 @@
     "image": "ghcr.io/azure-samples/cosmos-db-design-patterns/devcontainer:latest",
     "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
     "workspaceFolder": "/workspace/distributed-counter/source/",
-    "updateContentCommand": "dotnet build Cosmos_Patterns_DistributedCounter.sln",
+    "postAttachCommand": "dotnet build Cosmos_Patterns_DistributedCounter.sln",
     "customizations": {
         "codespaces": {
             "openFiles": [
