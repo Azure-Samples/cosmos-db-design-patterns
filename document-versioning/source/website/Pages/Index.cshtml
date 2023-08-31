@@ -1,0 +1,122 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<div>
+    <h1 class="display-4">Document Versioning Demo</h1>
+    <p>This demo showcases how to implement the document versioning pattern in Azure Cosmos DB.  The demo has 2 components:</p>
+    <ul>
+        <li>Azure Function - uses change feed to store statuses in a historical container</li>
+        <li>This website - used to manage the document version numbers</li>
+    </ul>
+    <section>
+        <form method="post" class="form-horizontal">
+            @Html.AntiForgeryToken()
+            <fieldset>
+                <legend>Create New Orders</legend>
+            <label for="DocCount">Number to create:</label>
+            <input name="DocCount" type="number">
+            <input type="submit" />
+            </fieldset>
+        </form>
+    </section>
+    <h2>Submitted Orders</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Order Number</th>
+                <th>Customer Id</th>
+                <th>Order Status</th>
+                <th>Document Version</th>
+                <th>Links</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var order in Model.SubmittedOrders)
+            {
+                <tr>
+                    <td>@order.OrderId</td>
+                    <td>@order.CustomerId</td>
+                    <td>@order.Status</td>
+                    <td>@order.DocumentVersion</td>
+                    <td>                        
+                        <a asp-controller="Status" asp-action="Fulfill" asp-route-orderid="@order.OrderId" asp-route-customerid="@order.CustomerId">Fulfill</a>&nbsp;&nbsp;
+                        <a asp-controller="Status" asp-action="Cancel" asp-route-orderid="@order.OrderId" asp-route-customerid="@order.CustomerId">Cancel</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <h2>Fulfilled Orders</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Order Number</th>
+                <th>Customer Id</th>
+                <th>Order Status</th>
+                <th>Document Version</th>
+                <th>Links</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var order in Model.FulfilledOrders)
+            {
+                <tr>
+                    <td>@order.OrderId</td>
+                    <td>@order.CustomerId</td>
+                    <td>@order.Status</td>
+                    <td>@order.DocumentVersion</td>
+                    <td>
+                        <a asp-controller="Status" asp-action="Deliver" asp-route-orderid="@order.OrderId" asp-route-customerid="@order.CustomerId">Deliver</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <h2>Delivered Orders</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Order Number</th>
+                <th>Customer Id</th>
+                <th>Order Status</th>
+                <th>Document Version</th>                
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var order in Model.DeliveredOrders)
+            {
+                <tr>
+                    <td>@order.OrderId</td>
+                    <td>@order.CustomerId</td>
+                    <td>@order.Status</td>
+                    <td>@order.DocumentVersion</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <h2>Cancelled Orders</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Order Number</th>
+                <th>Customer Id</th>
+                <th>Order Status</th>
+                <th>Document Version</th>                
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var order in Model.CancelledOrders)
+            {
+                <tr>
+                    <td>@order.OrderId</td>
+                    <td>@order.CustomerId</td>
+                    <td>@order.Status</td>
+                    <td>@order.DocumentVersion</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

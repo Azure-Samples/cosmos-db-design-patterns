@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Setup\**" />
+    <EmbeddedResource Remove="Setup\**" />
+    <None Remove="Setup\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Remove="C:\Users\sandnair\.nuget\packages\microsoft.azure.cosmos\3.31.2\contentFiles\any\netstandard2.0\ThirdPartyNotice.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.31.2" />
+  </ItemGroup>
+
+</Project>

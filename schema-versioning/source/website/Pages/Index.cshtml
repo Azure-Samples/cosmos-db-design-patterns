@@ -1,0 +1,46 @@
+﻿@page
+@model IndexModel
+@using Versioning
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Carts Demo</h1>        
+    @foreach (Cart cart in Model.Carts){
+        <section data-id="@cart.Id">
+            <p><strong>Customer </strong>@cart.CustomerId</p>
+            <table>
+                <thead>
+                    <tr>
+                        @if(cart.SchemaVersion != null){
+                            <th>Schema Version</th>
+                        }                        
+                        <th>Product Name</th>
+                        <th>Quantity</th>
+                        @if (cart.HasSpecialOrders()){
+                            <th>Special Order Notes</th>
+                        }
+                    </tr>
+                </thead>
+            @foreach (var item in cart.Items)
+            {
+                <tr>
+                    @if(cart.SchemaVersion != null){
+                        <td>@cart.SchemaVersion</td>
+                    }
+                    <td>@item.ProductName</td>
+                    <td>@item.Quantity</td>
+                    @if (cart.HasSpecialOrders()){
+                        <td>
+                        @if (item.IsSpecialOrder){
+                            @item.SpecialOrderNotes
+                        }
+                        </td>
+                    }
+                </tr>
+            }
+            </table>
+        </section>
+    }        
+</div>

@@ -1,0 +1,17 @@
+{
+    "version": "2.0",
+    "logging": {
+        "applicationInsights": {
+            "samplingSettings": {
+                "isEnabled": true,
+                "excludedTypes": "Request"
+            }
+        }
+    },
+    "extensions": {
+        "cosmosDB": {
+            "connectionMode": "Gateway",
+            "userAgentSuffix": "YOUR_DESIRED_SUFFIX"
+        }
+    }
+}

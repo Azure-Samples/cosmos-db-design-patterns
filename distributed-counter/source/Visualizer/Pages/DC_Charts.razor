@@ -1,0 +1,263 @@
+﻿@page "/chart/{PrimaryCounterID}"
+
+@using ChartJs.Blazor.Charts
+@using ChartJs.Blazor.ChartJS.LineChart
+@using ChartJs.Blazor.ChartJS.Common.Properties
+@using ChartJs.Blazor.ChartJS.Common.Wrappers
+@using ChartJs.Blazor.ChartJS.Common.Enums
+@using ChartJs.Blazor.ChartJS.Common.Handlers
+@using ChartJs.Blazor.ChartJS.Common.Axes
+@using ChartJs.Blazor.Util
+@using System.Timers;
+
+@using DistributedCounterDashboard.Data
+
+@inject DistributedCounterManagementService dc_mgmtService
+
+<div class="container">
+    <div class="row">
+        <div class="col shadow-sm p-3 mb-5 bg-white rounded mx-4">
+            <a href="#" class="btn btn-primary-outline mb-1">
+                <i class="bi bi-caret-left-fill"></i>
+                Back
+            </a>
+            <div class="bg-dark data-bs-theme">
+                <div class="text-white p-2 d-flex flex-row justify-content-between align-items-center">
+                    <div class="text-nowrap pe-3">
+                        Distributed Counter(s) for 
+                    </div>
+                    <div class="input-group">
+                        <input id="counter_id" class="form-control" readonly value="@PrimaryCounterID" />
+                        <button id="copy_counter_btn" class="btn btn-outline-light" type="button" data-clipboard-target="#counter_id" data-clipboard-action="copy">
+                            <i class="bi bi-clipboard2-fill"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="p-2">
+                <table style="border 0px">
+                    <tr>
+                        <td class="p-2"><b>In Display</b></td>
+                        <td class="p-2">: @CounterCount</td>
+                    </tr>
+                     <tr>
+                        <td class="p-2"><b>Active</b></td>
+                        <td class="p-2">: @ActiveCounterCount</td>
+                    </tr>
+                    <tr>
+                        <td class="p-2"><b>Aggregated Value</b></td>
+                        <td class="p-2">: @CounterAggrThiSec</td>
+                    </tr>
+                </table>            
+            </div>
+            <br />
+            <button class="btn btn-primary" @onclick="CounterPlus">Split</button> or
+            <button class="btn btn-primary" @onclick="CounterMinus">Merge</button> &nbsp;
+            <input type="text" @bind="@countersToSplitOrMerge" @oninput="@((e) => { int.TryParse((string)e.Value,out countersToSplitOrMerge);})" width="50px" />  &nbsp; Counters.
+        </div>
+        
+    </div>
+    <div class="row">
+        <div class="col">
+            
+            <ChartJsLineChart @ref="_lineChartJs" Config="@_config" />            
+        </div>
+    </div>
+</div>
+
+@code
+{
+    private LineConfig _config;
+    private ChartJsLineChart _lineChartJs;
+    private Random _rnd;
+    private int elapsedSeconds = 1;
+    private static System.Timers.Timer aTimer;
+
+    private int CounterCount;
+    private int WorkerCount;
+    private long CounterAggrThiSec;
+    private int ActiveCounterCount;
+    private int countersToSplitOrMerge = 1;
+
+    [Parameter]
+    public string PrimaryCounterID { get; set; }
+
+
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        SetChartCanvas();
+
+        DashboardService.Init(PrimaryCounterID, dc_mgmtService);
+
+        if (aTimer != null)
+        {
+            aTimer.Stop();
+            aTimer.Elapsed -= OnTimedEvent;
+            aTimer = null;
+        }
+
+        // Create a timer with a two second interval.
+        aTimer = new System.Timers.Timer(2000);
+        // Hook up the Elapsed event for the timer.
+        aTimer.Elapsed += OnTimedEvent;
+        aTimer.AutoReset = true;         
+        aTimer.Enabled = true;
+
+    }
+
+
+    private async void CounterPlus()
+    {   
+        DashboardService.CreateDCounterMangementObjects(elapsedSeconds, countersToSplitOrMerge);
+        CounterCount = DashboardService.DCounterVisualizationItems.Count;
+
+    }
+
+    private async void CounterMinus()
+    {
+        if (DashboardService.DCounterVisualizationItems.Count > countersToSplitOrMerge)
+        {
+            DashboardService.RemoveDCounterMangementObjects(elapsedSeconds, countersToSplitOrMerge);
+            CounterCount = DashboardService.DCounterVisualizationItems.Count;
+        }
+    }
+
+   
+    private async void OnTimedEvent(Object source, ElapsedEventArgs e)
+    {
+
+        elapsedSeconds++;
+
+        await DashboardService.UpdateCounterValues(elapsedSeconds);
+
+
+        _config.Data.Datasets.Clear();
+
+        int pos = 0;
+        long total = 0;
+        long thisSec = 0;
+        ActiveCounterCount = 0;
+        CounterCount = 0;
+        foreach (var item in DashboardService.DCounterVisualizationItems)
+        {
+            pos++;
+            AddLineInChart("DC " + pos, item.Value.Name, item.Value.Values);
+            thisSec = item.Value.Values.Last();
+            total = total + thisSec;
+
+            CounterCount++;
+            if (!item.Value.Terminated)
+                ActiveCounterCount++;
+        }
+
+        CounterAggrThiSec = total;
+
+        _config.Data.Labels = new List<string>();
+
+        int i = 1;
+        if (elapsedSeconds > 120)
+        {
+            i = elapsedSeconds - 120; 
+        }
+
+        while ( i <= elapsedSeconds)
+        {
+            i++;
+            _config.Data.Labels.Add((i*2).ToString());
+        }
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async void AddLineInChart(string Name,string lineColor, List<long> data)
+    {
+        LineDataset<DoubleWrapper> lineDataset;
+
+        lineDataset = new LineDataset<DoubleWrapper>
+            {
+                BackgroundColor = lineColor,
+                BorderColor = lineColor,
+                Label = Name,
+                Fill = false,
+                PointBackgroundColor = lineColor,
+                BorderWidth = 2,
+                PointRadius = 3,
+                PointBorderWidth = 1,
+                SteppedLine = SteppedLine.False
+            };
+
+        var chartdata = data.Select(d => new DoubleWrapper(d)).ToArray();
+
+
+        lineDataset.AddRange(chartdata);
+        _config.Data.Datasets.Add(lineDataset);     
+
+    }
+
+    private void SetChartCanvas()
+    {
+        _config = new LineConfig
+            {
+                Options = new LineOptions
+                {
+                    Responsive = true,
+                    Title = new OptionsTitle
+                    {
+                        Display = true,
+                        Text = "Distributed Counters Value /Second"
+                    },
+                    Legend = new Legend
+                    {
+                        Position = Position.Right,
+                        Labels = new LegendLabelConfiguration
+                        {
+                            UsePointStyle = true
+                        }
+                    },
+                    Tooltips = new Tooltips
+                    {
+                        Mode = InteractionMode.Nearest,
+                        Intersect = false
+                    },
+                    Scales = new Scales
+                    {
+                        xAxes = new List<CartesianAxis>
+                    {
+                        new CategoryAxis
+                        {
+                            ScaleLabel = new ScaleLabel
+                            {
+                                LabelString = "Seconds"
+                            }
+                        }
+                    },
+                        yAxes = new List<CartesianAxis>
+                    {
+                        new LinearCartesianAxis
+                        {
+                            ScaleLabel = new ScaleLabel
+                            {
+                                LabelString = "Distributed Counter Value"
+                            }
+                        }
+                    }
+                    },
+                    Hover = new LineOptionsHover
+                    {
+                        Intersect = true,
+                        Mode = InteractionMode.Y
+                    },
+                    Animation = new Animation
+                    {
+                        Easing = Easing.Linear,
+                        Duration = 10
+                    }
+                }
+            };
+      
+        _config.Data.Labels = new List<string> { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" };
+    }
+}

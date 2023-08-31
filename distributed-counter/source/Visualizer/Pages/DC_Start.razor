@@ -1,0 +1,105 @@
+﻿@page "/"
+
+@using ChartJs.Blazor.Charts
+@using ChartJs.Blazor.ChartJS.LineChart
+@using ChartJs.Blazor.ChartJS.Common.Properties
+@using ChartJs.Blazor.ChartJS.Common.Wrappers
+@using ChartJs.Blazor.ChartJS.Common.Enums
+@using ChartJs.Blazor.ChartJS.Common.Handlers
+@using ChartJs.Blazor.ChartJS.Common.Axes
+@using ChartJs.Blazor.Util
+
+
+@inject DistributedCounterManagementService dc_mgmtService
+@inject NavigationManager _navigationManager
+
+<div class="container">
+    <div class="row">
+        <div class="col shadow-sm p-3 mb-5 bg-white rounded mx-4">
+            <div class="bg-dark data-bs-theme">
+                <div class="text-white p-2"> Create New Distributed Counter</div>
+            </div>
+            <div class="p-2">
+                <table style="border 0px" >                   
+                    <tr>
+                        <td class="p-2"><b>Counter Initial Value</b></td>
+                        <td class="p-2"><input type="text" @bind="@CounterInitialValue" @oninput="@((e) => { long.TryParse((string)e.Value,out CounterInitialValue);})" /></td>
+                    </tr>
+                    <tr>
+                        <td class="p-2"><b>Initial Counters</b></td>
+                        <td class="p-2"><input type="text" @bind="@InitialCounters" @oninput="@((e) => { int.TryParse((string)e.Value,out InitialCounters);})" /></td>
+                    </tr>
+                </table>
+            </div>
+            <div class="p-2">
+                <button class="btn btn-primary" @onclick="CreateCounter">Create Counter</button>
+            </div>
+            
+        </div>
+
+        <div class="col shadow-sm p-3 mb-5 bg-white rounded mx-4">
+            <div class="bg-dark data-bs-theme">
+                <div class="text-white p-2"> Retrieve Existing Distributed Counter</div>
+            </div>
+            <div class="p-2">
+                <table style="border 0px">
+                    <tr>
+                        <td class="p-2"><b> Counter ID</b></td>
+                        <td class="p-2"><input type="text" @bind="@CounterID" @oninput="@((e) => { CounterID=(string)e.Value;})" /></td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" class="p-2">&nbsp;</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="p-2">
+                <button class="btn btn-primary" @onclick="GetCounter">Get Counter</button>
+                <span class="ps-2 text-danger"> @errorText</span>
+            </div>
+
+        </div>
+    </div>   
+</div>
+
+@code
+{
+    long CounterInitialValue=1000;
+    int InitialCounters=10;
+    string CounterName="Test";
+    string errorText = "";
+    string CounterID;
+
+    protected override async Task OnInitializedAsync()
+    {
+
+    }
+
+    private async void CreateCounter()
+    {
+        errorText = "";
+        InvokeAsync(StateHasChanged);
+
+        PrimaryCounter pc= await dc_mgmtService.CreateCounterAsync(CounterName, CounterInitialValue, InitialCounters);
+        await dc_mgmtService.ActivateCountersAsync(pc);
+        _navigationManager.NavigateTo("/chart/" + pc.Id);
+    }
+
+    private async void GetCounter()
+    {
+        errorText = "";
+        InvokeAsync(StateHasChanged);
+
+        PrimaryCounter pc = await dc_mgmtService.GetPrimaryCounterAsync(CounterID);
+        if (pc == null)
+        {
+            errorText = "Couldn't get Counter. Please try again.";
+            InvokeAsync(StateHasChanged);
+        }
+        else
+        {
+            _navigationManager.NavigateTo("/chart/" + pc.Id);
+        }
+    }
+
+   
+}

@@ -1,0 +1,34 @@
+{
+    "name": "Data binning pattern",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
+    "workspaceFolder": "/workspace/data-binning/source/",
+    "updateContentCommand": "dotnet build Cosmos_Patterns_Bucketing.csproj",
+    "features": {
+        "ghcr.io/devcontainers/features/azure-cli:1": {
+            "installBicep": true,
+            "extensions": "cosmosdb-preview"
+        }
+    },
+    "containerEnv": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+    },
+    "customizations": {
+        "codespaces": {
+            "openFiles": [
+                "readme.md"
+            ]
+        },
+        "vscode": {
+            "settings": {
+                "git.openRepositoryInParentFolders": "always"
+            },
+            "extensions": [
+                "ms-dotnettools.csharp",
+                "ms-azuretools.vscode-bicep"
+            ]
+        }
+    }
+}

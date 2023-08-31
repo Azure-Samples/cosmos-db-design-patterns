@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <EnableDefaultContentItems>true</EnableDefaultContentItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="ChartJs.Blazor" Version="1.1.0" />
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="3.1.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Counter\CosmosDistributedCounter.csproj" />
+  </ItemGroup>
+</Project>

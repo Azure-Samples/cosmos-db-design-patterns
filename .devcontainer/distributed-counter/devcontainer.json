@@ -1,0 +1,32 @@
+{
+    "name": "Distributed counter pattern",
+    "image": "mcr.microsoft.com/devcontainers/dotnet:6.0",
+    "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
+    "workspaceFolder": "/workspace/distributed-counter/source/",
+    "updateContentCommand": "dotnet build Cosmos_Patterns_DistributedCounter.sln",
+    "features": {
+        "ghcr.io/devcontainers/features/azure-cli:1": {
+            "installBicep": true,
+            "extensions": "cosmosdb-preview"
+        }
+    },
+    "containerEnv": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+    },
+    "customizations": {
+        "codespaces": {
+            "openFiles": [
+                "readme.md"
+            ]
+        },
+        "vscode": {
+            "settings": {
+                "git.openRepositoryInParentFolders": "always"
+            },
+            "extensions": [
+                "ms-dotnettools.csharp",
+                "ms-azuretools.vscode-bicep"
+            ]
+        }
+    }
+}
