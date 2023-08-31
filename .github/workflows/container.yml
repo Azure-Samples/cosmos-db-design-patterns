@@ -23,5 +23,4 @@ jobs:
           with:
             imageName: ghcr.io/azure-samples/cosmos-db-design-patterns/devcontainer
             noCache: true
-            imageTag: latest, ${{ github.run_id }}
             push: always
