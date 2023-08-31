@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/devcontainers/dotnet:6.0-bullseye
+FROM mcr.microsoft.com/devcontainers/dotnet:7.0-bullseye
 
 # Install Azure Functions Core Tools
 RUN curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
