@@ -1,18 +1,9 @@
 {
     "name": "Document versioning pattern",
-    "image": "mcr.microsoft.com/devcontainers/dotnet:6.0",
+    "image": "ghcr.io/azure-samples/cosmos-db-design-patterns/devcontainer:latest",
     "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
     "workspaceFolder": "/workspace/document-versioning/source/",
     "updateContentCommand": "dotnet build function-app/function-app.csproj && dotnet build website/website.csproj",
-    "features": {
-        "ghcr.io/devcontainers/features/azure-cli:1": {
-            "installBicep": true,
-            "extensions": "cosmosdb-preview"
-        }
-    },
-    "containerEnv": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
-    },
     "customizations": {
         "codespaces": {
             "openFiles": [
@@ -22,11 +13,7 @@
         "vscode": {
             "settings": {
                 "git.openRepositoryInParentFolders": "always"
-            },
-            "extensions": [
-                "ms-dotnettools.csharp",
-                "ms-azuretools.vscode-bicep"
-            ]
+            }
         }
     }
 }
