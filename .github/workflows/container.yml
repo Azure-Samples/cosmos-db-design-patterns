@@ -2,7 +2,7 @@ name: 'Build base devcontainer image'
 on:
   push:
     paths:
-      - '.devcontainer/base/**.*'
+      - '.devcontainer/base/**'
     branches:
       - main
   workflow_dispatch:
