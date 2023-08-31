@@ -22,5 +22,6 @@ jobs:
           uses: devcontainers/ci@v0.3
           with:
             imageName: ghcr.io/azure-samples/cosmos-db-design-patterns/devcontainer
-            cacheFrom: ghcr.io/azure-samples/cosmos-db-design-patterns/devcontainer
+            noCache: true
+            imageTag: latest, ${{ github.run_id }}
             push: always
