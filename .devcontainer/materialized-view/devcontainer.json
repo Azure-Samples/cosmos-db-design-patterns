@@ -1,6 +1,6 @@
 {
     "name": "Materialized view pattern",
-    "image": "ghcr.io/azure-samples/cosmos-db-design-patterns/devcontainer:latest",
+    "image": "ghcr.io/azure-samples/cosmos-db-design-patterns/devcontainer-base:latest",
     "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
     "workspaceFolder": "/workspace/materialized-view/source/",
     "postAttachCommand": "dotnet build data-generator/data-generator.csproj && dotnet build function-app/MaterializeViews.csproj",

@@ -1,6 +1,6 @@
 {
     "name": "Distributed lock pattern",
-    "image": "ghcr.io/azure-samples/cosmos-db-design-patterns/devcontainer:latest",
+    "image": "ghcr.io/azure-samples/cosmos-db-design-patterns/devcontainer-base:latest",
     "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
     "workspaceFolder": "/workspace/distributed-lock/source/",
     "postAttachCommand": "dotnet build consoleapp/Cosmos_Patterns_GlobalLock.sln",

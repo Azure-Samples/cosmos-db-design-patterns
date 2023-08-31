@@ -1,6 +1,6 @@
 {
     "name": "Attribute array pattern",
-    "image": "ghcr.io/azure-samples/cosmos-db-design-patterns/devcontainer:latest",
+    "image": "ghcr.io/azure-samples/cosmos-db-design-patterns/devcontainer-base:latest",
     "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
     "workspaceFolder": "/workspace/attribute-array/source/",
     "postAttachCommand": "dotnet build Cosmos_Patterns_Attribute.sln",

@@ -1,6 +1,6 @@
 {
     "name": "Preallocation pattern",
-    "image": "ghcr.io/azure-samples/cosmos-db-design-patterns/devcontainer:latest",
+    "image": "ghcr.io/azure-samples/cosmos-db-design-patterns/devcontainer-base:latest",
     "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
     "workspaceFolder": "/workspace/preallocation/source/",
     "postAttachCommand": "dotnet build Cosmos_Patterns_Preallocation.csproj",
