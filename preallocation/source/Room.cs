@@ -29,21 +29,26 @@ namespace Cosmos_Patterns_Preallocation
         public string? Description { get; set; }
         public int MaximumGuests { get; set; }
 
-        public List<AvailableDate> AvailableDates { get; set; }
+        public List<ReservationDate> ReservationDates { get; set; }
         
         public Room()
         {
             EntityType = "room";
-            AvailableDates = new List<AvailableDate>();
+            ReservationDates = new List<ReservationDate>();
         }
 
     }
 
-    public class AvailableDate
+    public class ReservationDate
     {
         public DateTime Date { get; set; }
+        public bool IsReserved { get; set; }
 
-        public bool IsAvailable { get; set; }
+        //public ReservationDate(DateTime date)
+        //{
+        //    Date = date;
+        //    Confirmed = true;
+        //}
     }
 
     public class RoomAttibuteBased : Room
