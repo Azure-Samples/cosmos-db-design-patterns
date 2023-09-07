@@ -56,7 +56,7 @@ Overall, the NoSQL event sourcing data pattern is well-suited for event-driven m
 This pattern provides:
 - A full log of events, useful for auditing or point in time calculations.
 - Change feed capability to enable multiple consumers to process new events.
-- [Materialized Views pattern](../materialized_views/README.md) (another pattern used with CQRS) using change feed builds off the event store created with this pattern to support multiple views off the same source data.
+- [Materialized Views pattern](../materialized_views/README.md) using change feed builds off the event store created with this pattern to support multiple views off the same source data.
 
 ## Sample implementation of event sourcing
 In this section we will walk through a case study on how to design and implement event sourcing, provding code examples and review cost considerations that will impact the design.
