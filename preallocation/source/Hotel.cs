@@ -1,5 +1,6 @@
 ﻿using Microsoft.Azure.Cosmos;
 using Newtonsoft.Json;
+using System;
 using Container = Microsoft.Azure.Cosmos.Container;
 
 namespace Cosmos_Patterns_Preallocation
@@ -28,6 +29,8 @@ namespace Cosmos_Patterns_Preallocation
 
         public ICollection<Reservation> Reservations { get; set; }
 
+        static int maxRooms = 10;
+
         public Hotel()
         {
             Rooms = new List<Room>();
@@ -36,6 +39,7 @@ namespace Cosmos_Patterns_Preallocation
             EntityType = "hotel";
         }
 
+        //query db to get list of  rooms
         async public Task<List<Room>> GetRooms(Container c)
         {
             string query = $"select * from c where c.EntityType = 'room' and c.hotelId = '{this.HotelId}'";
@@ -56,161 +60,139 @@ namespace Cosmos_Patterns_Preallocation
             return items;
         }
 
-        async public Task<List<Room>> FindAvailableRooms(Container c, DateTime start, DateTime end, string mode)
+        //query room  availability for a given date
+        async public Task FindAvailableRooms(Container c, DateTime queryDate, string mode)
         {
-            //ensure start is less than end...invalid, no rooms!
-            if (start > end)
-                return new List<Room>();
-
-            //number of days of the stay.
-            int noDates = (end - start).Days;
+            var requestCharge = 0.0;
+            var executionTime = new TimeSpan();
 
             //very easy to find available dates...
             if (mode == "preallocation")
             {
-                //do a cosmos query that finds hotel rooms that are availabel between two dates...
-                string query = $"select * from c where c.hotelId = '{this.HotelId}' and c.AvailableDates.IsAvailable = 1 and c.AvailableDates.Date >= '{start.ToString("yyyy-MM-dd")}' and c.AvailableDates.Date <= '{end.ToString("yyyy-MM-dd")}'";
-
-                QueryDefinition qd = new QueryDefinition(query);
-
                 List<Room> items = new List<Room>();
 
-                using FeedIterator<Room> feed = c.GetItemQueryIterator<Room>(queryDefinition: qd);
-
+                //do a cosmos query that finds all hotel rooms 
+                string query = $"SELECT a.Date, a.IsReserved, r.hotelId FROM room r JOIN a IN r.ReservationDates WHERE a.Date>= '{queryDate:o}' AND a.Date < '{queryDate.AddDays(1):o}' and a.IsReserved=false and r.hotelId = '{this.HotelId}'";
+                using FeedIterator<Room> feed = c.GetItemQueryIterator<Room>(new QueryDefinition(query));
+ 
                 while (feed.HasMoreResults)
                 {
                     FeedResponse<Room> response = await feed.ReadNextAsync();
-
+                    requestCharge += response.RequestCharge;
+                    executionTime += response.Diagnostics.GetClientElapsedTime();
                     items.AddRange(response);
                 }
 
-                return items;
+
+                Console.WriteLine($"With preallocation: {items.Count} room(s) available on {queryDate}, query consumed {requestCharge} RU(s) and completed in {executionTime.Milliseconds} milliseconds(s). ");
+               
+                //return items;
             }
-
-            //very difficult to find available dates...
-            if (mode == "nopreallocation")
+            else
             {
-                //get all the reservations
-                //do a cosmos query that finds hotel rooms that are availabel between two dates...
-                string query = $"select * from c where c.EntityType = 'room' and c.hotelId = '{this.HotelId}'";
 
-                QueryDefinition qd = new QueryDefinition(query);
 
                 List<Room> availableRooms = new List<Room>();
+                List<DateTime> reservedDates = new List<DateTime>();
+                List<Reservation> reservations = new List<Reservation>();
 
-                using FeedIterator<Room> feed = c.GetItemQueryIterator<Room>(queryDefinition: qd);
+                //get all the rooms in hotel
+                string query = $"select * from c where c.EntityType = 'room' and c.hotelId = '{this.HotelId}'";
+                using FeedIterator<Room> feedRooms = c.GetItemQueryIterator<Room>(new QueryDefinition(query));
 
-                while (feed.HasMoreResults)
+                while (feedRooms.HasMoreResults)
                 {
-                    FeedResponse<Room> response = await feed.ReadNextAsync();
-
+                    FeedResponse<Room> response = await feedRooms.ReadNextAsync();
+                    requestCharge += response.RequestCharge;
+                    executionTime += response.Diagnostics.GetClientElapsedTime();
                     availableRooms.AddRange(response);
                 }
 
-                //get all the reservations
-                //do a cosmos query that finds hotel rooms that are availabel between two dates...
-                query = $"select * from c where c.EntityType = 'reservation' and c.StartDate >= '{DateTime.Now}' and c.hotelId = '{this.HotelId}'";
+                //get all the reservations on the given date
+                query = $"select * from c where c.EntityType = 'reservation' and c.hotelId = '{this.HotelId}' and c.StartDate>= '{queryDate:o}' AND c.StartDate < '{queryDate.AddDays(1):o}'";
+                using FeedIterator<Reservation> feedReservations = c.GetItemQueryIterator<Reservation>(new QueryDefinition(query));
 
-                List<AvailableDate> availableDates = new List<AvailableDate>();
-
-                List<Reservation> reservations = new List<Reservation>();
-
-                using FeedIterator<Reservation> feed2 = c.GetItemQueryIterator<Reservation>(queryDefinition: qd);
-
-                while (feed2.HasMoreResults)
+                while (feedReservations.HasMoreResults)
                 {
-                    FeedResponse<Reservation> response = await feed2.ReadNextAsync();
-
+                    FeedResponse<Reservation> response = await feedReservations.ReadNextAsync();
+                    requestCharge += response.RequestCharge;
+                    executionTime += response.Diagnostics.GetClientElapsedTime();
                     reservations.AddRange(response);
                 }
 
-                //remove any rooms where reservations overlap the search dates
+                //merge reservation with to remove any rooms where reservations overlap the search dates
                 foreach (Reservation r in reservations)
                 {
-                    bool validRoom = true;
-
-                    //the search start date is after both start and end date of reservation...that's ok
-                    if (start > r.StartDate && start > r.EndDate)
-                        validRoom = true;
-
-                    //the search end date is after both start and end date of reservation...that's ok
-                    if (end > r.StartDate && end > r.EndDate)
-                        validRoom = true;
-
-                    //if the search end date is less than the end date and greater than the start date...that's not ok..
-                    if (end < r.EndDate && end > r.StartDate)
-                        validRoom = false;
-
-                    //if the search start date is less than the end date and greater than the start date...that's not ok..
-                    if (start < r.EndDate && start > r.StartDate)
-                        validRoom = false;
-
-                    if (!validRoom)
+                    //if room reserved on the the give date
+                    if (queryDate == r.StartDate)
                     {
-                        availableRooms.Remove(availableRooms.Where(r1 => r1.Id == r.RoomId).First());
+                        //remove from available list
+                        availableRooms.Remove(availableRooms.Where(r1 => r1.Id == r.RoomId).First()); 
                     }
-
                 }
-
-                return availableRooms;
+                Console.WriteLine($"Without preallocation: {availableRooms.Count} room(s) available on {queryDate}, query consumed {requestCharge} RU(s) and completed in {executionTime.Milliseconds} milliseconds(s). ");
+                //return availableRooms;
             }
 
-            return new List<Room>();
+            Console.WriteLine("");
+            Console.WriteLine("Press any key to continue.");
+            Console.ReadLine();2
+
         }
 
-        public async Task CreateReservations(DateTime start, string mode, Container hotelContainer)
-        {
-            Random rand = new Random();
+        public async Task CreateReservationsAsync(DateTime start, DateTime end, string mode, Container hotelContainer)
+        {          
 
             List<Room> rooms = await this.GetRooms(hotelContainer);
 
             //create some random reservations and remove available dates
             for (int i = 0; i < rooms.Count; i++)
             {
-                var query = from Room room in rooms where room.Id == $"room_{i.ToString()}" select room;
+                Room r = rooms[i];
 
-                foreach (Room r in query)
+                //lets assume there  is 1 reservation every 25 days for each room
+                int noDays = 25;
+                DateTime targetDate = start;
+                while (targetDate < end)
                 {
-                    //create random reservations
-                    int noDays = rand.Next(365);
-                    DateTime targetDate = start.AddDays(noDays);
+                    Reservation res = new Reservation();
+                    res.HotelId = this.Id;
+                    res.Id = $"reservation_{r.Id}_{targetDate.ToString("yyyyMMdd")}";
+                    res.RoomId = $"{r.Id}";
+                    res.StartDate = targetDate;
+                    res.EndDate = targetDate.AddDays(1);
+                    res.Room = r;
+                                       
 
-                    //reservations are used to track available dates...very slow
-                    if (mode == "nopreallocation")
+                    //additional preallocated data array is used to track available dates...faster
+                    if (mode == "preallocation")
                     {
-                        Reservation res = new Reservation();
-                        res.HotelId = this.Id;
-                        res.Id = $"reservation_{r.Id}_{targetDate.ToString("yyyyMMdd")}";
-                        res.RoomId = $"{r.Id}";
-                        res.StartDate = targetDate;
-                        res.EndDate = targetDate.AddDays(1);
-                        res.Room = r;
+                        //set the available date to false...
+                        foreach (var ad in r.ReservationDates.Where<ReservationDate>(r => r.Date == targetDate))
+                            ad.IsReserved = true;
 
+
+                        //save the room data
+                        await hotelContainer.UpsertItemAsync<Room>(
+                             item: r,
+                             partitionKey: new PartitionKey(r.HotelId)
+                         );
+                    }
+                    else
+                    {
                         //save the reservation
                         await hotelContainer.UpsertItemAsync<Reservation>(
                             item: res,
                             partitionKey: new PartitionKey(res.HotelId)
                         );
                     }
+                    targetDate = targetDate.AddDays(noDays);
 
-                    //preallocated data array is used to track available dates...faster
-                    if (mode == "preallocation")
-                    {
-                        //set the available date to false...
-                        foreach (var ad in r.AvailableDates.Where<AvailableDate>(r => r.Date == targetDate))
-                            ad.IsAvailable = false;
-
-                        //save the room data
-                        await hotelContainer.UpsertItemAsync<Room>(
-                            item: r,
-                            partitionKey: new PartitionKey(r.HotelId)
-                        );
-                    }
                 }
+
             }
         }
 
-        static int maxRooms = 10;
 
         public static Hotel CreateHotel(string id)
         {

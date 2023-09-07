@@ -37,39 +37,16 @@ Once the template is loaded, populate the values:
 
 Once those settings are set, select **Review + create**, then **Create**.
 
-## Set up environment variables
+## Updating Azure Cosmos DB URI and Key in Code
 
 1. Once the template deployment is complete, select **Go to resource group**.
 2. Select the new Azure Cosmos DB for NoSQL account.
-3. From the navigation, under **Settings**, select **Keys**. The values you need for the environment variables for the demo are here.
+3. From the navigation, under **Settings**, select **Keys**.
 
-Create 2 environment variables to run the demos:
+Update the  following in the **appsettings.json**  before you run the code:
 
-- `COSMOS_ENDPOINT`: set to the `URI` value on the Azure Cosmos DB account Keys blade.
-- `COSMOS_KEY`: set to the Read-Write `PRIMARY KEY` for the Azure Cosmos DB for NoSQL account
-
-Create your environment variables with the following syntax:
-
-PowerShell:
-
-```powershell
-$env:COSMOS_ENDPOINT="YOUR_COSMOS_ENDPOINT"
-$env:COSMOS_KEY="YOUR_COSMOS_READ_WRITE_PRIMARY_KEY"
-```
-
-Bash:
-
-```bash
-export COSMOS_ENDPOINT="YOUR_COSMOS_ENDPOINT"
-export COSMOS_KEY="YOUR_COSMOS_KEY"
-```
-
-Windows Command:
-
-```text
-set COSMOS_ENDPOINT=YOUR_COSMOS_ENDPOINT
-set COSMOS_KEY=YOUR_COSMOS_KEY
-```
+- `CosmosUri`: Set to the `URI` value on the Azure Cosmos DB account Keys blade.
+- `CosmosKey`: Set to the Read-Write `PRIMARY KEY` for the Azure Cosmos DB for NoSQL account
 
 ## Run the demo
 
@@ -97,25 +74,12 @@ List<Room> rooms = Hotel.CreateRooms(h);
 
 4. From Visual Studio, press **F5** to start the application.
 
-## Query the data
+5. Select Option 1 in the console application to create the containers and populate data in them. The code will create two containers.  One that contains reservations that are used to determine open dates and another hotel that uses pre-allocation of dates.
 
-The code will create two hotels.  One that contains reservations that are used to determine open dates and another hotel that uses pre-allocation of dates.
+	1. In Azure Portal, browse to you Cosmos DB resource.
+	2. Select **Data Explorer** in the left menu.
+	3. Review the data in both  container, notice that the 'Reservation' documents is not used in the *HotelApp_containerWithPreallocation*.
 
-1. In Azure Portal, browse to you Cosmos DB resource.
-2. Select **Data Explorer** in the left menu.
-3. Select your container, then choose **New SQL Query**.
-4. Run the following query to see the rooms created, notice that the 'AvailableDates' collection is not used.
-
- ```sql
- select * from c where c.EntityType = 'room' and c.hotelId = 'hotel_1'
- ```
-
- ```sql
- select * from c where c.EntityType = 'reservation' and c.hotelId = 'hotel_1'
- ```
-
-5. Run the following query to see the rooms created for hotel '2', review the rooms and the 'AvailableDates' property that has the pre-populated with a set of dates:
-
-  ```sql
-  select * from c where c.EntityType = 'room' and c.hotelId = 'hotel_2'
-  ```
+6. Select Option 2 to run the query with out any Preallocation. Provide a date in DD--MM-YYYY format.
+7. Select Option 3 to run the same query using Preallocation. Provide a date in DD--MM-YYYY format.
+8. Compare the code for both Step#6 and Step#7. Notice that Pre-allocation allows for a much simpler design for queries and logic versus other approaches however it can come at the cost of a larger document in storage and memory given the pre-allocation of the data.
