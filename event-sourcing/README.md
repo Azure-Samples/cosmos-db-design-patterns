@@ -13,18 +13,17 @@ description: This is an example that will simulate shopping cart events for an e
 
 # Event Sourcing pattern
 
-The [Event Sourcing pattern](https://learn.microsoft.com/azure/architecture/patterns/event-sourcing) is used to track append-only events (no updates or deletes) in an Azure Cosmos DB collection before additional processing takes place. This gives you a full log of historical events which can feed into multiple downstream systems. This full detail allows for calculating results at various points in time. In other words, you have an audit of all historical changes. When using event sourcing in Azure Cosmos DB, the change feed should be used to allow one or more consumers to easily process only changed data.
+[Event Sourcing](https://learn.microsoft.com/azure/architecture/patterns/event-sourcing) is an architectural pattern stemming from [Domain-Driven Design](https://en.wikipedia.org/wiki/Domain-driven_design) in which entities do not track their internal state by means of direct serialization or object-relational mapping, but by reading and committing events to an event store.
 
-Event sourcing is a design pattern that involves capturing all changes to an application's state as a sequence of events. These events are then stored in a database or event log and can be replayed to rebuild the state of the application at any point in time. While event sourcing can be implemented with various types of databases, it often makes the most sense for NoSQL databases due to the following reasons:
+A simple implementation would be a container that is used to track append-only events, (no updates or deletes). This gives you a full log of historical events which can feed into multiple others systems. 
 
-1. NoSQL databases offer schema flexibility, efficient handling of complex event data with nested structures, and seamless support for unstructured event data formats like JSON or BSON, aligning perfectly with the needs of event sourcing architectures.
+There are multiple notable benefits to this type of approach in application design. It is often paired with another architecture pattern, Command Query Responsibility System (CQRS) in a way that combines Cosmos DB's Change Feed to facilitate the read layer in this architecture, including implementing another architecture pattern also used with CQRS, [Materialized Views](../materialized_views/README.md). It can also simply enable a communications layer for sets of loosely-coupled services. 
 
-1. Scalability: NoSQL databases are designed to scale horizontally, making them well-suited for handling large volumes of writes, which is a common characteristic of event sourcing architectures. As events are continuously appended to the event log, NoSQL databases can efficiently handle write-heavy workloads, ensuring high availability and performance.
+While event sourcing can be implemented with various types of databases, this is pattern heavily used by developers building applications using Azure Cosmos DB. The ability for Change Feed to act as a centralized (and scalable) message publishing mechanism is a key reason for this. But there are other reasons as well, including:
 
-1. Optimal for Event Sourcing Writes: NoSQL databases excel in horizontal scalability and high write throughput, aligning perfectly with event sourcing's need for efficiently managing large volumes of write-heavy state-changing events while maintaining event order.
+1. Flexible schema: NoSQL databases generally allow for schema flexibility. Easy support for unstructured event data formats that are often in JSON formats align perfectly with the needs of event sourcing architectures.
 
-Despite these advantages, it's important to note that the choice of database for event sourcing depends on the specific requirements of the application and the skills and preferences of the development team. While NoSQL databases can be a good fit for many event sourcing scenarios, traditional relational databases or other data storage solutions may still be appropriate depending on the use case and the application's overall architecture.
-
+1. Scalability: NoSQL databases are typically designed for high scale. Data volumes in event sourcing patterns can range from the thousands to millions of messages per second. An underlying database needs to scale and do so seemlessly. Azure Cosmos DB's scale-out architecture is well-suited here with highly elastic throughput and storage.
 
 This sample demonstrates:
 
@@ -60,19 +59,13 @@ This pattern provides:
 - [Materialized Views pattern](../materialized_views/README.md) using change feed builds off the event store created with this pattern to support multiple views off the same source data.
 
 ## Sample implementation of event sourcing
-In this section we will walk through a case study on how to design and implement event sourcing.
+In this section we will walk through a case study on how to design and implement event sourcing, provding code examples and review cost considerations that will impact the design.
 
-We will walk through code examples and review cost considerations that will impact the design.
-
-Consider a shopping cart application for an eCommerce company. All changes to the cart should be tracked as events 
-but will be queried for multiple uses by different consuming services. Event sourcing pattern is chosen to ensure all history is retained and point 
-in time state can be calculated. Each time a change is made to the cart there will be multiple calculations 
-downstream. Rather than have the application update multiple containers, the single 
-event store collection `shopping_cart_event` will be appended with the change. The partition key will be `/cartId` to support the most common queries by the shopping cart service. Other services will consume data from the change feed and use solutions like [materialized views](../materialized_views/README.md) to support different query patterns.
+Consider a shopping cart application for an eCommerce company. All changes to the cart should be tracked as events but will be queried for multiple uses by different consuming services. Event sourcing pattern is chosen to ensure all history is retained and point in time state can be calculated. Each time a change is made to the cart there will be multiple calculations downstream. Rather than have the application update multiple containers, the single event store collection `shopping_cart_event` will be appended with the change. The partition key will be `/cartId` to support the most common queries by the shopping cart service. Other services will consume data from the change feed and use solutions like [materialized views](../materialized_views/README.md) to support different query patterns.
 
 In this example the state of all products in the cart is maintained as `productsInCart`. However, this could also be derived by each query or consumer if the application that writes the data does not know the full state.
 
-Sample events in the event store would look like this:
+Sample events in the event store could look like this:
 ```json
 {
   "cartId": guid,
@@ -161,7 +154,7 @@ There are a few ways you can start working with the code in this demo.
 
 - Open the terminal on your computer.
 - Navigate to the directory where you want to clone the repository.
-- Type `git clone https://github.com/AzureCosmosDB/design-patterns.git` and press enter.
+- Type `git clone https://github.com/Azure-Samples/cosmos-db-design-patterns.git` and press enter.
 - The repository will be cloned to your local machine.
 
 **Using Visual Studio Code:**
@@ -169,7 +162,7 @@ There are a few ways you can start working with the code in this demo.
 - Open Visual Studio Code.
 - Click on the **Source Control** icon in the left sidebar.
 - Click on the **Clone Repository** button at the top of the Source Control panel.
-- Paste `https://github.com/AzureCosmosDB/design-patterns.git` into the text field and press enter.
+- Paste `https://github.com/Azure-Samples/cosmos-db-design-patterns.git` into the text field and press enter.
 - Select a directory where you want to clone the repository.
 - The repository will be cloned to your local machine.
 
@@ -177,11 +170,11 @@ There are a few ways you can start working with the code in this demo.
 
 Forking the repository allows you to create your own copy of the repository under your GitHub account. This copy is independent of the original repository and is stored on your account. You can make changes to your forked copy without affecting the original repository. To fork the repository:
 
-- Visit the repository URL: [https://github.com/AzureCosmosDB/design-patterns](https://github.com/AzureCosmosDB/design-patterns)
+- Visit the repository URL: [https://github.com/Azure-Samples/cosmos-db-design-patterns](https://github.com/Azure-Samples/cosmos-db-design-patterns.git)
 - Click the "Fork" button at the top right corner of the repository page.
 - Select where you want to fork the repository (your personal account or an organization).
 - After forking, you'll have your own copy of the repository under your account. You can make changes, create branches, and push your changes back to your fork.
-- After forking the repository, open the repository on GitHub: [https://github.com/YourUsername/design-patterns](https://github.com/YourUsername/design-patterns) (replace `YourUsername` with your GitHub username).
+- After forking the repository, open the repository on GitHub: [https://github.com/YourUsername/cosmos-db-design-patterns](https://github.com/YourUsername/cosmos-db-design-patterns) (replace `YourUsername` with your GitHub username).
 - Click the "Code" button and copy the URL (HTTPS or SSH) of the repository.
 - Open a terminal on your local computer and navigate to the directory where you want to clone the repository using the `cd` command.
 - Run the command: `git clone <repository_url>` (replace `<repository_url>` with the copied URL).
@@ -189,7 +182,7 @@ Forking the repository allows you to create your own copy of the repository unde
 
 ### **GitHub Codespaces**
 
-You can try out this implementation by running the code in [GitHub Codespaces](https://docs.github.com/codespaces/overview) with a [free Azure Cosmos DB account](https://learn.microsoft.com/azure/cosmos-db/try-free). (*This option doesn't require an Azure subscription, just a GitHub account.*)
+You can try out this implementation by running the code in [GitHub Codespaces](https://docs.github.com/codespaces/overview)
 
 - Open the application code in a GitHub Codespace:
 
@@ -197,7 +190,7 @@ You can try out this implementation by running the code in [GitHub Codespaces](h
 
 ## Create an Azure Cosmos DB for NoSQL account
 
-1. Create a free Azure Cosmos DB for NoSQL account: (<https://cosmos.azure.com/try>)
+1. If you don't already have an Azure Subscription, create a free Azure Cosmos DB for NoSQL account: (<https://cosmos.azure.com/try>)
 
 1. In the Data Explorer, create a new database and container with the following values:
 
@@ -279,7 +272,7 @@ WHERE c.CartId = "38f4687d-35f2-4933-aadd-8776f4134589"
 ORDER BY c.EventTimestamp DESC
 ```
 
-More complex queries can be run on the events container directly. Ideally, they will still use the partitionKey to optimize costs while the change feed is used to build other views when needed. One example is if the source application did not track the `productsInCart` information. In that case the product and quantities in the cart can be derived with a slightly more complex query. This query returns a record per product with the final quantity. It filters to a specific cart and also ignores the events that do not include a product, such as cart creation or purchase. You can test this in Data Explorer, but remember to replace the CartId value with one generated by running the demo.
+More complex queries can be run on the events container directly. Ideally, they will still use the partition key to optimize costs while the change feed is used to build other views when needed. One example is if the source application did not track the `productsInCart` information. In that case the product and quantities in the cart can be derived with a slightly more complex query. This query returns a record per product with the final quantity. It filters to a specific cart and also ignores the events that do not include a product, such as cart creation or purchase. You can test this in Data Explorer, but remember to replace the CartId value with one generated by running the demo.
 
 ```sql
 SELECT c.CartId, c.UserId, c.Product,
