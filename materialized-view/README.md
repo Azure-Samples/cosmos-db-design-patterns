@@ -171,19 +171,7 @@ You will need a connection string for the Azure Cosmos DB account.
 
 1. Select the new Azure Cosmos DB for NoSQL account.
 
-1. From the navigation, under **Settings**, select **Keys**. The values you need for the environment variables for the demo are here.
-
-Create 2 environment variables to run the demos:
-
-- `COSMOS_ENDPOINT`: set to the `URI` value on the Azure Cosmos DB account Keys blade.
-- `COSMOS_KEY`: set to the Read-Write `PRIMARY KEY` for the Azure Cosmos DB for NoSQL account
-
-Create your environment variables in a bash terminal with the following syntax:
-
-```bash
-export COSMOS_ENDPOINT="YOUR_COSMOS_ENDPOINT"
-export COSMOS_KEY="YOUR_COSMOS_KEY"
-```
+1. From the navigation, under **Settings**, select **Keys**. The values you need for the application configuration for the demo are here.
 
 1. While on the Keys blade, make note of the `PRIMARY CONNECTION STRING`. You will need this for the Azure Function App.
 

@@ -260,7 +260,7 @@ You can try out this implementation by running the code in [GitHub Codespaces](h
 2. Once the account deployment is complete, select the new Azure Cosmos DB for NoSQL account.
 3. From the navigation, under **Settings**, select **Keys**.
 
-Update the  following in the **appsettings.json**  before you run the code:
+Update the following in the **appsettings.json**  before you run the code:
 
 - `CosmosUri`: Set to the `URI` value on the Azure Cosmos DB account Keys blade.
 - `CosmosKey`: Set to the Read-Write `PRIMARY KEY` for the Azure Cosmos DB for NoSQL account
