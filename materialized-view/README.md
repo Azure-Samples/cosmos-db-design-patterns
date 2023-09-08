@@ -107,7 +107,7 @@ There are a few ways you can start working with the code in this demo.
 
 - Open the terminal on your computer.
 - Navigate to the directory where you want to clone the repository.
-- Type `git clone https://github.com/AzureCosmosDB/design-patterns.git` and press enter.
+- Type `git clone https://github.com/Azure-Samples/cosmos-db-design-patterns.git` and press enter.
 - The repository will be cloned to your local machine.
 
 **Using Visual Studio Code:**
@@ -115,7 +115,7 @@ There are a few ways you can start working with the code in this demo.
 - Open Visual Studio Code.
 - Click on the **Source Control** icon in the left sidebar.
 - Click on the **Clone Repository** button at the top of the Source Control panel.
-- Paste `https://github.com/AzureCosmosDB/design-patterns.git` into the text field and press enter.
+- Paste `https://github.com/Azure-Samples/cosmos-db-design-patterns.git` into the text field and press enter.
 - Select a directory where you want to clone the repository.
 - The repository will be cloned to your local machine.
 
@@ -123,7 +123,7 @@ There are a few ways you can start working with the code in this demo.
 
 Forking the repository allows you to create your own copy of the repository under your GitHub account. This copy is independent of the original repository and is stored on your account. You can make changes to your forked copy without affecting the original repository. To fork the repository:
 
-- Visit the repository URL: [https://github.com/AzureCosmosDB/design-patterns](https://github.com/AzureCosmosDB/design-patterns)
+- Visit the repository URL: [https://github.com/Azure-Samples/cosmos-db-design-patterns](https://github.com/Azure-Samples/cosmos-db-design-patterns)
 - Click the "Fork" button at the top right corner of the repository page.
 - Select where you want to fork the repository (your personal account or an organization).
 - After forking, you'll have your own copy of the repository under your account. You can make changes, create branches, and push your changes back to your fork.
@@ -135,7 +135,7 @@ Forking the repository allows you to create your own copy of the repository unde
 
 ### **GitHub Codespaces**
 
-You can try out this implementation by running the code in [GitHub Codespaces](https://docs.github.com/codespaces/overview) with a [free Azure Cosmos DB account](https://learn.microsoft.com/azure/cosmos-db/try-free). (*This option doesn't require an Azure subscription, just a GitHub account.*)
+You can try out this implementation by running the code in [GitHub Codespaces](https://docs.github.com/codespaces/overview)
 
 - Open the application code in a GitHub Codespace:
 
