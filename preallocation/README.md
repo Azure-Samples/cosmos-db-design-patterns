@@ -10,27 +10,9 @@ urlFragment: preallocation
 description: This is an example that shows how preallocation is used to optimize the performance and efficiency of database operations by allocating resources or space in advance, rather than dynamically as needed. 
 ---
 
-# UNDER CONSTRUCTION
-
 # Preallocation Pattern
 
-The **preallocation pattern** in NoSQL databases refers to a strategy of reserving or allocating resources such as storage space, throughput, and other capacity-related aspects in advance, rather than dynamically as needed. This pattern aims to optimize the performance, scalability, and predictability of NoSQL database systems by reducing the overhead of resource allocation during runtime and ensuring that sufficient resources are available to handle workload spikes and growth.
-
-In the context of NoSQL databases, the preallocation pattern can manifest in several ways:
-
-1. **Storage Space Preallocation**: NoSQL databases, especially those with flexible schemas like document stores, can benefit from preallocating storage space for documents or data structures. This can help avoid frequent resizing and reallocation of storage as data grows, leading to more consistent performance and reduced storage fragmentation.
-
-2. **Throughput Preallocation**: Many NoSQL databases, like key-value stores or column-family databases, offer throughput provisioning to handle the number of requests or operations per second. Preallocating sufficient throughput capacity ensures that the database can handle anticipated peak workloads without throttling or degradation of performance.
-
-3. **Index Preallocation**: Preallocating index structures or metadata required for querying can help improve query performance. This is particularly relevant in databases that support complex queries, where efficient indexing is crucial for rapid data retrieval.
-
-4. **Partition Key and Sharding Preallocation**: In distributed NoSQL databases, like wide-column stores or distributed document databases, preallocating partition keys and determining sharding strategies in advance can prevent hotspots and ensure an even distribution of data across nodes or partitions.
-
-5. **Resource Planning**: Beyond storage and throughput, preallocating other resources like memory, cache, and network bandwidth can contribute to optimal performance and responsiveness of NoSQL databases.
-
-The rationale behind the preallocation pattern is to reduce the impact of dynamic resource allocation operations during runtime, which can introduce latency, contention, and unpredictability in performance. By provisioning resources upfront based on expected workloads and growth projections, developers can create more predictable and stable database systems that are capable of handling a variety of scenarios without unexpected bottlenecks.
-
-This pattern involved pre-allocating an collection of values in full rather than adding them one at a time later or utilize complex logic to determine a result.
+The pre-allocation pattern involves creating an initial empty structure that will be populated later. This approach simplifies the design of queries and logic compared to alternative methods. However, it should be noted that pre-allocating data can result in larger storage and RU usage.
 
 This sample demonstrates:
 
@@ -45,14 +27,13 @@ A couple examples include:
 - Hotel room reservations for a room instance
 - Available seats in a theatre for a movie instance.
 
-> **NOTE** Azure Cosmos DB has an item size limit of 2MB for an item.  Be sure any document that you model with the pre-allocation pattern stays under this limit, if it goes over this limit, you will need to consider breaking the data into seperate items.
-
+> **NOTE** Azure Cosmos DB has an item size limit of 2MB for an item.  Be sure any document that you model with the pre-allocation pattern stays under this limit, if it goes over this limit, you will need to consider breaking the data into separate items.
 
 The main components of the models used in the sample include:
 
 - Hotels that contains Rooms
 - Reservations that include a RoomId and HotelId
-- Rooms can contain AvailableDates
+- Rooms can contain ReservationDates
 
 ### Scenario: Non-preallocation and preallocation design patterns for hotel room reservations.
 
@@ -131,7 +112,7 @@ In the non-preallocation pattern, you will see that a hotel is created with 10 r
         "Available": false,
         "Description": null,
         "MaximumGuests": 0,
-        "AvailableDates": [],
+        "ReservationDates": [],
         "Features": [],
         "RoomImages": [],
         "Reviews": []
@@ -141,7 +122,7 @@ In the non-preallocation pattern, you will see that a hotel is created with 10 r
 
 ## Preallocation
 
-In the following example you will see the reservation dates for a room being pre-allocated in a collection with a simple `IsAvailable` property for each date.  This will then make the process of finding available dates a bit easier when it comes to sending queries to the database.
+In the following example you will see the reservation dates for a room being pre-allocated in a collection with a simple `IsReserved` property for each date.  This will then make the process of finding available dates a bit easier when it comes to sending queries to the database.
 
 ```csharp
 DateTime start = DateTime.Parse(DateTime.Now.ToString("01/01/yyyy"));
@@ -154,7 +135,7 @@ foreach (Room r in h.Rooms)
 
     while (start.AddDays(count) < end)
     {
-        r.AvailableDates.Add(new AvailableDate { Date = start.AddDays(count), IsAvailable = true });
+        r.ReservationDates.Add(new ReservationDate { Date = start.AddDays(count), IsReserved = true });
 
         count++;
     }
@@ -165,11 +146,12 @@ foreach (Room r in h.Rooms)
 
 ```json
 {
-    "id": "room_1",
+    "id": "room_0",
+    "_etag": "\"de016f0a-0000-0700-0000-64f19c080000\"",
     "EntityType": "room",
     "LeaseId": null,
     "LeasedUntil": null,
-    "hotelId": "hotel_2",
+    "hotelId": "hotel_1",
     "Name": null,
     "Type": null,
     "Status": null,
@@ -179,19 +161,20 @@ foreach (Room r in h.Rooms)
     "Available": false,
     "Description": null,
     "MaximumGuests": 0,
-    "AvailableDates": [
+    "ReservationDates": [
         {
-            "Date": "2023-01-01T00:00:00",
-            "IsAvailable": true
+            "Date": "2023-09-01T00:00:00Z",
+            "IsReserved": true
         },
         {
-            "Date": "2023-01-02T00:00:00",
-            "IsAvailable": true
-        }...
-    ],
-    "Features": [],
-    "RoomImages": [],
-    "Reviews": []
+            "Date": "2023-09-02T00:00:00Z",
+            "IsReserved": false
+        },
+        {
+            "Date": "2023-09-03T00:00:00Z",
+            "IsReserved": false
+        },...
+    ]    
 }
 ```
 
@@ -200,17 +183,17 @@ foreach (Room r in h.Rooms)
 By pre-allocating the room's reservation days, you can easily run the following query to find available dates for a particular room or set of rooms:
 
 ```sql
-select c.id, count(ad) from c join ad in c.AvailableDates where ad.Date > '2023-01-01T00:00:00' and ad.Date < '2023-01-05T00:00:00' and c.hotelId = 'hotel_2' group by c.id
+
+SELECT a.Date, a.IsReserved, r.hotelId FROM room r JOIN a IN r.ReservationDates WHERE a.Date>= '2023-09-01T00:00:00Z' AND a.Date < '2023-09-02T00:00:00Z' and a.IsReserved=false and r.hotelId = 'hotel_1'
 ```
 
-By not choosing the pre-allocation pattern, the alternative way to find available rooms for a set of dates will be more complex.  For example, without pre-allocation, you would need to query all reservations for a room then build a collection of available dates by substracting the reservation dates.  You can see a subset of this logic available in the `FindAvailableRooms` method of the `Hotel` class.
+By not choosing the pre-allocation pattern, the alternative way to find available rooms for a set of dates will be more complex.  For example, without pre-allocation, you would need to query all reservations for a room then build a collection of available dates by subtracting the reservation dates.  You can see a subset of this logic available in the `FindAvailableRooms` method of the `Hotel` class.
 
 ## Try this implementation
 
 To run this demo, you will need to have:
 
 - [.NET 6.0 Runtime](https://dotnet.microsoft.com/download/dotnet/6.0)
-- [Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local#install-the-azure-functions-core-tools)
 
 ## Confirm required tools are installed
 
@@ -223,14 +206,6 @@ dotnet --list-runtimes
 ```
 
 As you may have multiple versions of the runtime installed, make sure that .NET components with versions that start with 6.0 appear as part of the output.
-
-Next, check the version of Azure Functions Core Tools with this command:
-
-```bash
-func --version
-```
-
-You should have a version 4._x_ installed. If you do not have this version installed, you will need to uninstall the older version and follow [these instructions for installing Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local#install-the-azure-functions-core-tools).
 
 ## Getting the code
 
@@ -280,86 +255,39 @@ You can try out this implementation by running the code in [GitHub Codespaces](h
 
 1. Create a free Azure Cosmos DB for NoSQL account: (<https://cosmos.azure.com/try>)
 
-1. In the Data Explorer, create a new database and container with the following values:
+## Updating Azure Cosmos DB URI and Key in Code
 
-    | | Value |
-    | --- | --- |
-    | **Database name** | `CosmosPatterns` |
-    | **Container name** | `HotelApp` |
-    | **Partition key path** | `/Id` |
-    | **Throughput** | `400` (*Manual*) |
+2. Once the account deployment is complete, select the new Azure Cosmos DB for NoSQL account.
+3. From the navigation, under **Settings**, select **Keys**.
 
-## Set up environment variables
+Update the  following in the **appsettings.json**  before you run the code:
 
-You need 2 environment variables to run these demos.
-
-1. Go to resource group.
-
-1. Select the new Azure Cosmos DB for NoSQL account.
-
-1. From the navigation, under **Settings**, select **Keys**. The values you need for the environment variables for the demo are here.
-
-Create 2 environment variables to run the demos:
-
-- `COSMOS_ENDPOINT`: set to the `URI` value on the Azure Cosmos DB account Keys blade.
-- `COSMOS_KEY`: set to the Read-Write `PRIMARY KEY` for the Azure Cosmos DB for NoSQL account
-
-Create your environment variables in a bash terminal with the following syntax:
-
-```bash
-export COSMOS_ENDPOINT="YOUR_COSMOS_ENDPOINT"
-export COSMOS_KEY="YOUR_COSMOS_KEY"
-```
+- `CosmosUri`: Set to the `URI` value on the Azure Cosmos DB account Keys blade.
+- `CosmosKey`: Set to the Read-Write `PRIMARY KEY` for the Azure Cosmos DB for NoSQL account
 
 ## Run the demo
 
 1. Open the application code.
-1. Review the `program.cs` file.
-1. Notice the following code snippets
-
-```csharp
-Hotel h = Hotel.CreateHotel("1");
-```
-
-> NOTE: This will create a new hotel object with the id.
-
-```csharp
-List<Room> rooms = Hotel.CreateRooms(h);
-```
-
-> NOTE: This will create a set of rooms for a hotel, you can change the numbner of rooms (set to 10) to create by modifying the appropriate property in the class.
-
-1. From Visual Studio Code, start the app by running the following:
+2. From Visual Studio Code, start the app by running the following:
 
   ```bash
   dotnet build
   dotnet run
   ```
-1. From Visual Studio, press **F5** to start the application.
 
-## Query the data
+    or
+    From Visual Studio, press **F5** to start the application.
 
-The code will create two hotels.  One that contains reservations that are used to determine open dates and another hotel that uses pre-allocation of dates.
+3. Select option `1` in the console application to build the sample database. This option will create a database called `CosmosPatterns` which will have 2 containers called `HotelApp_containerWithPreallocation` and `HotelApp_containerWithoutPreallocation`. 
+	1. In Azure Portal, browse to you Cosmos DB resource.
+	2. Select **Data Explorer** in the left menu.
+	3. Review the data in both  container, notice that the 'Reservation' documents is not used in the *HotelApp_containerWithPreallocation*, instead the reservation dates for a room are pre-allocated in a collection.
 
-1. In Azure Portal, browse to you Cosmos DB resource.
-1. Select **Data Explorer** in the left menu.
-1. Select your container, then choose **New SQL Query**.
-1. Run the following query to see the rooms created, notice that the 'AvailableDates' collection is not used.
+4. Select option `2` to run the query with out any Preallocation. Provide a date in DD--MM-YYYY format.
+5. Select option `3` to run the same query using Preallocation. Provide a date in DD--MM-YYYY format.
+6. Compare the code for both Step# 4 and Step# 5. Notice that Pre-allocation allows for a much simpler design for queries and logic versus other approaches however it can come at the cost of a larger document in storage and memory given the pre-allocation of the data.
 
- ```sql
- select * from c where c.EntityType = 'room' and c.hotelId = 'hotel_1'
- ```
-
- ```sql
- select * from c where c.EntityType = 'reservation' and c.hotelId = 'hotel_1'
- ```
-
-1. Run the following query to see the rooms created for hotel '2', review the rooms and the 'AvailableDates' property that has the pre-populated with a set of dates:
-
-  ```sql
-  select * from c where c.EntityType = 'room' and c.hotelId = 'hotel_2'
-  ```
 
 ## Summary
 
-Pre-allocation allows for a much simpler design for queries and logic versus other approaches however it can come at the cost of a larger document in storage and memory given the pre-allocation of the data.
+Pre-allocation allows for a much simpler design for queries and logic versus other approaches however it can come at the cost of a larger document in storage and RU charge given the pre-allocation of the data.
