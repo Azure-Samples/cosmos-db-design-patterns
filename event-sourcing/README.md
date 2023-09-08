@@ -209,7 +209,7 @@ You will need a connection string for the Azure Cosmos DB account.
 
 1. Select the new Azure Cosmos DB for NoSQL account.
 
-1. From the navigation, under **Settings**, select **Keys**. The values you need for the environment variables for the demo are here.
+1. From the navigation, under **Settings**, select **Keys**. The values you need for the application settings for the demo are here.
 
 1. While on the Keys blade, make note of the `PRIMARY CONNECTION STRING`. You will need this for the Azure Function App.
 

@@ -166,7 +166,7 @@ You need to configure the application configuraiton file to run these demos.
 
 1. Select the new Azure Cosmos DB for NoSQL account.
 
-1. From the navigation, under **Settings**, select **Keys**. The values you need for the environment variables for the demo are here.
+1. From the navigation, under **Settings**, select **Keys**. The values you need for the application settings for the demo are here.
 
 While on the Keys blade, make note of the `PRIMARY CONNECTION STRING`. You will need this for the Azure Function App.
 

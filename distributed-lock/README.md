@@ -123,7 +123,7 @@ You can try out this implementation by running the code in [GitHub Codespaces](h
     | **Container name** | `Locks` |
     | **Partition key path** | `/id` |
 
-1. From the navigation, under **Settings**, select **Keys**. The values you need for the environment variables for the demo are here.
+1. From the navigation, under **Settings**, select **Keys**. The values you need for the application settings for the demo are here.
 
 ## Configure the application
 
@@ -154,6 +154,8 @@ You can try out this implementation by running the code in [GitHub Codespaces](h
 ```bash
 dotnet run
 ```
+
+1. When prompted, enter the values for the lock name and the default TTL
 
 ## Summary
 

@@ -300,8 +300,6 @@ export COSMOS_ENDPOINT="YOUR_COSMOS_ENDPOINT"
 export COSMOS_KEY="YOUR_COSMOS_KEY"
 ```
 
-While on the Keys blade, make note of the `PRIMARY CONNECTION STRING`. You will need this for the Azure Function App.
-
 ## Generate data
 
 Open the application code. Run the data generator to generate original carts and schema-versioned carts.
