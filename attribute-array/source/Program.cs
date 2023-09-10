@@ -1,5 +1,5 @@
-﻿using DataUploader.Options;
-using DataUploader.Services;
+﻿using AttributeArray.Options;
+using AttributeArray.Services;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Configuration;
 using Spectre.Console;
@@ -38,45 +38,30 @@ CosmosClient client = new(
 
 Database database = await client.CreateDatabaseIfNotExistsAsync(
     id: "CosmosPatterns",
-    throughput: 400
+    throughputProperties: ThroughputProperties.CreateAutoscaleThroughput(1000)
 );
 
 Console.Write(
-    new Panel("[green]Attribute upload utility featuring sample queries[/]")
+    new Panel("[green]Sample comparing Attribute Array Pattern to Property-based Attributes[/]")
         .BorderColor(Color.White)
         .RoundedBorder()
         .Expand()
 );
 
 Console.Write(
-    new Rule("[yellow]Property and array-based product attributes[/]")
+    new Rule("[yellow]Property and Array-based product attributes[/]")
         .LeftJustified()
         .RuleStyle("olive")
 );
 
 Container productsContainer = await database.CreateContainerIfNotExistsAsync(
-    id: "Products",
+    id: "ArrayAttributes",
     partitionKeyPath: "/productId"
 );
 
 // Use product container as an example
 await new ProductService(productsContainer)
     .GenerateProductsAsync();
-
-Console.Write(
-    new Rule("[yellow]Attribute and Non-attribute based hotel rooms[/]")
-        .LeftJustified()
-        .RuleStyle("olive")
-);
-
-Container hotelRoomsContainer = await database.CreateContainerIfNotExistsAsync(
-    id: "Hotels",
-    partitionKeyPath: "/hotelId"
-);
-
-// Use hotel room price container as an example
-await new HotelService(hotelRoomsContainer)
-    .GenerateHotelRoomsAsync();
 
 Console.Write(
     new Panel("[green]The attribute upload utlity has finished. Use the Data Explorer in Azure Cosmos DB to run additional queries.[/]")

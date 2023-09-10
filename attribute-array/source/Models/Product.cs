@@ -1,34 +1,44 @@
-namespace DataUploader.Models;
+namespace AttributeArray.Models;
 
-internal sealed record Product();
 
 internal sealed record AttributePropertyProduct(
     string Id,
     string ProductId,
     string Name,
     string Category,
-    decimal Price,
+    string Price,
     int SizeSmall,
     int SizeMedium,
-    int SizeLarge
-)
-{
-    public string EntityType { get; init; } = nameof(Product);
-}
+    int SizeLarge,
+    string EntityType
+);
+
 
 internal sealed record AttributeArrayProduct(
     string Id,
     string ProductId,
     string Name,
     string Category,
-    decimal Price,
-    IList<ProductSize> Sizes
-)
-{
-    public string EntityType { get; init; } = nameof(Product);
-}
+    string Price,
+    IList<ProductSize> Sizes,
+    string EntityType
+);
+
 
 internal sealed record ProductSize(
+    string Size,
+    int Count
+);
+
+internal sealed record PropertyQueryResult(
     string Name,
+    int SizeSmall,
+    int SizeMedium,
+    int SizeLarge
+);
+
+internal sealed record ArrayQueryResult(
+    string Name,
+    string Size,
     int Count
 );
