@@ -1,5 +1,5 @@
 using Bogus;
-using DataUploader.Models;
+using AttributeArray.Models;
 using Microsoft.Azure.Cosmos;
 using Spectre.Console;
 using Spectre.Console.Json;
@@ -7,7 +7,7 @@ using System.Text.Json;
 using Container = Microsoft.Azure.Cosmos.Container;
 using Console = Spectre.Console.AnsiConsole;
 
-namespace DataUploader.Services;
+namespace AttributeArray.Services;
 
 internal sealed class ProductService
 {
@@ -20,40 +20,99 @@ internal sealed class ProductService
 
     public async Task GenerateProductsAsync()
     {
-        // Property-based
-        await GeneratePropertyBasedAttributeProductsAsync();
+        
+        (IList<AttributePropertyProduct> attributePropertyProducts, IList<AttributeArrayProduct> attributeArrayProducts) = await GenerateDataAsync();
 
-        // Array-based
-        await GenerateArrayBasedAttributeProductsAsync();
+        await InsertAttributePropertyItemsAsync(attributePropertyProducts);
+
+        await InsertAttributeArrayItemsAsync(attributeArrayProducts);
+
+        await ExecuteAttributePropertyQueryAsync();
+
+        await ExecuteAttributeArrayQueryAsync();
+        
+
     }
 
-    private async Task GeneratePropertyBasedAttributeProductsAsync()
+    private async Task<(IList<AttributePropertyProduct> attributePropertyProducts, IList<AttributeArrayProduct> attributeArrayProducts)> GenerateDataAsync()
     {
         int count = 3;
+
+        Console.MarkupLine($"[teal bold]Press any key to generate [underline]{count}[/] products with attributes as properties and attribute array pattern.[/]");
+        System.Console.ReadKey();
+
 
         Console.MarkupLine($"[red italic]Creating [underline]{count}[/] product items with [bold]property-based attributes[/]...[/]");
         await Task.Delay(1500);
 
-        IReadOnlyCollection<AttributePropertyProduct> products = new Faker<AttributePropertyProduct>()
+        IList<AttributePropertyProduct> attributePropertyProducts = new Faker<AttributePropertyProduct>()
             .CustomInstantiator(f =>
-                {
-                    string identifier = $"{f.Random.Guid()}";
-                    return new AttributePropertyProduct(
-                        Id: identifier,
-                        ProductId: identifier,
-                        Name: f.Commerce.ProductName(),
-                        Category: f.Commerce.Department(),
-                        Price: f.Random.Decimal(100, 1000),
-                        SizeSmall: f.Random.Int(1, 100),
-                        SizeMedium: f.Random.Int(1, 100),
-                        SizeLarge: f.Random.Int(1, 100)
-                    );
-                })
+            {
+                string identifier = $"{f.Random.Guid()}";
+                return new AttributePropertyProduct(
+                    Id: identifier,
+                    ProductId: identifier,
+                    Name: f.Commerce.ProductName(),
+                    Category: f.Commerce.Department(),
+                    Price: f.Commerce.Price(100, 1000, 2),
+                    SizeSmall: f.Random.Int(1, 100),
+                    SizeMedium: f.Random.Int(1, 100),
+                    SizeLarge: f.Random.Int(1, 100),
+                    EntityType: "Attribute Properties"
+                );
+            })
             .Generate(count)
             .AsReadOnly();
 
+        //Make equivalent attribute array-based products
+        List<AttributeArrayProduct> attributeArrayProducts = new List<AttributeArrayProduct>();
+
+        Console.MarkupLine($"[red italic]Duplicating the [underline]{count}[/] products with [bold]array-based attributes[/]...[/]");
+        await Task.Delay(1500);
+
+        foreach (var attributePropertyProduct in attributePropertyProducts)
+        {
+
+            IList<ProductSize> productSizes = new List<ProductSize>();
+            productSizes.Add(new ProductSize(Size: "Small", Count: attributePropertyProduct.SizeSmall));
+            productSizes.Add(new ProductSize(Size: "Medium", Count: attributePropertyProduct.SizeMedium));
+            productSizes.Add(new ProductSize(Size: "Large", Count: attributePropertyProduct.SizeLarge));
+
+            attributeArrayProducts.Add(new AttributeArrayProduct
+            (
+                Id: Guid.NewGuid().ToString(),  //Need a unique id so it can co-exist in the same logical partition of productId
+                ProductId: attributePropertyProduct.ProductId,
+                Name: attributePropertyProduct.Name,
+                Category: attributePropertyProduct.Category,
+                Price: attributePropertyProduct.Price,
+                EntityType: "Attribute Array",
+                Sizes: productSizes
+            ));
+
+        }
+
+        //Print out the new product names
+        Console.Write(
+            new Panel(
+                new Rows(
+                    attributePropertyProducts.Select(p => new Markup($"Product: [underline]{p.Name}[/]")).ToArray()
+                )
+            )
+                .Header($"[teal bold]Products created[/]")
+                .RoundedBorder()
+                .BorderColor(Color.Teal)
+            );
+
+        return (attributePropertyProducts, attributeArrayProducts);
+
+    }
+
+    private async Task InsertAttributePropertyItemsAsync(IList<AttributePropertyProduct> attributePropertyProducts)
+    {
         List<Task> upsertTasks = new();
-        foreach (var product in products)
+
+        //Insert attribute property sample items
+        foreach (var product in attributePropertyProducts)
         {
             upsertTasks.Add(
                 _productsContainer.UpsertItemAsync<AttributePropertyProduct>(
@@ -63,33 +122,46 @@ internal sealed class ProductService
             );
         }
         await Task.WhenAll(upsertTasks);
+    }
 
-        Console.Write(
-            new Panel(
-                new Rows(
-                    products.Select(p => new Markup($"New product: [underline]{p.Id}[/]")).ToArray()
+    private async Task InsertAttributeArrayItemsAsync(IList<AttributeArrayProduct> attributeArrayProducts)
+    {
+        List<Task> upsertTasks = new();
+
+        //insert attribute array sample items
+        foreach (var product in attributeArrayProducts)
+        {
+            upsertTasks.Add(
+                _productsContainer.UpsertItemAsync<AttributeArrayProduct>(
+                    item: product,
+                    partitionKey: new PartitionKey(product.ProductId)
                 )
-            )
-                .Header($"[teal bold]Products created[/]")
-                .RoundedBorder()
-                .BorderColor(Color.Teal)
-        );
+            );
+        }
+        await Task.WhenAll(upsertTasks);
+    }
 
-        Console.MarkupLine("[red italic]Performing a query on all attributes using multiple [underline]OR[/] statements...[/]");
+    private async Task ExecuteAttributePropertyQueryAsync()
+    {
+        Console.MarkupLine($"[teal bold]Press any key to execute a query with attributes as properties[/]");
+        System.Console.ReadKey();
+
+
+        Console.MarkupLine("[red italic]Performing a query on size attributes using multiple [underline]OR[/] statements...[/]");
         await Task.Delay(1500);
 
-        string queryString = "SELECT VALUE p FROM products p WHERE p.sizeSmall >= @quantity OR p.sizeMedium >= @quantity OR p.sizeLarge >= @quantity";
+        string queryString = "SELECT p.name, p.sizeSmall, p.sizeMedium, p.sizeLarge FROM products p WHERE p.sizeSmall >= @quantity OR p.sizeMedium >= @quantity OR p.sizeLarge >= @quantity";
 
         int inputQuantity = 75;
         var query = new QueryDefinition(queryString)
             .WithParameter("@quantity", inputQuantity);
 
-        using FeedIterator<AttributePropertyProduct> feed = _productsContainer.GetItemQueryIterator<AttributePropertyProduct>(query);
+        using FeedIterator<PropertyQueryResult> feed = _productsContainer.GetItemQueryIterator<PropertyQueryResult>(query);
 
-        List<AttributePropertyProduct> items = new();
+        List<PropertyQueryResult> items = new();
         while (feed.HasMoreResults)
         {
-            FeedResponse<AttributePropertyProduct> response = await feed.ReadNextAsync();
+            FeedResponse<PropertyQueryResult> response = await feed.ReadNextAsync();
 
             items.AddRange(response.Resource);
         }
@@ -104,79 +176,34 @@ internal sealed class ProductService
                     new JsonText(listJson)
                 )
             )
-                .Header("[bold]Query results[/]")
-                .RoundedBorder()
-                .Expand()
-                .BorderColor(Color.Teal)
+            .Header("[bold]Query results[/]")
+            .RoundedBorder()
+            .Expand()
+            .BorderColor(Color.Teal)
         );
+
     }
 
-    private async Task GenerateArrayBasedAttributeProductsAsync()
+    private async Task ExecuteAttributeArrayQueryAsync()
     {
-        int count = 3;
+        Console.MarkupLine($"[teal bold]Press any key to execute a query using attribute array pattern[/]");
+        System.Console.ReadKey();
 
-        Console.MarkupLine($"[red italic]Creating [underline]{count}[/] product items with [bold]array-based attributes[/]...[/]");
+        Console.MarkupLine("[red italic]Performing a query on size attributes using simple [underline]JOIN[/] statements and comparison operators...[/]");
         await Task.Delay(1500);
 
-        IReadOnlyCollection<AttributeArrayProduct> products = new Faker<AttributeArrayProduct>()
-            .CustomInstantiator(f =>
-                {
-                    string identifier = $"{f.Random.Guid()}";
-                    return new AttributeArrayProduct(
-                        Id: identifier,
-                        ProductId: identifier,
-                        Name: f.Commerce.ProductName(),
-                        Category: f.Commerce.Department(),
-                        Price: f.Random.Decimal(100, 1000),
-                        Sizes: new List<ProductSize>
-                        {
-                            new ProductSize("Small", f.Random.Int(1, 100)),
-                            new ProductSize("Medium", f.Random.Int(1, 100)),
-                            new ProductSize("Large", f.Random.Int(1, 100))
-                        }
-                    );
-                })
-            .Generate(count)
-            .AsReadOnly();
-
-        List<Task> upsertTasks = new();
-        foreach (var product in products)
-        {
-            upsertTasks.Add(
-                _productsContainer.UpsertItemAsync<AttributeArrayProduct>(
-                    item: product,
-                    partitionKey: new PartitionKey(product.ProductId)
-                )
-            );
-        }
-        await Task.WhenAll(upsertTasks);
-
-        Console.Write(
-            new Panel(
-                new Rows(
-                    products.Select(p => new Markup($"New product: [underline]{p.Id}[/]")).ToArray()
-                )
-            )
-                .Header($"[teal bold]Products created[/]")
-                .RoundedBorder()
-                .BorderColor(Color.Teal)
-        );
-
-        Console.MarkupLine("[red italic]Performing a query on attributes using simple [underline]JOIN[/] statements and comparison operators...[/]");
-        await Task.Delay(1500);
-
-        string queryString = $"SELECT VALUE p FROM products p JOIN s IN p.sizes WHERE s.count >= @quantity";
+        string queryString = $"SELECT p.name, s.size, s.count FROM products p JOIN s IN p.sizes WHERE s.count >= @quantity";
 
         int inputQuantity = 75;
         var query = new QueryDefinition(queryString)
             .WithParameter("@quantity", inputQuantity);
 
-        using FeedIterator<AttributeArrayProduct> feed = _productsContainer.GetItemQueryIterator<AttributeArrayProduct>(query);
+        using FeedIterator<ArrayQueryResult> feed = _productsContainer.GetItemQueryIterator<ArrayQueryResult>(query);
 
-        List<AttributeArrayProduct> items = new();
+        List<ArrayQueryResult> items = new();
         while (feed.HasMoreResults)
         {
-            FeedResponse<AttributeArrayProduct> response = await feed.ReadNextAsync();
+            FeedResponse<ArrayQueryResult> response = await feed.ReadNextAsync();
 
             items.AddRange(response.Resource);
         }
@@ -197,4 +224,5 @@ internal sealed class ProductService
                 .BorderColor(Color.Teal)
         );
     }
+
 }

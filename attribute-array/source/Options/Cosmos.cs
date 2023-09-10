@@ -1,4 +1,4 @@
-namespace DataUploader.Options;
+namespace AttributeArray.Options;
 
 public class Cosmos
 {
