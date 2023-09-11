@@ -14,8 +14,8 @@ namespace Cosmos_Patterns_Preallocation
         static CosmosClient? client;
 
         static Database? db;
-        static string containerWithPreallocation=string.Empty;
-        static string containerWithoutPreallocation=string.Empty;
+        static string WithPreallocation=string.Empty;
+        static string WithoutPreallocation=string.Empty;
 
         static async Task Main(string[] args)
         {
@@ -26,8 +26,8 @@ namespace Cosmos_Patterns_Preallocation
 
             var client = new CosmosClient(configuration["CosmosUri"], configuration["CosmosKey"]);
             var database = configuration["Database"];
-            containerWithPreallocation = configuration["containerWithPreallocation"];
-            containerWithoutPreallocation = configuration["containerWithoutPreallocation"];
+            WithPreallocation = configuration["WithPreallocation"];
+            WithoutPreallocation = configuration["WithoutPreallocation"];
 
 
             db = await client.CreateDatabaseIfNotExistsAsync(
@@ -56,19 +56,19 @@ namespace Cosmos_Patterns_Preallocation
                 {
                     Console.Clear();
                     Console.WriteLine("Creating objects without Preallocation...");
-                    await CreateWithNoPreallocationAsync(containerWithoutPreallocation);
+                    await CreateWithNoPreallocationAsync(WithoutPreallocation);
 
                     Console.WriteLine("Creating objects with Preallocation...");
-                    await CreateWithPreallocationAsync(containerWithPreallocation);
+                    await CreateWithPreallocationAsync(WithPreallocation);
 
                 }
                 else if (result.KeyChar == '2')
                 {                   
-                    QueryContainerAsync(containerWithoutPreallocation,"nopreallocation").GetAwaiter().GetResult();
+                    QueryContainerAsync(WithoutPreallocation,"nopreallocation").GetAwaiter().GetResult();
                 }
                 else if (result.KeyChar == '3')
                 {                    
-                    QueryContainerAsync(containerWithPreallocation, "preallocation").GetAwaiter().GetResult();
+                    QueryContainerAsync(WithPreallocation, "preallocation").GetAwaiter().GetResult();
                 }
                 else if (result.KeyChar == '4')
                 {

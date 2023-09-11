@@ -239,21 +239,21 @@ You can try out this implementation by running the code in [GitHub Codespaces](h
 
 1. Create a free Azure Cosmos DB for NoSQL account: (<https://cosmos.azure.com/try>)
 
-1. In the Data Explorer, create a new databased named **CosmosPatterns** with shared autoscale throughput and a container **HotelApp_containerWithPreallocation**:
+1. In the Data Explorer, create a new databased named **CosmosPatterns** with shared autoscale throughput and a container **WithPreallocation**:
 
     | | Value |
     | --- | --- |
     | **Database name** | `CosmosPatterns` |
-    | **Container name** | `HotelApp_containerWithPreallocation` |
+    | **Container name** | `WithPreallocation` |
     | **Partition key path** | `/Id` |
     | **Throughput** | `1000` (*Autoscale*) |
 
-1. Create a second container in the same `CosmosPatterns` database named `HotelApp_containerWithoutPreallocation`:
+1. Create a second container in the same `CosmosPatterns` database named `WithoutPreallocation`:
 
     | | Value |
     | --- | --- |
     | **Database name** | `CosmosPatterns` |
-    | **Container name** | `HotelApp_containerWithoutPreallocation` |
+    | **Container name** | `WithoutPreallocation` |
     | **Partition key path** | `/Id` |
 
 **Note:** We are using shared database throughput because it can scale down to 100 RU/s when not running. This is the most cost effient if running in a paid subscription and not using Free Tier.
