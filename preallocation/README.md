@@ -223,7 +223,7 @@ As you may have multiple versions of the runtime installed, make sure that .NET 
 - Open Visual Studio Code.
 - Click on the **Source Control** icon in the left sidebar.
 - Click on the **Clone Repository** button at the top of the Source Control panel.
-- Paste `git clone https://github.com/Azure-Samples/cosmos-db-design-patterns.git` into the text field and press enter.
+- Paste `https://github.com/Azure-Samples/cosmos-db-design-patterns.git` into the text field and press enter.
 - Select a directory where you want to clone the repository.
 - The repository will be cloned to your local machine.
 
@@ -239,20 +239,28 @@ You can try out this implementation by running the code in [GitHub Codespaces](h
 
 1. Create a free Azure Cosmos DB for NoSQL account: (<https://cosmos.azure.com/try>)
 
-1. In the Data Explorer, create a new databased named **HotelDB** with shared autoscale throughput and a container **Hotels**:
+1. In the Data Explorer, create a new databased named **CosmosPatterns** with shared autoscale throughput and a container **HotelApp_containerWithPreallocation**:
 
     | | Value |
     | --- | --- |
-    | **Database name** | `Hotels` |
-    | **Container name** | `AttributeArrays` |
+    | **Database name** | `CosmosPatterns` |
+    | **Container name** | `HotelApp_containerWithPreallocation` |
     | **Partition key path** | `/Id` |
     | **Throughput** | `1000` (*Autoscale*) |
+
+1. Create a second container in the same `CosmosPatterns` database named `HotelApp_containerWithoutPreallocation`:
+
+    | | Value |
+    | --- | --- |
+    | **Database name** | `CosmosPatterns` |
+    | **Container name** | `HotelApp_containerWithoutPreallocation` |
+    | **Partition key path** | `/Id` |
 
 **Note:** We are using shared database throughput because it can scale down to 100 RU/s when not running. This is the most cost effient if running in a paid subscription and not using Free Tier.
 
 ## Updating Azure Cosmos DB URI and Key in Code
 
-2. Once the account deployment is complete, select the new Azure Cosmos DB for NoSQL account.
+1. Once the account deployment is complete, select the new Azure Cosmos DB for NoSQL account.
 
 1. Open the Keys blade, click the Eye icon to view the `PRIMARY KEY`. Keep this and the `URI` handy. You will need these for the next step.
 Update the following in the **appsettings.json**  before you run the code:

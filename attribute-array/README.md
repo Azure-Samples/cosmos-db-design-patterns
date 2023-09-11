@@ -165,7 +165,7 @@ As you may have multiple versions of the runtime installed, make sure that .NET 
 - Open Visual Studio Code.
 - Click on the **Source Control** icon in the left sidebar.
 - Click on the **Clone Repository** button at the top of the Source Control panel.
-- Paste `git clone https://github.com/Azure-Samples/cosmos-db-design-patterns.git` into the text field and press enter.
+- Paste `https://github.com/Azure-Samples/cosmos-db-design-patterns.git` into the text field and press enter.
 - Select a directory where you want to clone the repository.
 - The repository will be cloned to your local machine.
 
