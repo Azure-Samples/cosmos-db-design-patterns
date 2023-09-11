@@ -151,15 +151,13 @@ As you may have multiple versions of the runtime installed, make sure that .NET 
 
 ## Getting the code
 
-There are a few ways you can start working with the code in this demo.
-
 ### **Clone the Repository to Your Local Computer:**
 
 **Using the Terminal:**
 
 - Open the terminal on your computer.
 - Navigate to the directory where you want to clone the repository.
-- Type `git clone https://github.com/Azure-Samples/cosmos-db-design-patterns.git` and press enter.
+- Type `git clone git clone https://github.com/Azure-Samples/cosmos-db-design-patterns.git` and press enter.
 - The repository will be cloned to your local machine.
 
 **Using Visual Studio Code:**
@@ -167,13 +165,9 @@ There are a few ways you can start working with the code in this demo.
 - Open Visual Studio Code.
 - Click on the **Source Control** icon in the left sidebar.
 - Click on the **Clone Repository** button at the top of the Source Control panel.
-- Paste `https://github.com/Azure-Samples/cosmos-db-design-patterns.git` into the text field and press enter.
+- Paste `git clone https://github.com/Azure-Samples/cosmos-db-design-patterns.git` into the text field and press enter.
 - Select a directory where you want to clone the repository.
 - The repository will be cloned to your local machine.
-
-### **Fork the Repository:**
-
-Forking the repository allows you to create your own copy of the repository under your GitHub account. This copy is independent of the original repository and is stored on your account. You can make changes to your forked copy without affecting the original repository. After forking, follow the steps above to clone locally, making sure you use the URL to your newly forked copy.
 
 ### **GitHub Codespaces**
 
@@ -187,7 +181,7 @@ You can try out this implementation by running the code in [GitHub Codespaces](h
 
 1. Create a free Azure Cosmos DB for NoSQL account: (<https://cosmos.azure.com/try>)
 
-1. In the Data Explorer, create a new databased named **CosmosPatterns** with shared autoscale throughput:
+1. In the Data Explorer, create a new database named **CosmosPatterns** with shared autoscale throughput:
 
     | | Value |
     | --- | --- |
