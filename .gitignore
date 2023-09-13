@@ -359,3 +359,4 @@ MigrationBackup/
 /distributed-lock/source/consoleapp/appsettings.development.json
 /distributed-counter/source/Visualizer/appsettings.Development.json
 /distributed-counter/source/ConsumerApp/appsettings.Development.json
+/data-binning/source/appsettings.development.json
