@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System.Net;
 
-namespace Bucketing
+namespace data_binning
 {
     public class SensorEvent
     {

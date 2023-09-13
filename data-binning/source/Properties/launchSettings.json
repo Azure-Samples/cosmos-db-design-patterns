@@ -3,7 +3,9 @@
     "Cosmos_Patterns_Bucketing": {
       "commandName": "Project",
       "commandLineArgs": "--port 7272",
-      "launchBrowser": false
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "development"
+      }
     }
   }
 }

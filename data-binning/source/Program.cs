@@ -1,31 +1,104 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using System.ComponentModel.DataAnnotations;
 using System.Net.Http;
+using Microsoft.Azure.Cosmos;
 using Newtonsoft.Json;
+using static Azure.Core.HttpHeader;
+using Microsoft.Extensions.Configuration;
+using Container = Microsoft.Azure.Cosmos.Container;
+using Database = Microsoft.Azure.Cosmos.Database;
 
-namespace Bucketing
+namespace data_binning
 {
     internal class Program 
     {
-        static string urlBase = "http://localhost:7071"; // "http://<functionapp>.azurewebsites.net:7071"
- 
-        public static async Task<string> SimulateEvents(int deviceCount, int timeout)
-        {
-            HttpClient client = new HttpClient();
-            client.Timeout = TimeSpan.FromMinutes(10);
 
-            var url = $"{urlBase}/api/CosmosPatternsBucketingExample";
-            var args = new Dictionary<string, int>
+
+
+        static DateTime TruncateToMinute(DateTime time)
+        {
+            return new DateTime(time.Year, time.Month, time.Day, time.Hour, time.Minute, 0, DateTimeKind.Utc);
+        }
+
+        public static async Task SimulateEvents(int deviceCount, int timeout)
+        {
+            Database db;
+            Container container;
+            string partitionKeyPath = "/DeviceId";
+
+            var configuration = new ConfigurationBuilder()
+                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                 .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")}.json", optional: true);
+
+            var config = configuration.Build();
+
+
+            string uri = config["CosmosUri"];
+            string key = config["CosmosKey"];
+
+            CosmosClient client = new(
+                accountEndpoint: uri!,
+                authKeyOrResourceToken: key!);
+
+
+            string databaseName = "Hotels";
+            string containerName = "SensorEvents";
+
+            db = client.CreateDatabaseIfNotExistsAsync(databaseName).Result;
+            container = db.CreateContainerIfNotExistsAsync(id: containerName, partitionKeyPath: partitionKeyPath, throughput: 400).Result;
+
+            List<SensorEvent> sensorEvents = new List<SensorEvent>();
+
+            var time = DateTime.UtcNow;
+            var currentTimeMinute = TruncateToMinute(time);
+            var endTime = currentTimeMinute.AddMinutes(timeout);
+            var nextPublishTime = TruncateToMinute(time);
+
+            while (currentTimeMinute <= endTime)
             {
-                {"deviceCount", deviceCount},
-                {"timeout", timeout}
-            };
-            string jsonBody = JsonConvert.SerializeObject(args);
-            var body = new StringContent(jsonBody, System.Text.Encoding.UTF8, "application/json");
-            
-            var response = await client.PostAsync(url, body);
-            string result = await response.Content.ReadAsStringAsync();
-            return result;
+                // Sleep then increment time
+                System.Threading.Thread.Sleep(1000);
+                time = DateTime.UtcNow;
+                currentTimeMinute = TruncateToMinute(time);
+
+                // Only generate events on 5 second interval
+                if (time.Second % 5 == 0)
+                {
+                    // System.Console.WriteLine(time.Second);
+                    var events = SensorEvent.GenerateSensorEvents(deviceCount);
+                    events.ForEach(e => sensorEvents.Add(e));
+
+                    // Only publish at 1 minute interval (seconds = 00)
+                    if (currentTimeMinute > nextPublishTime)
+                    {
+                        System.Console.WriteLine($"Calculating batch for {nextPublishTime.ToString()}");
+                        var aggTimestamp = DateTime.UtcNow.ToString();
+                        var summaryEvents = sensorEvents.GroupBy(e => e.DeviceId)
+                        .Select(e => new SummarySensorEvent
+                        {
+                            DeviceId = e.Key,
+                            eventTimestamp = nextPublishTime.ToString(),
+                            numberOfReadings = e.Count(),
+                            avgTemperature = e.Average(ea => ea.Temperature),
+                            minTemperature = e.Min(ee => ee.Temperature),
+                            maxTemperature = e.Max(ee => ee.Temperature),
+                            readings = e.Select(ee => new Reading
+                            {
+                                eventTimestamp = ee.EventTimestamp,
+                                temperature = ee.Temperature
+                            }).ToArray(),
+                            receivedTimestamp = aggTimestamp
+                        }).ToList();
+
+                        summaryEvents.ForEach(row => System.Console.WriteLine($"{row.DeviceId}, {row.numberOfReadings}, {row.eventTimestamp}"));
+                        summaryEvents.ForEach(row => container.CreateItemAsync(row, new PartitionKey(row.DeviceId)).Wait());
+
+                        nextPublishTime = currentTimeMinute;
+                        sensorEvents = new List<SensorEvent>();
+                    }
+                }
+            }
+
         }
 
         static async Task Main(string[] args)
@@ -45,8 +118,7 @@ namespace Bucketing
 
             Console.WriteLine($"Please wait while events are simulated for {timeoutInput} minutes.");
 
-
-            var simulateEventsResult = await SimulateEvents(deviceCount, timeout);
+            await SimulateEvents(deviceCount, timeout);
             
             System.Console.WriteLine($"Function completed generation events for {deviceCountInput} devices");
             Console.WriteLine($"Check SensorEventContainer for new sensor events");
