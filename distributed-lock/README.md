@@ -19,7 +19,7 @@ Distributed locks are superior to regular locks in distributed systems because t
 This sample demonstrates:
 
 - ✅Optimistic concurrency control (ETag updates)
-- ✅TTL (ability to set an expiration date on a record)
+- ✅TTL (ability to set an expiration date on a document)
 
 ## Common scenario
 
@@ -62,15 +62,13 @@ As you may have multiple versions of the runtime installed, make sure that .NET 
 
 ## Getting the code
 
-There are a few ways you can start working with the code in this demo.
-
 ### **Clone the Repository to Your Local Computer:**
 
 **Using the Terminal:**
 
 - Open the terminal on your computer.
 - Navigate to the directory where you want to clone the repository.
-- Type `git clone https://github.com/Azure-Samples/cosmos-db-design-patterns.git` and press enter.
+- Type `git clone git clone https://github.com/Azure-Samples/cosmos-db-design-patterns.git` and press enter.
 - The repository will be cloned to your local machine.
 
 **Using Visual Studio Code:**
@@ -81,20 +79,6 @@ There are a few ways you can start working with the code in this demo.
 - Paste `https://github.com/Azure-Samples/cosmos-db-design-patterns.git` into the text field and press enter.
 - Select a directory where you want to clone the repository.
 - The repository will be cloned to your local machine.
-
-### **Fork the Repository:**
-
-Forking the repository allows you to create your own copy of the repository under your GitHub account. This copy is independent of the original repository and is stored on your account. You can make changes to your forked copy without affecting the original repository. To fork the repository:
-
-- Visit the repository URL: [https://github.com/Azure-Samples/cosmos-db-design-patterns](https://github.com/Azure-Samples/cosmos-db-design-patterns)
-- Click the "Fork" button at the top right corner of the repository page.
-- Select where you want to fork the repository (your personal account or an organization).
-- After forking, you'll have your own copy of the repository under your account. You can make changes, create branches, and push your changes back to your fork.
-- After forking the repository, open the repository on GitHub: [https://github.com/YourUsername/design-patterns](https://github.com/YourUsername/design-patterns) (replace `YourUsername` with your GitHub username).
-- Click the "Code" button and copy the URL (HTTPS or SSH) of the repository.
-- Open a terminal on your local computer and navigate to the directory where you want to clone the repository using the `cd` command.
-- Run the command: `git clone <repository_url>` (replace `<repository_url>` with the copied URL).
-- This will create a local copy of the repository on your computer, which you can modify and work with.
 
 ### **GitHub Codespaces**
 
@@ -108,12 +92,14 @@ You can try out this implementation by running the code in [GitHub Codespaces](h
 
 1. Create a free Azure Cosmos DB for NoSQL account: (<https://cosmos.azure.com/try>)
 
-1. In the Data Explorer, create a new databased named **LockDB** with a small amount of throughput assigned:
+1. In the Data Explorer, create a new databased named **LockDB** with with shared autoscale throughput:
 
     | | Value |
     | --- | --- |
     | **Database name** | `LockDB` |
-    | **Throughput** | `400` (*Manual*) |
+    | **Throughput** | `1000` (*Autoscale*) |
+
+**Note:** We are using shared database throughput because it can scale down to 100 RU/s when not running. This is the most cost effient if running in a paid subscription and not using Free Tier.
 
 1. Create a container named **Locks** container with the following values:
 
@@ -123,11 +109,11 @@ You can try out this implementation by running the code in [GitHub Codespaces](h
     | **Container name** | `Locks` |
     | **Partition key path** | `/id` |
 
-1. From the navigation, under **Settings**, select **Keys**. The values you need for the application settings for the demo are here.
+1. Open the Keys blade, click the Eye icon to view the `PRIMARY KEY`. Keep this and the `URI` handy. You will need these for the next step.
 
 ## Configure the application
 
-1. Open the code, create an **appsettings.Development.json** file in the **/consoleapp** folders. In this files, create a JSON object with **CosmosUri** and **CosmosKey** properties. Use the URI and primary key you recorded earlier for these values:
+1. Open the application code, create an **appsettings.Development.json** file in the **/source** folder. In the file, create a JSON object with **CosmosUri** and **CosmosKey** properties. Copy and paste the values for `URI` and `PRIMARY KEY` from the previous step:
 
 ```json
 {
