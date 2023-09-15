@@ -1,9 +1,7 @@
 {
   "profiles": {
-    "Cosmos_Patterns_Bucketing": {
-      "commandName": "Project",
-      "commandLineArgs": "--port 7272",
-      "launchBrowser": false
+    "Cosmos_DataBinning": {
+      "commandName": "Project"
     }
   }
 }

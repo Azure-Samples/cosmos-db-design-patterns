@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System.Net;
 
-namespace Bucketing
+namespace DataBinning
 {
     public class SensorEvent
     {
@@ -11,26 +11,21 @@ namespace Bucketing
         public string EventTimestamp { get; set; } = DateTime.UtcNow.ToString();
         public string ReceivedTimestamp { get; set; } = DateTime.UtcNow.ToString();
     
-        public static List<SensorEvent> GenerateSensorEvents(int deviceCount)
+        public static SensorEvent GenerateSensorEvent(string deviceId)
         {
-            var sensorEvents = new List<SensorEvent>();
+           
             Random rng = new Random();
             
             var sessionId = Guid.NewGuid().ToString();
-            var deviceIds = Enumerable.Range(1,deviceCount).ToArray();
 
             // Calculate temperature between 65 and 79 (as double)
             double temperature = rng.NextDouble() * (79.0 - 65.0) + 65.0;
 
-            foreach (var device in deviceIds)
-            {
-                var sensorEvent = new SensorEvent();
-                sensorEvent.DeviceId = device.ToString();
-                sensorEvent.Temperature = temperature;
-                
-                sensorEvents.Add(sensorEvent);
-            }
-            return sensorEvents;
+            var sensorEvent = new SensorEvent();
+            sensorEvent.DeviceId = deviceId;
+            sensorEvent.Temperature = temperature;
+
+            return sensorEvent;
         }
     }
 
