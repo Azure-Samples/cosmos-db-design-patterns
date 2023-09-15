@@ -1,11 +1,7 @@
 {
   "profiles": {
-    "Cosmos_Patterns_Bucketing": {
-      "commandName": "Project",
-      "commandLineArgs": "--port 7272",
-      "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "development"
-      }
+    "Cosmos_DataBinning": {
+      "commandName": "Project"
     }
   }
 }
