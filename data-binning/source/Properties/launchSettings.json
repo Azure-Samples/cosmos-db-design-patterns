@@ -1,6 +1,6 @@
 {
   "profiles": {
-    "Cosmos_DataBinning": {
+    "DataBinning": {
       "commandName": "Project"
     }
   }

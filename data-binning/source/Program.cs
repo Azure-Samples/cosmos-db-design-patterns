@@ -1,13 +1,6 @@
-﻿// See https://aka.ms/new-console-template for more information
-using System.ComponentModel.DataAnnotations;
-using System.Net.Http;
-using Microsoft.Azure.Cosmos;
-using Newtonsoft.Json;
-using static Azure.Core.HttpHeader;
+﻿using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Configuration;
-using Container = Microsoft.Azure.Cosmos.Container;
-using Database = Microsoft.Azure.Cosmos.Database;
-using Cosmos_data_binning;
+
 
 namespace DataBinning
 {
@@ -22,19 +15,29 @@ namespace DataBinning
        
             Container container = await createCosmosDBArtifactsAsync();
 
-            Console.WriteLine("How many devices would you like to generate data for (enter number between 1 and 100)?");
+            Console.WriteLine("How many devices would you like to generate data for (enter number between 1 and 25)?");
             var deviceCountInput = Console.ReadLine();
             int.TryParse(deviceCountInput, out int deviceCount);
+           if (deviceCount > 25 )
+           {
+                Console.WriteLine("Reducing devices to 25");
+                deviceCount = 25;
+           }
 
             Console.WriteLine("How many minutes would you like to generate data for (enter number between 1 and 10)?");
             var timeoutInput = Console.ReadLine();            
             int.TryParse(timeoutInput, out int timeout);
+            if (timeout > 10)
+            {
+                Console.WriteLine("Reducing minutes to 10");
+                timeout = 10;
+            }
 
             var currtime = System.DateTime.UtcNow;
             var finalBatchtime = Utility.GetNextPublishTime(currtime.AddMinutes(timeout));
             int durationSec = (int) (finalBatchtime - currtime).Duration().TotalSeconds;
 
-            Console.WriteLine($"Please wait while events are simulated for {timeoutInput} minutes.");
+            Console.WriteLine($"Please wait while events are simulated for {timeout} minutes.");
 
             _lock = new object();
             for (int i = 0; i < deviceCount; i++)
@@ -51,7 +54,7 @@ namespace DataBinning
             //wait till all threads complete.
             await Task.Delay((durationSec +2) * 1000);
 
-            System.Console.WriteLine($"Completed generation events for {deviceCountInput} devices");
+            System.Console.WriteLine($"Completed generation events for {deviceCount} devices");
             Console.WriteLine($"Check DataBinning Container for sensor events");
         }
 
@@ -63,7 +66,7 @@ namespace DataBinning
 
             var configuration = new ConfigurationBuilder()
                  .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-                 .AddJsonFile($"appsettings.development.json", optional: true);
+                 .AddJsonFile($"appsettings.Development.json", optional: true);
 
             var config = configuration.Build();
 

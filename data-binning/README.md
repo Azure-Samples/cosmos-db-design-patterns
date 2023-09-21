@@ -12,7 +12,9 @@ description: Review this case study on how to design and implement binning to op
 
 # Azure Cosmos DB design pattern: Data Binning
 
-The binning pattern (sometimes called windowing pattern) is used when the data being tracked is being created at a high velocity and the use case only requires summaries or snapshots of a window of data. A common example is if one thousand sensors are configured to each track one reading per 5 seconds. There may be an alerting system that benefits from that frequency, but the applications using Azure Cosmos DB only want to see the data summarized by minute. As data is generated, it is summarized over a window of 1 minute and only the summarized documents are stored in the Azure Cosmos DB collection.
+The binning pattern (sometimes called windowing pattern) is a design pattern used when data is generated at a high frequency and requires aggregate views of the data over specific intervals of time. For example, a device emits data every second, but users view it as an average over one minute intervals. 
+
+There are two primary benefits from this pattern. First, it reduces the number of requests over the wire from the receiving endpoint to any backend storage. This saves compute costs and reduces network traffic. Second, it simultaneously simplifies and reduces compute cost on the processing to produce aggregate views of data. In particular that aggregate view with the shortest interval as it is calculated with the higest frequency. The impact for using this pattern is a function of the number of devices combined with the frequency of data transmitted and aggregates calculated.
 
 > This sample demonstrates:
 >

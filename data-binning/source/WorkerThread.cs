@@ -1,13 +1,6 @@
-﻿using DataBinning;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.Azure.Cosmos;
-using Microsoft.Azure.Cosmos.Serialization.HybridRow.RecordIO;
+﻿using Microsoft.Azure.Cosmos;
 
-namespace Cosmos_data_binning
+namespace DataBinning
 {
     // Delegate that defines the signature for the callback method.
     public delegate void PostMessageCallback(string msg);
