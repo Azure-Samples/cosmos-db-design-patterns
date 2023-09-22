@@ -14,34 +14,29 @@ description: Review this case study on how to design and implement binning to op
 
 The binning pattern (sometimes called windowing pattern) is a design pattern used when data is generated at a high frequency and requires aggregate views of the data over specific intervals of time. For example, a device emits data every second, but users view it as an average over one minute intervals. 
 
-There are two primary benefits from this pattern. First, it reduces the number of requests over the wire from the receiving endpoint to any backend storage. This saves compute costs and reduces network traffic. Second, it simultaneously simplifies and reduces compute cost on the processing to produce aggregate views of data. In particular that aggregate view with the shortest interval as it is calculated with the higest frequency. The impact for using this pattern is a function of the number of devices combined with the frequency of data transmitted and aggregates calculated.
+There are two primary benefits from this pattern. First, it reduces the number of requests over the wire from the receiving endpoint to any backend storage. This saves compute costs and reduces network traffic. Second, it simultaneously simplifies and reduces compute cost on the database to produce aggregate views of data. In particular aggregate views with the shortest interval as these are calculated with the higest frequency. The impact for using this pattern is a function of the number of devices, the frequency of data and aggregates calculated.
 
 > This sample demonstrates:
 >
 > - ✅ Design and implementation of data binning to optimize cost.
 > - ✅ Simulation of sensor events and then binning them into 1 minute windows before storing them in Azure Cosmos DB.
-> - ✅ Triggering a function with default values of 10 devices for 3 minutes.
 >
 
 ## Common scenario
 
-A common scenario for data binning with NoSQL data is when you need to aggregate and summarize large volumes of data based on specific criteria or ranges. Binning, also known as bucketing or histogramming, is a technique used to group data points into bins or categories based on their values.
+An example where binning is preferred is when working with sensor data from Internet of Things (IoT) devices. For example, a hotel chain has devices installed in all rooms to read the temperature and send events to a centralized service. Each of those devices is configured to send an event to Azure IoT Hub every 5 seconds. For a hotel chain with one thousand rooms across its locations, that results in 12,000 data points per minute that are captured. An online monitoring application and dashboard only needs to show results once per minute. By applying the binning pattern with a window of 1 minute, database writes are reduced from 12,000 to 1,000 inserts per minute with a single document that includes the device identifier, an array of all the data points collected, and any aggregates calculated over that period of time. This reduces the compute required for the write operations without losing any detail the application requires. 
 
-Let's say you have a social media platform where users generate a significant amount of data, such as posts, comments, and likes. You want to analyze the engagement levels of users based on the number of likes received by their posts. Instead of analyzing each individual like event, you can use data binning to group the posts into different ranges of likes, such as 0-10 likes, 11-20 likes, 21-30 likes, and so on.
+Just as important, this also eliminates the need to run an expensive query every minute that aggregates all the datapoints across all 1000 devices. If every data point was inserted as it's own document every 5 seconds for all 1,000 devices, this query would need to first filter for every document over the last minute, then group by device and calculate any required aggregate values. If these aggregates are pre-calculated, this eliminates an expensive step in processing that is executed with the greatest frequency.
 
-By applying data binning, you can efficiently calculate metrics like the average number of likes per post in each bin, identify the most popular posts within specific ranges, or track changes in user engagement over time. This aggregation and summarization of data into bins enable you to derive meaningful insights and make informed decisions.
-
-If this pattern is not used for this scenario, it would result in a high volume of rows in an Azure Cosmos DB collection. Storing that detail would keep flexibility for all types of queries, but the performance and cost would not be optimal for querying at the 1 minute level. By applying calculations over an appropriate time window, less storage is required, less work is performed by each read, and less processing power is required to support queries.
+This potentially could be optimized even further. Rather than running a query every minute to get the latest document for each of the 1000 devices, you could potentially take all of the pre-calculated aggregates across all 1,000 devices and insert them as an array in a single document. The dashboard could then be powered by executing a point-read on one document every minute versus a query. The dashboard could also be powered by implementing the materialized view pattern from a second container. This is a pattern we cover in another design pattern. No matter what you do however, it is important to iterate, test and measure to find the design that works for you.
 
 ## Sample implementation
 
 In this section we will walk through a case study on how to design and implement binning to optimize cost.
 
-An example where binning is preferred is when working with sensor data from Internet of Things (IoT) devices. For example, a hotel chain has devices installed in all rooms to read the temperature and send events to a centralized service. Each of those devices is configured to send an event to Azure IoT Hub every 5 seconds. For a hotel chain with one thousand rooms across its locations, that results in 12,000 documents per minute. The online monitoring application which uses Azure Cosmos DB only needs to show results once per minute. By applying the binning pattern with a window of 1 minute, the Azure Cosmos DB container will write 1,000 documents per minute. This reduces the RSUs required for both write and read operations without losing any detail the application requires.
+The demo code will simulate events and bucket them within the same console application. It accepts parameters for up to 25 devices for up to 10 minutes to simulate data. Events are generated every 5 seconds. The console app collects, aggregates, then writes these to Cosmos DB once a minute.
 
-The demo code will simulate events and bucket them within the same Azure function app. It accepts parameters for how many devices to simulate data for and for what period of time. The events generated will be every 5 seconds but the app collects and aggregates these to the minute before saving to Azure Cosmos DB. The focus is on seeing how incoming sensore events will be modeled differently to fit into 1 minute buckets in a Azure Cosmos DB container.
-
-A sample of incoming events sent every second would look like this (but this is not written to Azure Cosmos DB):
+A sample of incoming events sent every 5 seconds would look like this (but this is not written to Azure Cosmos DB):
 
 ```json
 {
@@ -137,7 +132,6 @@ Note: In the demo application, aggregated events are collected based on system t
 In order to run the demos, you will need:
 
 - [.NET 6.0 Runtime](https://dotnet.microsoft.com/download/dotnet/6.0)
-- [Azure Functions Core Tools v4](https://learn.microsoft.com/azure/azure-functions/functions-run-local#install-the-azure-functions-core-tools)
 
 ## Confirm required tools are installed
 
@@ -150,14 +144,6 @@ dotnet --list-runtimes
 ```
 
 As you may have multiple versions of the runtime installed, make sure that .NET components with versions that start with 6.0 appear as part of the output.
-
-Next, check the version of Azure Functions Core Tools with this command:
-
-```bash
-func --version
-```
-
-You should have installed a version that starts with `4.`. If you do not have a v4 version installed, you will need to uninstall the older version and follow [these instructions for installing Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local#install-the-azure-functions-core-tools).
 
 ## Getting the code
 
@@ -191,14 +177,14 @@ You can try out this implementation by running the code in [GitHub Codespaces](h
 
 1. Create a free Azure Cosmos DB for NoSQL account: (<https://cosmos.azure.com/try>)
 
-1. In the Data Explorer, create a new database and container with the following values with shared autoscale throughput:
+1. In the Data Explorer, create a new database and container with the following values with **database** autoscale throughput:
 
     | | Value |
     | --- | --- |
-    | **Database name** | `Hotels` |
-    | **Container name** | `SensorEvents` |
-    | **Partition key path** | `/DeviceId` |
+    | **Database name** | `CosmosPatterns` |
     | **Throughput** | `1000` (*Autoscale*) |
+    | **Container name** | `DataBinning` |
+    | **Partition key path** | `/DeviceId` |
 
 **Note:** We are using shared database throughput because it can scale down to 100 RU/s when not running. This is the most cost effient if running in a paid subscription and not using Free Tier.
 
