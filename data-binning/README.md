@@ -7,7 +7,7 @@ products:
 name: |
   Azure Cosmos DB design pattern: Data Binning
 urlFragment: data-binning
-description: Review this case study on how to design and implement binning to optimize cost.
+description: Review this pattern on how to design and implement binning to optimize cost.
 ---
 
 # Azure Cosmos DB design pattern: Data Binning
@@ -177,58 +177,47 @@ You can try out this implementation by running the code in [GitHub Codespaces](h
 
 1. Create a free Azure Cosmos DB for NoSQL account: (<https://cosmos.azure.com/try>)
 
-1. In the Data Explorer, create a new database and container with the following values with **database** autoscale throughput:
+1. In the Data Explorer, create a new database named **CosmosPatterns** with shared autoscale throughput:
 
     | | Value |
     | --- | --- |
     | **Database name** | `CosmosPatterns` |
     | **Throughput** | `1000` (*Autoscale*) |
+
+**Note:** We are using shared database throughput because it can scale down to 100 RU/s when not running. This is the most cost effient when running at very small scale.
+
+1. Create a container **DataBinning** with the following values:
+
+
+    | | Value |
+    | --- | --- |
+    | **Database name** | `CosmosPatterns` |
     | **Container name** | `DataBinning` |
     | **Partition key path** | `/DeviceId` |
 
-**Note:** We are using shared database throughput because it can scale down to 100 RU/s when not running. This is the most cost effient if running in a paid subscription and not using Free Tier.
+## Get Azure Cosmos DB connection information
 
-## Set up environment variables
+You will need connection details for the Azure Cosmos DB account.
 
-1. Go to resource group
 1. Select the new Azure Cosmos DB for NoSQL account.
-1. From the navigation, under **Settings**, select **Keys**. The values you need for the environment variables for the demo are here.
 
-1. Create 2 environment variables to run the demos:
+1. Open the Keys blade, click the Eye icon to view the `PRIMARY KEY`. Keep this and the `URI` handy. You will need these for the next step.
 
-    - `COSMOS_ENDPOINT`: set to the `URI` value on the Azure Cosmos DB account Keys blade.
-    - `COSMOS_KEY`: set to the Read-Write `PRIMARY KEY` for the Azure Cosmos DB for NoSQL account
+## Prepare the app configuration
 
-1. Open a terminal in your GitHub Codespace and create your Bash variables with the following syntax:
+1. Open the application code, create an **appsettings.Development.json** file in the **/source** folder. In the file, create a JSON object with **CosmosUri** and **CosmosKey** properties. Copy and paste the values for `URI` and `PRIMARY KEY` from the previous step:
 
-    ```bash
-    export COSMOS_ENDPOINT="YOUR_COSMOS_ENDPOINT"
-    export COSMOS_KEY="YOUR_COSMOS_KEY"
+    ```json
+    {
+      "CosmosUri": "<endpoint>",
+      "CosmosKey": "<primary-key>"
+    }
     ```
 
 ## Run the demo
 
-1. Open the application code.  Add a file to the folder `Cosmos_Patterns_Bucketing` called **local.settings.json** with the following contents:
-
-    ```json
-    {
-        "IsEncrypted": false,
-        "Values": {
-            "AzureWebJobsStorage": "UseDevelopmentStorage=true",
-            "FUNCTIONS_WORKER_RUNTIME": "dotnet"
-        }
-    }
-    ```
-
-1. Start the function app to wait for HTTP calls to simulate events and binning.
-
-```bash
-func start
-```
-
-To trigger the function to generate events and write bucketed entries to Cosmos DB, you can review and run Program.cs.
-
 Open a new terminal and run the included Console App (Program.cs) which generates events saves them bucketed by device and minute:
+
 ```bash
 dotnet run
 ```
@@ -269,4 +258,4 @@ Note: The generated data will likely have many values considered anomalies. You 
 
 ## Summary
 
-When modeling binned data, it is important to consider which summarized values may be helpful. If maximum and minimum are not useful, then those can be left out. Most often a sum, count, average, or all three will be helpful.
+When modeling data for any application it's important to consider how the data will be used. NoSQL databases provide the ability to model data in a hierarchy within a JSON document. Applying the data binning pattern allows you to collect and aggregate data for how it is most often used. This provides efficency at multiple levels and simplifies design. This example we demonstrated provides a simple pattern for optimization. This pattern can be expanded upon and combined with other patterns to optimize even further or in different ways to give you the best performance and efficiency for your solutions. 
