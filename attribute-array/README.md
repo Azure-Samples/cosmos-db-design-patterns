@@ -14,7 +14,7 @@ description: Review this example of using attribute array to efficiently query a
 
 The attribute array pattern is a unique design pattern specific to JSON-based NoSQL databases where multiple name/value pairs containing similar data are modeled as arrays within a document. The alternative would model as these individual name/value pairs on the parent object.
 
-There are two main advantages to this pattern. First is it can simplify query construction making queries more concise and less prone to bugs. Second is it is more efficient to index, reduing cost and improving performance.
+There are two main advantages to this pattern. First is it can simplify query construction making queries more concise and less prone to bugs. Second is it is more efficient to index, reducing cost and improving performance.
 
 This sample demonstrates:
 
@@ -157,7 +157,7 @@ As you may have multiple versions of the runtime installed, make sure that .NET 
 
 - Open the terminal on your computer.
 - Navigate to the directory where you want to clone the repository.
-- Type `git clone git clone https://github.com/Azure-Samples/cosmos-db-design-patterns.git` and press enter.
+- Type `git clone https://github.com/Azure-Samples/cosmos-db-design-patterns.git` and press enter.
 - The repository will be cloned to your local machine.
 
 **Using Visual Studio Code:**
@@ -188,7 +188,7 @@ You can try out this implementation by running the code in [GitHub Codespaces](h
     | **Database name** | `CosmosPatterns` |
     | **Throughput** | `1000` (*Autoscale*) |
 
-**Note:** We are using shared database throughput because it can scale down to 100 RU/s when not running. This is the most cost effient if running in a paid subscription and not using Free Tier.
+**Note:** We are using shared database throughput because it can scale down to 100 RU/s when not running. This is the most cost efficient if running in a paid subscription and not using Free Tier.
 
 1. Create a container **AttributeArrays** with the following values:
 

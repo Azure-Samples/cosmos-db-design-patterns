@@ -14,7 +14,7 @@ description: Review this pattern on how to design and implement binning to optim
 
 The binning pattern (sometimes called windowing pattern) is a design pattern used when data is generated at a high frequency and requires aggregate views of the data over specific intervals of time. For example, a device emits data every second, but users view it as an average over one minute intervals. 
 
-There are two primary benefits from this pattern. First, it reduces the number of requests over the wire from the receiving endpoint to any backend storage. This saves compute costs and reduces network traffic. Second, it simultaneously simplifies and reduces compute cost on the database to produce aggregate views of data. In particular aggregate views with the shortest interval as these are calculated with the higest frequency. The impact for using this pattern is a function of the number of devices, the frequency of data and aggregates calculated.
+There are two primary benefits from this pattern. First, it reduces the number of requests over the wire from the receiving endpoint to any backend storage. This saves compute costs and reduces network traffic. Second, it simultaneously simplifies and reduces compute cost on the database to produce aggregate views of data. In particular aggregate views with the shortest interval as these are calculated with the highest frequency. The impact for using this pattern is a function of the number of devices, the frequency of data and aggregates calculated.
 
 > This sample demonstrates:
 >
@@ -26,9 +26,9 @@ There are two primary benefits from this pattern. First, it reduces the number o
 
 An example where binning is preferred is when working with sensor data from Internet of Things (IoT) devices. For example, a hotel chain has devices installed in all rooms to read the temperature and send events to a centralized service. Each of those devices is configured to send an event to Azure IoT Hub every 5 seconds. For a hotel chain with one thousand rooms across its locations, that results in 12,000 data points per minute that are captured. An online monitoring application and dashboard only needs to show results once per minute. By applying the binning pattern with a window of 1 minute, database writes are reduced from 12,000 to 1,000 inserts per minute with a single document that includes the device identifier, an array of all the data points collected, and any aggregates calculated over that period of time. This reduces the compute required for the write operations without losing any detail the application requires. 
 
-Just as important, this also eliminates the need to run an expensive query every minute that aggregates all the datapoints across all 1000 devices. If every data point was inserted as it's own document every 5 seconds for all 1,000 devices, this query would need to first filter for every document over the last minute, then group by device and calculate any required aggregate values. If these aggregates are pre-calculated, this eliminates an expensive step in processing that is executed with the greatest frequency.
+Just as important, this also eliminates the need to run an expensive query every minute that aggregates all the datapoints across all 1,000 devices. If every data point was inserted as its own document every 5 seconds for all 1,000 devices, this query would need to first filter for every document over the last minute, then group by device and calculate any required aggregate values. If these aggregates are pre-calculated, this eliminates an expensive step in processing that is executed with the greatest frequency.
 
-This potentially could be optimized even further. Rather than running a query every minute to get the latest document for each of the 1000 devices, you could potentially take all of the pre-calculated aggregates across all 1,000 devices and insert them as an array in a single document. The dashboard could then be powered by executing a point-read on one document every minute versus a query. The dashboard could also be powered by implementing the materialized view pattern from a second container. This is a pattern we cover in another design pattern. No matter what you do however, it is important to iterate, test and measure to find the design that works for you.
+This potentially could be optimized even further. Rather than running a query every minute to get the latest document for each of the 1,000 devices, you could potentially take all of the pre-calculated aggregates across all 1,000 devices and insert them as an array in a single document. The dashboard could then be powered by executing a point-read on one document every minute versus a query. The dashboard could also be powered by implementing the materialized view pattern from a second container. This is a pattern we cover in another design pattern. No matter what you do however, it is important to iterate, test and measure to find the design that works for you.
 
 ## Sample implementation
 
@@ -153,7 +153,7 @@ As you may have multiple versions of the runtime installed, make sure that .NET 
 
 - Open the terminal on your computer.
 - Navigate to the directory where you want to clone the repository.
-- Type `git clone git clone https://github.com/Azure-Samples/cosmos-db-design-patterns.git` and press enter.
+- Type `git clone https://github.com/Azure-Samples/cosmos-db-design-patterns.git` and press enter.
 - The repository will be cloned to your local machine.
 
 **Using Visual Studio Code:**
@@ -184,7 +184,7 @@ You can try out this implementation by running the code in [GitHub Codespaces](h
     | **Database name** | `CosmosPatterns` |
     | **Throughput** | `1000` (*Autoscale*) |
 
-**Note:** We are using shared database throughput because it can scale down to 100 RU/s when not running. This is the most cost effient when running at very small scale.
+**Note:** We are using shared database throughput because it can scale down to 100 RU/s when not running. This is the most cost efficient when running at very small scale.
 
 1. Create a container **DataBinning** with the following values:
 
@@ -216,7 +216,7 @@ You will need connection details for the Azure Cosmos DB account.
 
 ## Run the demo
 
-Open a new terminal and run the included Console App (Program.cs) which generates events saves them bucketed by device and minute:
+Open a new terminal and run the included Console App (Program.cs) which generates events, saves them bucketed by device and minute:
 
 ```bash
 dotnet run
