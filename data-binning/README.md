@@ -12,7 +12,7 @@ description: Review this pattern on how to design and implement binning to optim
 
 # Azure Cosmos DB design pattern: Data Binning
 
-The binning pattern (sometimes called windowing pattern) is a design pattern used when data is generated at a high frequency and requires aggregate views of the data over specific intervals of time. For example, a device emits data every second, but users view it as an average over one minute intervals. 
+The binning pattern (sometimes called windowing pattern) is a design pattern used when data is generated at a high frequency and requires aggregate views of the data over specific intervals of time. For example, a device emits data every second, but users view it as an average over one minute intervals.
 
 There are two primary benefits from this pattern. First, it reduces the number of requests over the wire from the receiving endpoint to any backend storage. This saves compute costs and reduces network traffic. Second, it simultaneously simplifies and reduces compute cost on the database to produce aggregate views of data. In particular aggregate views with the shortest interval as these are calculated with the highest frequency. The impact for using this pattern is a function of the number of devices, the frequency of data and aggregates calculated.
 
@@ -24,7 +24,7 @@ There are two primary benefits from this pattern. First, it reduces the number o
 
 ## Common scenario
 
-An example where binning is preferred is when working with sensor data from Internet of Things (IoT) devices. For example, a hotel chain has devices installed in all rooms to read the temperature and send events to a centralized service. Each of those devices is configured to send an event to Azure IoT Hub every 5 seconds. For a hotel chain with one thousand rooms across its locations, that results in 12,000 data points per minute that are captured. An online monitoring application and dashboard only needs to show results once per minute. By applying the binning pattern with a window of 1 minute, database writes are reduced from 12,000 to 1,000 inserts per minute with a single document that includes the device identifier, an array of all the data points collected, and any aggregates calculated over that period of time. This reduces the compute required for the write operations without losing any detail the application requires. 
+An example where binning is preferred is when working with sensor data from Internet of Things (IoT) devices. For example, a hotel chain has devices installed in all rooms to read the temperature and send events to a centralized service. Each of those devices is configured to send an event to Azure IoT Hub every 5 seconds. For a hotel chain with one thousand rooms across its locations, that results in 12,000 data points per minute that are captured. An online monitoring application and dashboard only needs to show results once per minute. By applying the binning pattern with a window of 1 minute, database writes are reduced from 12,000 to 1,000 inserts per minute with a single document that includes the device identifier, an array of all the data points collected, and any aggregates calculated over that period of time. This reduces the compute required for the write operations without losing any detail the application requires.
 
 Just as important, this also eliminates the need to run an expensive query every minute that aggregates all the datapoints across all 1,000 devices. If every data point was inserted as its own document every 5 seconds for all 1,000 devices, this query would need to first filter for every document over the last minute, then group by device and calculate any required aggregate values. If these aggregates are pre-calculated, this eliminates an expensive step in processing that is executed with the greatest frequency.
 
@@ -63,6 +63,7 @@ A sample of incoming events sent every 5 seconds would look like this (but this 
 ```
 
 Once binning is applied to summarize to a 1 minute window, the resulting event would look like this and be writtend to Azure Cosmos DB:
+
 ```json
 {
   "deviceId": 1,
@@ -72,54 +73,54 @@ Once binning is applied to summarize to a 1 minute window, the resulting event w
   "maxTemperature": 71.3,
   "numberOfReadings": 12,
   "readings": [
-        {
-            "eventTimestamp": "12/30/2022 10:53:05 PM",
-            "temperature": 71.1
-        },
-        {
-            "eventTimestamp": "12/30/2022 10:53:10 PM",
-            "temperature": 71.1
-        },
-        {
-            "eventTimestamp": "12/30/2022 10:53:15 PM",
-            "temperature": 71.2
-        },
-        {
-            "eventTimestamp": "12/30/2022 10:53:20 PM",
-            "temperature": 71.2
-        },
-        {
-            "eventTimestamp": "12/30/2022 10:53:25 PM",
-            "temperature": 71.2
-        },
-        {
-            "eventTimestamp": "12/30/2022 10:53:30 PM",
-            "temperature": 71.2
-        },
-        {
-            "eventTimestamp": "12/30/2022 10:53:35 PM",
-            "temperature": 71.2
-        },
-        {
-            "eventTimestamp": "12/30/2022 10:53:40 PM",
-            "temperature": 71.2
-        },
-        {
-            "eventTimestamp": "12/30/2022 10:53:45 PM",
-            "temperature": 71.2
-        },
-        {
-            "eventTimestamp": "12/30/2022 10:53:50 PM",
-            "temperature": 71.2
-        },
-        {
-            "eventTimestamp": "12/30/2022 10:53:55 PM",
-            "temperature": 71.3
-        },
-        {
-            "eventTimestamp": "12/30/2022 10:54:00 PM",
-            "temperature": 71.3
-        }],
+    {
+      "eventTimestamp": "12/30/2022 10:53:05 PM",
+      "temperature": 71.1
+    },
+    {
+      "eventTimestamp": "12/30/2022 10:53:10 PM",
+      "temperature": 71.1
+    },
+    {
+      "eventTimestamp": "12/30/2022 10:53:15 PM",
+      "temperature": 71.2
+    },
+    {
+      "eventTimestamp": "12/30/2022 10:53:20 PM",
+      "temperature": 71.2
+    },
+    {
+      "eventTimestamp": "12/30/2022 10:53:25 PM",
+      "temperature": 71.2
+    },
+    {
+      "eventTimestamp": "12/30/2022 10:53:30 PM",
+      "temperature": 71.2
+    },
+    {
+      "eventTimestamp": "12/30/2022 10:53:35 PM",
+      "temperature": 71.2
+    },
+    {
+      "eventTimestamp": "12/30/2022 10:53:40 PM",
+      "temperature": 71.2
+    },
+    {
+      "eventTimestamp": "12/30/2022 10:53:45 PM",
+      "temperature": 71.2
+    },
+    {
+      "eventTimestamp": "12/30/2022 10:53:50 PM",
+      "temperature": 71.2
+    },
+    {
+      "eventTimestamp": "12/30/2022 10:53:55 PM",
+      "temperature": 71.3
+    },
+    {
+      "eventTimestamp": "12/30/2022 10:54:00 PM",
+      "temperature": 71.3
+    }],
   "receivedTimestamp": "12/30/2022 10:54:00 PM"
 }
 
@@ -188,7 +189,6 @@ You can try out this implementation by running the code in [GitHub Codespaces](h
 
 1. Create a container **DataBinning** with the following values:
 
-
     | | Value |
     | --- | --- |
     | **Database name** | `CosmosPatterns` |
@@ -225,11 +225,13 @@ dotnet run
 While the Console App is running you may return to the terminal window where the function was started to see that it is writing batches to Cosmos DB.
 
 ## Querying the binned sensor data
+
 Once you have run the demo which generates data, you can run queries directly against the event source container by using **Data Explorer** in the Azure Portal.
 
 1. In Azure Portal, browse to you Cosmos DB resource.
 1. Select **Data Explorer** in the left menu.
-1. Select your container, then choose **New SQL Query**. 
+1. Select your container, then choose **New SQL Query**.
+
 ![Screenshot of creating a SQL Query in Data Explorer within the Azure portal.](./images/data-explorer-create-new-query-bucketing.png)
 
 Below is an example query for checking how many minutes the maxTemperature or minTemperature has been out of the expected range for each device.
@@ -244,6 +246,7 @@ GROUP BY c.DeviceId
 ```
 
 An example to check each reading in the array and count how many events were out of the expected range, you can use the `IN` keyword to access each array element in the query:
+
 ```sql
 SELECT
   c.DeviceId,
@@ -258,4 +261,4 @@ Note: The generated data will likely have many values considered anomalies. You 
 
 ## Summary
 
-When modeling data for any application it's important to consider how the data will be used. NoSQL databases provide the ability to model data in a hierarchy within a JSON document. Applying the data binning pattern allows you to collect and aggregate data for how it is most often used. This provides efficency at multiple levels and simplifies design. This example we demonstrated provides a simple pattern for optimization. This pattern can be expanded upon and combined with other patterns to optimize even further or in different ways to give you the best performance and efficiency for your solutions. 
+When modeling data for any application it's important to consider how the data will be used. NoSQL databases provide the ability to model data in a hierarchy within a JSON document. Applying the data binning pattern allows you to collect and aggregate data for how it is most often used. This provides efficency at multiple levels and simplifies design. This example we demonstrated provides a simple pattern for optimization. This pattern can be expanded upon and combined with other patterns to optimize even further or in different ways to give you the best performance and efficiency for your solutions.

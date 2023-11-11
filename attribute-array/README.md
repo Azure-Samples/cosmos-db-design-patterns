@@ -148,7 +148,6 @@ dotnet --list-runtimes
 
 As you may have multiple versions of the runtime installed, make sure that .NET components with versions that start with 6.0 appear as part of the output.
 
-
 ## Getting the code
 
 ### **Clone the Repository to Your Local Computer:**
@@ -226,6 +225,7 @@ You will need connection details for the Azure Cosmos DB account.
 1. Press Enter to observe the output as the program creates several objects based on property and array approaches for attributes. The application also outputs the results of various test queries.
 
 ### Query for Product Attributes
+
 1. Navigate to the Azure portal (<https://portal.azure.com>), browse to your Azure Cosmos DB account. Go to the **Data Explorer**.
 
 1. Select the **AttributeArrays** container, select **Items**. Scroll through each of the six documents in the container. The first three items show the data model when storing similar attributes as individual properties, the other three demonstrate how to model data using the attribute array pattern.
@@ -251,6 +251,7 @@ You will need connection details for the Azure Cosmos DB account.
         p.sizeMedium >= 75 OR 
         p.sizeLarge >= 75
     ```
+
     Notice that due to the data model, you are forced to return sizes that do not meet the query criteria. This is something that has to be handled in the application. Also query construction is clumsy. As the type and number of attributes grows, this data model will grow more cumbersome and prone to bugs.
 
 #### Query using attribute array pattern
@@ -269,6 +270,7 @@ You will need connection details for the Azure Cosmos DB account.
     WHERE
         s.count >= 75
     ```
+
     Notice the remarkable difference in query construction. It is very clean. It also concisely returns the product name, size and count in stock for that size.
 
 ## Summary
