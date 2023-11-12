@@ -18,7 +18,7 @@ This sample demonstrates:
 
 - ✅ It showcases how to implement document versioning in Azure Cosmos DB to track and manage the current and historical versions of documents.
 - ✅  The example illustrates the separation of current document versions stored in a `CurrentOrderStatus` collection and historical document versions stored in a `HistoricalOrderStatus` collection.
-- ✅ It highlights the integration of Azure Cosmos DB change feed with a function app to capture and copy the versioned documents to the historical collection, enabling efficient tracking and management of document versions.
+- ✅ It highlights the integration of Azure Cosmos DB change feed with a Function App to capture and copy the versioned documents to the historical collection, enabling efficient tracking and management of document versions.
 
 ## Common scenario
 
@@ -36,8 +36,8 @@ Suppose we have this document:
   "orderId": 1101,
   "status": "Submitted",
   "orderDetails": [
-    [{"productName": "Product 1", "quantity": 1},
-     {"productName": "Product 2", "quantity": 3}]
+    {"productName": "Product 1", "quantity": 1},
+    {"productName": "Product 2", "quantity": 3}
   ]
 }
 ```
@@ -50,8 +50,8 @@ Now, suppose the customer had to cancel the order. The replacement document coul
   "orderId": 1101,
   "status": "Cancelled",
   "orderDetails": [
-    [{"productName": "Product 1", "quantity": 1},
-     {"productName": "Product 2", "quantity": 3}]
+    {"productName": "Product 1", "quantity": 1},
+    {"productName": "Product 2", "quantity": 3}
   ]
 }
 ```
@@ -59,7 +59,7 @@ Now, suppose the customer had to cancel the order. The replacement document coul
 Looking at these documents, though, there is no easy way to tell which of these documents is the current document. By using document versioning, add a field to the document to track the version number. Update the current document in a `CurrentOrderStatus` container and add the change to the `HistoricalOrderStatus` container. While Azure Cosmos DB for NoSQL does not have a document versioning feature, you can build in the handling through an application. In [the demo](./code/setup.md), you can see how to implement the document versioning feature with the following components:
 
 - A website that allows you to create orders and change the order status. The website updates the document version and saves the document to the current status container.
-- A function app that reads the data for the Azure Cosmos DB change feed and copies the versioned documents to the historical status container
+- A Function App that reads the data for the Azure Cosmos DB change feed and copies the versioned documents to the historical status container
 
 The demo website includes links to update the orders to the different statuses.
 
@@ -100,7 +100,7 @@ You should have installed a version that starts with `4.`. If you do not have a 
 
 - Open the terminal on your computer.
 - Navigate to the directory where you want to clone the repository.
-- Type `git clone git clone https://github.com/Azure-Samples/cosmos-db-design-patterns.git` and press enter.
+- Type `git clone https://github.com/Azure-Samples/cosmos-db-design-patterns.git` and press enter.
 - The repository will be cloned to your local machine.
 
 **Using Visual Studio Code:**
@@ -142,11 +142,11 @@ You can try out this implementation by running the code in [GitHub Codespaces](h
     | **Partition key path** | `/CustomerId` |
     | **Throughput** | `1000` (*Autoscale*) |
 
+**Note:** We are using shared database throughput because it can scale down to 100 RU/s when not running. This is the most cost efficient if running in a paid subscription and not using Free Tier.
+
 ## Set up application configuration file
 
-**Note:** We are using shared database throughput because it can scale down to 100 RU/s when not running. This is the most cost effient if running in a paid subscription and not using Free Tier.
-
-You need to configure the application configuraiton file to run these demos.
+You need to configure the application configuration file to run these demos.
 
 1. Go to resource group.
 
@@ -187,9 +187,9 @@ While on the Keys blade, make note of the `PRIMARY CONNECTION STRING`. You will 
 
     ![Screenshot of the 'dotnet run' output. The URL to navigate to is highlighted. In the screenshot, the URL is 'http://localhost:5183'.](images/local-site-url.png)
 
-    **Do not doing anything on this website yet. Continue to the next step.**
+    **Don't do anything on this website yet. Continue to the next step.**
 
-1. At another command prompt, switch to the `function-app` folder. Then, run the function app with:
+1. At another command prompt, switch to the `function-app` folder. Then, run the Function App with:
 
     ```bash
     func start
