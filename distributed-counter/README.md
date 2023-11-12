@@ -136,7 +136,7 @@ You can try out this implementation by running the code in [GitHub Codespaces](h
     | **Database name** | `CounterDB` |
     | **Container name** | `Counters` |
     | **Partition key path** | `/pk` |
-    | **Throughput** | `1000` (*AutoScale*) |
+    | **Throughput** | `1000` (_AutoScale_) |
 
 **Note:** We are using shared database throughput because it can scale down to 100 RU/s when not running. This is the most cost effient if running in a paid subscription and not using Free Tier.
 
