@@ -32,13 +32,13 @@ Suppose we have this document:
 
 ```json
 {
-    "customerId": 10,
-    "orderId": 1101,
-    "status": "Submitted",
-    "orderDetails": [
-        [{"productName": "Product 1", "quantity": 1},
-         {"productName": "Product 2", "quantity": 3}]
-    ]
+  "customerId": 10,
+  "orderId": 1101,
+  "status": "Submitted",
+  "orderDetails": [
+    [{"productName": "Product 1", "quantity": 1},
+     {"productName": "Product 2", "quantity": 3}]
+  ]
 }
 ```
 
@@ -46,13 +46,13 @@ Now, suppose the customer had to cancel the order. The replacement document coul
 
 ```json
 {
-    "customerId": 10,
-    "orderId": 1101,
-    "status": "Cancelled",
-    "orderDetails": [
-        [{"productName": "Product 1", "quantity": 1},
-         {"productName": "Product 2", "quantity": 3}]
-    ]
+  "customerId": 10,
+  "orderId": 1101,
+  "status": "Cancelled",
+  "orderDetails": [
+    [{"productName": "Product 1", "quantity": 1},
+     {"productName": "Product 2", "quantity": 3}]
+  ]
 }
 ```
 
@@ -162,12 +162,12 @@ While on the Keys blade, make note of the `PRIMARY CONNECTION STRING`. You will 
 
     ```json
     {
-        "IsEncrypted": false,
-        "Values": {
-            "AzureWebJobsStorage": "UseDevelopmentStorage=false",
-            "FUNCTIONS_WORKER_RUNTIME": "dotnet",        
-            "CosmosDBConnection" : "YOUR_PRIMARY_CONNECTION_STRING"
-        }
+      "IsEncrypted": false,
+      "Values": {
+        "AzureWebJobsStorage": "UseDevelopmentStorage=false",
+        "FUNCTIONS_WORKER_RUNTIME": "dotnet",
+        "CosmosDBConnection" : "YOUR_PRIMARY_CONNECTION_STRING"
+      }
     }
     ```
 
@@ -196,7 +196,6 @@ While on the Keys blade, make note of the `PRIMARY CONNECTION STRING`. You will 
     ```
 
 Now that you have the website and function app started, create 5-10 orders with the website.
-
 
 This is what the website will look like when starting out:
 
