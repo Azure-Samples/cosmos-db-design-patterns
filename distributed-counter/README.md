@@ -72,7 +72,7 @@ This sample is implemented as a C#/.NET application with three projects. The thr
 
 ## Try this implementation
 
-To run the function app for Event Sourcing Pattern, you will need to have:
+In order to run the demos, you will need:
 
 - [.NET 6.0 Runtime](https://dotnet.microsoft.com/download/dotnet/6.0)
 - [Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local#install-the-azure-functions-core-tools)
@@ -105,7 +105,7 @@ You should have a version 4._x_ installed. If you do not have this version insta
 
 - Open the terminal on your computer.
 - Navigate to the directory where you want to clone the repository.
-- Type `git clone git clone https://github.com/Azure-Samples/cosmos-db-design-patterns.git` and press enter.
+- Type `git clone https://github.com/Azure-Samples/cosmos-db-design-patterns.git` and press enter.
 - The repository will be cloned to your local machine.
 
 **Using Visual Studio Code:**
@@ -138,7 +138,7 @@ You can try out this implementation by running the code in [GitHub Codespaces](h
     | **Partition key path** | `/pk` |
     | **Throughput** | `1000` (_AutoScale_) |
 
-**Note:** We are using shared database throughput because it can scale down to 100 RU/s when not running. This is the most cost effient if running in a paid subscription and not using Free Tier.
+**Note:** We are using shared database throughput because it can scale down to 100 RU/s when not running. This is the most cost efficient if running in a paid subscription and not using Free Tier.
 
 ## Get Azure Cosmos DB connection information
 
@@ -152,7 +152,7 @@ You will need a connection string for the Azure Cosmos DB account.
 
 ## Prepare the app configuration
 
-1. Open the code, create an **appsettings.Development.json** file in both the **/visualizer** and **/consumerapp** folders. In each of the files, create a JSON object with **CosmosUri** and **CosmosKey** properties. Copy and paste the values for `URI` and `PRIMARY KEY` from the previous step:
+1. Open the code, create an **appsettings.Development.json** file in both the **/Visualizer** and **/ConsumerApp** folders. In each of the files, create a JSON object with **CosmosUri** and **CosmosKey** properties. Copy and paste the values for `URI` and `PRIMARY KEY` from the previous step:
 
     ```json
     {
