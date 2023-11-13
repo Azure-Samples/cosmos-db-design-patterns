@@ -183,7 +183,17 @@ foreach (Room r in h.Rooms)
 By pre-allocating the room's reservation days, you can easily run the following query to find available dates for a particular room or set of rooms:
 
 ```sql
-SELECT a.Date, a.IsReserved, r.hotelId FROM room r JOIN a IN r.ReservationDates WHERE a.Date>= '2023-09-01T00:00:00Z' AND a.Date < '2023-09-02T00:00:00Z' and a.IsReserved=false and r.hotelId = 'hotel_1'
+SELECT
+    a.Date,
+    a.IsReserved,
+    r.hotelId
+FROM room r
+    JOIN a IN r.ReservationDates
+WHERE
+    a.Date >= '2023-09-01T00:00:00Z' AND
+    a.Date < '2023-09-02T00:00:00Z' AND
+    a.IsReserved = false AND
+    r.hotelId = 'hotel_1'
 ```
 
 By not choosing the pre-allocation pattern, the alternative way to find available rooms for a set of dates will be more complex.  For example, without pre-allocation, you would need to query all reservations for a room then build a collection of available dates by subtracting the reservation dates.  You can see a subset of this logic available in the `FindAvailableRooms` method of the `Hotel` class.
@@ -214,7 +224,7 @@ As you may have multiple versions of the runtime installed, make sure that .NET 
 
 - Open the terminal on your computer.
 - Navigate to the directory where you want to clone the repository.
-- Type `git clone git clone https://github.com/Azure-Samples/cosmos-db-design-patterns.git` and press enter.
+- Type `git clone https://github.com/Azure-Samples/cosmos-db-design-patterns.git` and press enter.
 - The repository will be cloned to your local machine.
 
 **Using Visual Studio Code:**
@@ -244,7 +254,7 @@ You can try out this implementation by running the code in [GitHub Codespaces](h
     | --- | --- |
     | **Database name** | `CosmosPatterns` |
     | **Container name** | `WithPreallocation` |
-    | **Partition key path** | `/Id` |
+    | **Partition key path** | `/id` |
     | **Throughput** | `1000` (*Autoscale*) |
 
 1. Create a second container in the same `CosmosPatterns` database named `WithoutPreallocation`:
@@ -253,9 +263,9 @@ You can try out this implementation by running the code in [GitHub Codespaces](h
     | --- | --- |
     | **Database name** | `CosmosPatterns` |
     | **Container name** | `WithoutPreallocation` |
-    | **Partition key path** | `/Id` |
+    | **Partition key path** | `/id` |
 
-**Note:** We are using shared database throughput because it can scale down to 100 RU/s when not running. This is the most cost effient if running in a paid subscription and not using Free Tier.
+**Note:** We are using shared database throughput because it can scale down to 100 RU/s when not running. This is the most cost efficient if running in a paid subscription and not using Free Tier.
 
 ## Updating Azure Cosmos DB URI and Key in Code
 
@@ -285,8 +295,8 @@ Update the following in the **appsettings.json**  before you run the code:
     2. Select **Data Explorer** in the left menu.
     3. Review the data in both  container, notice that the 'Reservation' documents is not used in the *HotelApp_containerWithPreallocation*, instead the reservation dates for a room are pre-allocated in a collection.
 
-4. Select option `2` to run the query with out any Preallocation. Provide a date in DD--MM-YYYY format.
-5. Select option `3` to run the same query using Preallocation. Provide a date in DD--MM-YYYY format.
+4. Select option `2` to run the query with out any Preallocation. Provide a date in DD-MM-YYYY format.
+5. Select option `3` to run the same query using Preallocation. Provide a date in DD-MM-YYYY format.
 6. Compare the code for both Step# 4 and Step# 5. Notice that Pre-allocation allows for a much simpler design for queries and logic versus other approaches however it can come at the cost of a larger document in storage and memory given the pre-allocation of the data.
 
 ## Summary
