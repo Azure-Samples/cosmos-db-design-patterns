@@ -19,7 +19,7 @@ A simple implementation would be a container that is used to track append-only e
 
 There are multiple notable benefits to this type of approach in application design. It is often paired with another architecture pattern, Command Query Responsibility System (CQRS) in a way that combines Cosmos DB's Change Feed to facilitate the read layer in this architecture, including implementing another architecture pattern also used with CQRS, [Materialized Views](../materialized_views/README.md). It can also simply enable a communications layer for sets of loosely-coupled services.
 
-While event sourcing can be implemented with various types of databases, this is pattern heavily used by developers building applications using Azure Cosmos DB. The ability for Change Feed to act as a centralized (and scalable) message publishing mechanism is a key reason for this. But there are other reasons as well, including:
+While event sourcing can be implemented with various types of databases, this pattern is heavily used by developers building applications using Azure Cosmos DB. The ability for Change Feed to act as a centralized (and scalable) message publishing mechanism is a key reason for this. But there are other reasons as well, including:
 
 1. Flexible schema: NoSQL databases generally allow for schema flexibility. Easy support for unstructured event data formats that are often in JSON formats align perfectly with the needs of event sourcing architectures.
 
@@ -61,7 +61,7 @@ This pattern provides:
 
 ## Sample implementation of event sourcing
 
-In this section we will walk through a case study on how to design and implement event sourcing, provding code examples and review cost considerations that will impact the design.
+In this section we will walk through a case study on how to design and implement event sourcing, provide code examples and review cost considerations that will impact the design.
 
 Consider a shopping cart application for an eCommerce company. All changes to the cart should be tracked as events but will be queried for multiple uses by different consuming services. Event sourcing pattern is chosen to ensure all history is retained and point in time state can be calculated. Each time a change is made to the cart there will be multiple calculations downstream. Rather than have the application update multiple containers, the single event store collection `shopping_cart_event` will be appended with the change. The partition key will be `/cartId` to support the most common queries by the shopping cart service. Other services will consume data from the change feed and use solutions like [materialized views](../materialized_views/README.md) to support different query patterns.
 
@@ -155,7 +155,7 @@ You should have a version 4.*x* installed. If you do not have this version insta
 
 - Open the terminal on your computer.
 - Navigate to the directory where you want to clone the repository.
-- Type `git clone git clone https://github.com/Azure-Samples/cosmos-db-design-patterns.git` and press enter.
+- Type `git clone https://github.com/Azure-Samples/cosmos-db-design-patterns.git` and press enter.
 - The repository will be cloned to your local machine.
 
 **Using Visual Studio Code:**
@@ -188,7 +188,7 @@ You can try out this implementation by running the code in [GitHub Codespaces](h
     | **Partition key path** | `/CartId` |
     | **Throughput** | `1000` (*Autoscale*) |
 
-**Note:** We are using shared database throughput because it can scale down to 100 RU/s when not running. This is the most cost effient if running in a paid subscription and not using Free Tier.
+**Note:** We are using shared database throughput because it can scale down to 100 RU/s when not running. This is the most cost efficient if running in a paid subscription and not using Free Tier.
 
 ## Get Azure Cosmos DB connection information
 
@@ -206,14 +206,14 @@ You will need a connection string for the Azure Cosmos DB account.
 
 1. Open the application code.
 
-2. Add a file to the `Cosmos_Patterns_EventSourcing` folder called **local.settings.json** with the following contents:
+2. Add a file to the `source` folder called **local.settings.json** with the following contents:
 
     ```json
     {
         "IsEncrypted": false,
         "Values": {
             "AzureWebJobsStorage": "UseDevelopmentStorage=true",
-            "FUNCTIONS_WORKER_RUNTIME": "dotnet",        
+            "FUNCTIONS_WORKER_RUNTIME": "dotnet",
             "CosmosDBConnection" : "YOUR_PRIMARY_CONNECTION_STRING"
         }
     }
