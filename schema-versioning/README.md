@@ -229,7 +229,7 @@ You should have installed a version that starts with `4.`. If you do not have a 
 
 - Open the terminal on your computer.
 - Navigate to the directory where you want to clone the repository.
-- Type `git clone git clone https://github.com/Azure-Samples/cosmos-db-design-patterns.git` and press enter.
+- Type `git clone https://github.com/Azure-Samples/cosmos-db-design-patterns.git` and press enter.
 - The repository will be cloned to your local machine.
 
 **Using Visual Studio Code:**
@@ -262,7 +262,7 @@ You can try out this implementation by running the code in [GitHub Codespaces](h
     | **Partition key path** | `/id` |
     | **Throughput** | `1000` (*Autoscale*) |
 
-**Note:** We are using shared database throughput because it can scale down to 100 RU/s when not running. This is the most cost effient if running in a paid subscription and not using Free Tier.
+**Note:** We are using shared database throughput because it can scale down to 100 RU/s when not running. This is the most cost efficient if running in a paid subscription and not using Free Tier.
 
 ## Set up environment variables
 
@@ -323,7 +323,7 @@ cd ./website
 dotnet run
 ```
 
-Navigate to the URL displayed in the output. In the example below, the URL is shown as part of the `info` output, following the "Now listening on:" text.
+Navigate to the URL displayed in the output. In the example below, the URL is shown as part of the `info` output, following the "Now listening on: " text.
 
 ![Screenshot of the 'dotnet run' output. The URL to navigate to is highlighted. In the screenshot, the URL is 'http://localhost:5279'.](./images/local-site-url.png)
 
