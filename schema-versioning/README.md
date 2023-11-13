@@ -30,38 +30,38 @@ As the amount of data grows and the usage of the data grows, it may make sense t
 Suppose the Wide World Importers had an online store with data in Azure Cosmos DB for NoSQL. This is the initial cart object.
 
 ```csharp
-    public class Cart
-    {
-        [JsonProperty("id")]
-        public string Id { get; set; } = Guid.NewGuid().ToString();
-        public string SessionId { get; set; } = Guid.NewGuid().ToString();
-        public int CustomerId { get; set; }
-        public List<CartItem>? Items { get; set;}
-    }
+public class Cart
+{
+    [JsonProperty("id")]
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string SessionId { get; set; } = Guid.NewGuid().ToString();
+    public int CustomerId { get; set; }
+    public List<CartItem>? Items { get; set;}
+}
 
-    public class CartItem {
-        public string ProductName { get; set; } = "";
-        public int Quantity { get; set; }
-    }
+public class CartItem {
+    public string ProductName { get; set; } = "";
+    public int Quantity { get; set; }
+}
 ```
 
 When stored in Azure Cosmos DB for NoSQL, a cart would look like this:
 
 ```json
 {
-    "id": "194d7453-d9db-496b-834b-7b2db408e4be",
-    "SessionId": "98f5621e-b1af-44f1-815c-f4aac728c4d4",
-    "CustomerId": 741,
-    "Items": [
-        {
-            "ProductName": "Product 23",
-            "Quantity": 4
-        },
-        {
-            "ProductName": "Product 16",
-            "Quantity": 3
-        }
-    ]
+  "id": "194d7453-d9db-496b-834b-7b2db408e4be",
+  "SessionId": "98f5621e-b1af-44f1-815c-f4aac728c4d4",
+  "CustomerId": 741,
+  "Items": [
+    {
+      "ProductName": "Product 23",
+      "Quantity": 4
+    },
+    {
+      "ProductName": "Product 16",
+      "Quantity": 3
+    }
+  ]
 }
 ```
 
@@ -70,51 +70,51 @@ This model was initially designed assuming products were ordered as-is without c
 This could be the updated class with schema versioning:
 
 ```csharp
-    public class CartWithVersion
-    {
-        [JsonProperty("id")]
-        public string Id { get; set; } = Guid.NewGuid().ToString();
-        public string SessionId { get; set; } = Guid.NewGuid().ToString();
-        public long CustomerId { get; set; }
-        public List<CartItemWithSpecialOrder>? Items { get; set;}
-        // Track the schema version
-        public int SchemaVersion = 2;
-    }
+public class CartWithVersion
+{
+    [JsonProperty("id")]
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string SessionId { get; set; } = Guid.NewGuid().ToString();
+    public long CustomerId { get; set; }
+    public List<CartItemWithSpecialOrder>? Items { get; set;}
+    // Track the schema version
+    public int SchemaVersion = 2;
+}
 
-    public class CartItemWithSpecialOrder : CartItem {
-        public bool IsSpecialOrder { get; set; } = false;
-        public string? SpecialOrderNotes {  get; set; }
-    }
+public class CartItemWithSpecialOrder : CartItem {
+    public bool IsSpecialOrder { get; set; } = false;
+    public string? SpecialOrderNotes {  get; set; }
+}
 ```
 
 An updated cart in Azure Cosmos DB for NoSQL would look like this:
 
 ```json
 {
-    "SchemaVersion": 2,
-    "id": "9baf08d2-e119-46a1-92d7-d94ee59d7270",
-    "SessionId": "39306d1b-d8d8-424a-aa8b-800df123cb3c",
-    "CustomerId": 827,
-    "Items": [
-        {
-            "IsSpecialOrder": false,
-            "SpecialOrderNotes": null,
-            "ProductName": "Product 4",
-            "Quantity": 2
-        },
-        {
-            "IsSpecialOrder": true,
-            "SpecialOrderNotes": "Special Order Details for Product 22",
-            "ProductName": "Product 22",
-            "Quantity": 2
-        },
-        {
-            "IsSpecialOrder": true,
-            "SpecialOrderNotes": "Special Order Details for Product 15",
-            "ProductName": "Product 15",
-            "Quantity": 3
-        }
-    ]
+  "SchemaVersion": 2,
+  "id": "9baf08d2-e119-46a1-92d7-d94ee59d7270",
+  "SessionId": "39306d1b-d8d8-424a-aa8b-800df123cb3c",
+  "CustomerId": 827,
+  "Items": [
+    {
+      "IsSpecialOrder": false,
+      "SpecialOrderNotes": null,
+      "ProductName": "Product 4",
+      "Quantity": 2
+    },
+    {
+      "IsSpecialOrder": true,
+      "SpecialOrderNotes": "Special Order Details for Product 22",
+      "ProductName": "Product 22",
+      "Quantity": 2
+    },
+    {
+      "IsSpecialOrder": true,
+      "SpecialOrderNotes": "Special Order Details for Product 15",
+      "ProductName": "Product 15",
+      "Quantity": 3
+    }
+  ]
 }
 ```
 
@@ -123,7 +123,7 @@ When it comes to data modeling, a schema version field in a JSON document can be
 ---
 **Filename**: schema.md
 
-**Schema Updates**
+**Schema Updates**:
 
 | Version | Notes |
 |---------|-------|
@@ -137,18 +137,18 @@ If you use a nullable type for the version, this will allow the developers to ch
 In [the demo](./source/setup.md), `SchemaVersion` is treated as a nullable integer with the `int?` data type. The developers added a `HasSpecialOrders()` method to help determine whether to show the special order details. This is what the Cart class looks like on the website side:
 
 ```csharp
-    public class Cart
-    {
-        [JsonProperty("id")]
-        public string Id { get; set; } = Guid.NewGuid().ToString();
-        public string SessionId { get; set; } = Guid.NewGuid().ToString();
-        public long CustomerId { get; set; }
-        public List<CartItemWithSpecialOrder>? Items { get; set;}
-        public int? SchemaVersion {get; set;}
-        public bool HasSpecialOrders() { 
-            return this.Items.Where(x=>x.IsSpecialOrder == true).Count() > 0;
-        }
+public class Cart
+{
+    [JsonProperty("id")]
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string SessionId { get; set; } = Guid.NewGuid().ToString();
+    public long CustomerId { get; set; }
+    public List<CartItemWithSpecialOrder>? Items { get; set;}
+    public int? SchemaVersion {get; set;}
+    public bool HasSpecialOrders() {
+        return this.Items.Where(x=>x.IsSpecialOrder == true).Count() > 0;
     }
+}
 ```
 
 The website demo shows the output based on conditional handling.
@@ -162,7 +162,7 @@ The website demo shows the output based on conditional handling.
                 <tr>
                     @if(cart.SchemaVersion != null){
                         <th>Schema Version</th>
-                    }                        
+                    }
                     <th>Product Name</th>
                     <th>Quantity</th>
                     @if (cart.HasSpecialOrders()){
