@@ -15,11 +15,11 @@ description: This is an example that will simulate shopping cart events for an e
 
 [Event Sourcing](https://learn.microsoft.com/azure/architecture/patterns/event-sourcing) is an architectural pattern stemming from [Domain-Driven Design](https://en.wikipedia.org/wiki/Domain-driven_design) in which entities do not track their internal state by means of direct serialization or object-relational mapping, but by reading and committing events to an event store.
 
-A simple implementation would be a container that is used to track append-only events, (no updates or deletes). This gives you a full log of historical events which can feed into multiple others systems. 
+A simple implementation would be a container that is used to track append-only events, (no updates or deletes). This gives you a full log of historical events which can feed into multiple others systems.
 
-There are multiple notable benefits to this type of approach in application design. It is often paired with another architecture pattern, Command Query Responsibility System (CQRS) in a way that combines Cosmos DB's Change Feed to facilitate the read layer in this architecture, including implementing another architecture pattern also used with CQRS, [Materialized Views](../materialized_views/README.md). It can also simply enable a communications layer for sets of loosely-coupled services. 
+There are multiple notable benefits to this type of approach in application design. It is often paired with another architecture pattern, Command Query Responsibility System (CQRS) in a way that combines Cosmos DB's Change Feed to facilitate the read layer in this architecture, including implementing another architecture pattern also used with CQRS, [Materialized Views](../materialized_views/README.md). It can also simply enable a communications layer for sets of loosely-coupled services.
 
-While event sourcing can be implemented with various types of databases, this is pattern heavily used by developers building applications using Azure Cosmos DB. The ability for Change Feed to act as a centralized (and scalable) message publishing mechanism is a key reason for this. But there are other reasons as well, including:
+While event sourcing can be implemented with various types of databases, this pattern is heavily used by developers building applications using Azure Cosmos DB. The ability for Change Feed to act as a centralized (and scalable) message publishing mechanism is a key reason for this. But there are other reasons as well, including:
 
 1. Flexible schema: NoSQL databases generally allow for schema flexibility. Easy support for unstructured event data formats that are often in JSON formats align perfectly with the needs of event sourcing architectures.
 
@@ -54,18 +54,21 @@ Overall, the NoSQL event sourcing data pattern is well-suited for event-driven m
 ## Solution
 
 This pattern provides:
+
 - A full log of events, useful for auditing or point in time calculations.
 - Change feed capability to enable multiple consumers to process new events.
 - [Materialized Views pattern](../materialized_views/README.md) using change feed builds off the event store created with this pattern to support multiple views off the same source data.
 
 ## Sample implementation of event sourcing
-In this section we will walk through a case study on how to design and implement event sourcing, provding code examples and review cost considerations that will impact the design.
+
+In this section we will walk through a case study on how to design and implement event sourcing, provide code examples and review cost considerations that will impact the design.
 
 Consider a shopping cart application for an eCommerce company. All changes to the cart should be tracked as events but will be queried for multiple uses by different consuming services. Event sourcing pattern is chosen to ensure all history is retained and point in time state can be calculated. Each time a change is made to the cart there will be multiple calculations downstream. Rather than have the application update multiple containers, the single event store collection `shopping_cart_event` will be appended with the change. The partition key will be `/cartId` to support the most common queries by the shopping cart service. Other services will consume data from the change feed and use solutions like [materialized views](../materialized_views/README.md) to support different query patterns.
 
 In this example the state of all products in the cart is maintained as `productsInCart`. However, this could also be derived by each query or consumer if the application that writes the data does not know the full state.
 
 Sample events in the event store could look like this:
+
 ```json
 {
   "cartId": guid,
@@ -142,7 +145,7 @@ Next, check the version of Azure Functions Core Tools with this command:
 func --version
 ```
 
-You should have a version 4._x_ installed. If you do not have this version installed, you will need to uninstall the older version and follow [these instructions for installing Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local#install-the-azure-functions-core-tools).
+You should have a version 4.*x* installed. If you do not have this version installed, you will need to uninstall the older version and follow [these instructions for installing Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local#install-the-azure-functions-core-tools).
 
 ## Getting the code
 
@@ -152,7 +155,7 @@ You should have a version 4._x_ installed. If you do not have this version insta
 
 - Open the terminal on your computer.
 - Navigate to the directory where you want to clone the repository.
-- Type `git clone git clone https://github.com/Azure-Samples/cosmos-db-design-patterns.git` and press enter.
+- Type `git clone https://github.com/Azure-Samples/cosmos-db-design-patterns.git` and press enter.
 - The repository will be cloned to your local machine.
 
 **Using Visual Studio Code:**
@@ -167,6 +170,7 @@ You should have a version 4._x_ installed. If you do not have this version insta
 ### **GitHub Codespaces**
 
 You can try out this implementation by running the code in [GitHub Codespaces](https://docs.github.com/codespaces/overview)
+
 - Open the application code in a GitHub Codespace:
 
     [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/azure-samples/cosmos-db-design-patterns?quickstart=1&devcontainer_path=.devcontainer%2Fevent-sourcing%2Fdevcontainer.json)
@@ -184,7 +188,7 @@ You can try out this implementation by running the code in [GitHub Codespaces](h
     | **Partition key path** | `/CartId` |
     | **Throughput** | `1000` (*Autoscale*) |
 
-**Note:** We are using shared database throughput because it can scale down to 100 RU/s when not running. This is the most cost effient if running in a paid subscription and not using Free Tier.
+**Note:** We are using shared database throughput because it can scale down to 100 RU/s when not running. This is the most cost efficient if running in a paid subscription and not using Free Tier.
 
 ## Get Azure Cosmos DB connection information
 
@@ -202,22 +206,22 @@ You will need a connection string for the Azure Cosmos DB account.
 
 1. Open the application code.
 
-1. Add a file to the `Cosmos_Patterns_EventSourcing` folder called **local.settings.json** with the following contents:
+2. Add a file to the `source` folder called **local.settings.json** with the following contents:
 
     ```json
     {
         "IsEncrypted": false,
         "Values": {
             "AzureWebJobsStorage": "UseDevelopmentStorage=true",
-            "FUNCTIONS_WORKER_RUNTIME": "dotnet",        
+            "FUNCTIONS_WORKER_RUNTIME": "dotnet",
             "CosmosDBConnection" : "YOUR_PRIMARY_CONNECTION_STRING"
         }
     }
     ```
 
-Make sure to replace `YOUR_PRIMARY_CONNECTION_STRING` with the `PRIMARY CONNECTION STRING` value noted earlier.
+    Make sure to replace `YOUR_PRIMARY_CONNECTION_STRING` with the `PRIMARY CONNECTION STRING` value noted earlier.
 
-2. Edit **host.json** Set the `userAgentSuffix` to a value you prefer to use. This is used in tracking in Activity Monitor. See [host.json settings](https://learn.microsoft.com/azure/azure-functions/functions-bindings-cosmosdb-v2?tabs=in-process%2Cextensionv4&pivots=programming-language-csharp#hostjson-settings) for more details.
+3. Edit **host.json** Set the `userAgentSuffix` to a value you prefer to use. This is used in tracking in Activity Monitor. See [host.json settings](https://learn.microsoft.com/azure/azure-functions/functions-bindings-cosmosdb-v2?tabs=in-process%2Cextensionv4&pivots=programming-language-csharp#hostjson-settings) for more details.
 
 ## Run the demo
 
@@ -230,24 +234,28 @@ func start
 To trigger the function to generate events and send to the function, you can make HTTP calls with each CartEvent sent as JSON. Review and run Program.cs to see this in action.
 
 Open a new terminal and run the included Console App (Program.cs) which generates simple shopping cart events:
+
 ```bash
 dotnet run
 ```
 
 ## Querying the event source data
+
 Once you have run [the demo](./code/setup.md) which generates data, you can run queries directly against the event source container by using **Data Explorer** in the Azure Portal.
 
 1. In Azure Portal, browse to you Azure Cosmos DB resource.
 2. Select **Data Explorer** in the left menu.
-3. Select your container, then choose **New SQL Query**. 
+3. Select your container, then choose **New SQL Query**.
 ![Screenshot of creating a SQL Query in Data Explorer within the Azure portal.](./images/data-explorer-create-new-query.png)
 
 The most common query for this append-only store is to retrieve events for a specific `CartId`, ordered by `EventTimestamp`. In this case only the latest event for a cart is needed to know the last status and what products were in the cart.
 
 The Console App (started with `dotnet run`) used in the demo will print out `CartId` values as it creates events.
-```
+
+```plaintext
 HTTP function successful for event cart_created for cart 38f4687d-35f2-4933-aadd-8776f4134589.
 ```
+
 Copy the query below and paste into the query pane in Data Explorer. **Replace the CartId value** with a GUID copied from the Console App program output.
 
 ```sql

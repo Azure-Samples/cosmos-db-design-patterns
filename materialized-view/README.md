@@ -25,7 +25,7 @@ This sample demonstrates:
 - ✅ Implementing materialized views using the change feed.
 - ✅ Look at a query meant for the Product partitioned container and how it runs in the two different containers.
 - ✅ Test an in-partition query to make note of the difference in performance.
- 
+
 ## Common scenario
 
 Materialized views offer a valuable means of enhancing query performance by precomputing and storing optimized data representations. This process involves creating derived tables that capture and preserve the results of specific queries. By doing so, materialized views address the need for faster and more efficient data retrieval.
@@ -95,7 +95,7 @@ Next, check the version of Azure Functions Core Tools with this command:
 func --version
 ```
 
-You should have a version 4._x_ installed. If you do not have this version installed, you will need to uninstall the older version and follow [these instructions for installing Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local#install-the-azure-functions-core-tools).
+You should have a version 4.*x* installed. If you do not have this version installed, you will need to uninstall the older version and follow [these instructions for installing Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local#install-the-azure-functions-core-tools).
 
 ## Getting the code
 
@@ -105,7 +105,7 @@ You should have a version 4._x_ installed. If you do not have this version insta
 
 - Open the terminal on your computer.
 - Navigate to the directory where you want to clone the repository.
-- Type `git clone git clone https://github.com/Azure-Samples/cosmos-db-design-patterns.git` and press enter.
+- Type `git clone https://github.com/Azure-Samples/cosmos-db-design-patterns.git` and press enter.
 - The repository will be cloned to your local machine.
 
 **Using Visual Studio Code:**
@@ -147,7 +147,7 @@ You can try out this implementation by running the code in [GitHub Codespaces](h
     | **Partition key path** | `/Product` |
     | **Throughput** | `1000` (*Autoscale*) |
 
-**Note:** We are using shared database throughput because it can scale down to 100 RU/s when not running. This is the most cost effient if running in a paid subscription and not using Free Tier.
+**Note:** We are using shared database throughput because it can scale down to 100 RU/s when not running. This is the most cost efficient if running in a paid subscription and not using Free Tier.
 
 ## Get Azure Cosmos DB connection information
 
@@ -178,12 +178,12 @@ dotnet run
 
     ```json
     {
-        "IsEncrypted": false,
-        "Values": {
-            "AzureWebJobsStorage": "UseDevelopmentStorage=false",
-            "FUNCTIONS_WORKER_RUNTIME": "dotnet",        
-            "CosmosDBConnection" : "YOUR_PRIMARY_CONNECTION_STRING"
-        }
+      "IsEncrypted": false,
+      "Values": {
+        "AzureWebJobsStorage": "UseDevelopmentStorage=false",
+        "FUNCTIONS_WORKER_RUNTIME": "dotnet",
+        "CosmosDBConnection" : "YOUR_PRIMARY_CONNECTION_STRING"
+      }
     }
     ```
 
@@ -207,7 +207,7 @@ dotnet run
 
 As the data generator runs, switch to the function app's command window and show the logging to demonstrate what's happening using the change feed.
 
-You can confirm the entries by looking at the Sales and SalesByProduct containers in Data Explorer in the Azure portal in the Azure Cosmos DB for NoSQL account. 
+You can confirm the entries by looking at the Sales and SalesByProduct containers in Data Explorer in the Azure portal in the Azure Cosmos DB for NoSQL account.
 
 ## Run an in-partition query
 
@@ -256,4 +256,5 @@ Look at the values under **Query Stats**. For this demo, pay close attention to 
 ![Screenshot of Data Explorer with the query run over the SalesByProduct container. The SalesByProduct container in navigation and the 'Index lookup time' in Query Stats are highlighted.](/materialized-view/images/index-lookup-type-salesbyproduct.png)
 
 ## Summary
+
 When deciding what field to use for the partition key, keep in mind the queries you use and how you filter your data. A materialized view for your query can significantly improve the performance.
