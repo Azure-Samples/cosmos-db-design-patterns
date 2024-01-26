@@ -45,7 +45,7 @@ Learn how to leverage data binning to organize and group data points into predef
 
 ### [Distributed Counter](/distributed-counter/)
 
-Implement a distributed counter to efficiently maintain and update counts across multiple documents.  Read more about this design pattern in this [blog post](https://aka.ms/cosmosdbdesignpatterns/distributed-counter).
+Implement a distributed counter to efficiently maintain and update counts across multiple documents. Read more about this design pattern in this [blog post](https://aka.ms/cosmosdbdesignpatterns/distributed-counter).
 
 
 ### [Distributed Lock](/distributed-lock/)
