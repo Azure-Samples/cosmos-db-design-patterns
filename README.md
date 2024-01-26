@@ -37,15 +37,16 @@ Explore the following design patterns to enhance your understanding of building 
 
 ### [Attribute Array](/attribute-array/)
 
-This pattern demonstrates how to use attribute arrays to efficiently store and query multiple attributes of an entity within a single document. Dive into the `attribute-array` folder for a comprehensive guide on how to get started.
+This pattern demonstrates how to use attribute arrays to efficiently store and query multiple attributes of an entity within a single document. Dive into the `attribute-array` folder for a comprehensive guide on how to get started. Read more about this design pattern in this [blog post](https://aka.ms/cosmosdbdesignpatterns/attribute-array).
 
 ### [Data Binning](/data-binning/)
 
-Learn how to leverage data binning to organize and group data points into predefined bins for easy analysis and retrieval. Discover the `data-binning` folder for step-by-step instructions on implementation.
+Learn how to leverage data binning to organize and group data points into predefined bins for easy analysis and retrieval. Discover the `data-binning` folder for step-by-step instructions on implementation. Read more about this design pattern in this [blog post](https://aka.ms/cosmosdbdesignpatterns/data-binning).
 
 ### [Distributed Counter](/distributed-counter/)
 
-Implement a distributed counter to efficiently maintain and update counts across multiple documents. Find detailed instructions in the `distributed-counter` folder to get started.
+Implement a distributed counter to efficiently maintain and update counts across multiple documents.  Read more about this design pattern in this [blog post](https://aka.ms/cosmosdbdesignpatterns/distributed-counter).
+
 
 ### [Distributed Lock](/distributed-lock/)
 
