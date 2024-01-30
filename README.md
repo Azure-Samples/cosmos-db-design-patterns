@@ -50,11 +50,11 @@ Implement a distributed counter to efficiently maintain and update counts across
 
 ### [Distributed Lock](/distributed-lock/)
 
-Explore the `distributed-lock` pattern to learn how to implement distributed locks for managing concurrent access to resources in Azure Cosmos DB.
+Explore the `distributed-lock` pattern to learn how to implement distributed locks for managing concurrent access to resources in Azure Cosmos DB.Read more about this design pattern in this [blog post](https://aka.ms/cosmosdbdesignpatterns/global-distributed-lock).
 
 ### [Document Versioning](/document-versioning/)
 
-Discover how to manage document versioning effectively within Azure Cosmos DB. The `document-versioning` folder provides guidance on handling document changes over time.
+Discover how to manage document versioning effectively within Azure Cosmos DB. The `document-versioning` folder provides guidance on handling document changes over time. Read more about this design pattern in this [blog post](https://aka.ms/cosmosdbdesignpatterns/document-versioning).
 
 ### [Event Sourcing](/event-sourcing/)
 
