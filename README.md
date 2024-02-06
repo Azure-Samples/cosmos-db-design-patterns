@@ -58,7 +58,7 @@ Discover how to manage document versioning effectively within Azure Cosmos DB. T
 
 ### [Event Sourcing](/event-sourcing/)
 
-Uncover the power of event sourcing for building applications that maintain a history of changes as a sequence of events. Explore the `event-sourcing` folder for in-depth instructions.
+Uncover the power of event sourcing for building applications that maintain a history of changes as a sequence of events. Explore the `event-sourcing` folder for in-depth instructions. Read more about this design pattern in this [blog post](https://aka.ms/cosmosdbdesignpatterns/event-sourcing).
 
 ### [Materialized View](/materialized-view/)
 
