@@ -62,11 +62,11 @@ Uncover the power of event sourcing for building applications that maintain a hi
 
 ### [Materialized View](/materialized-view/)
 
-Learn how to create and manage materialized views to efficiently retrieve precomputed data from Azure Cosmos DB. Refer to the `materialized-view` folder for implementation details.
+Learn how to create and manage materialized views to efficiently retrieve precomputed data from Azure Cosmos DB. Refer to the `materialized-view` folder for implementation details. Read more about this design pattern in this [blog post](https://aka.ms/cosmosdbdesignpatterns/materialized-view).  
 
 ### [Preallocation](/preallocation/)
 
-Explore the `preallocation` pattern to understand how to preallocate resources, such as document IDs, to optimize performance and resource utilization.
+Explore the `preallocation` pattern to understand how to preallocate resources, such as document IDs, to optimize performance and resource utilization. Read more about this design pattern in this [blog post](https://aka.ms/cosmosdbdesignpatterns/preallocation).  
 
 ### [Schema Versioning](/schema-versioning/)
 
