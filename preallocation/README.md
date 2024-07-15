@@ -202,7 +202,7 @@ By not choosing the pre-allocation pattern, the alternative way to find availabl
 
 To run this demo, you will need to have:
 
-- [.NET 6.0 Runtime](https://dotnet.microsoft.com/download/dotnet/6.0)
+- [.NET 8.0 Runtime](https://dotnet.microsoft.com/download)
 
 ## Confirm required tools are installed
 
