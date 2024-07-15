@@ -1,11 +1,5 @@
 ﻿using CosmosDistributedLock.Services;
-using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Configuration;
-using System.Configuration;
-using System.Net;
-using System.Collections;
-using System.Drawing;
-using System.Diagnostics.Metrics;
 
 
 namespace Cosmos_Patterns_GlobalLock

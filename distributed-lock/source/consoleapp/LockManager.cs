@@ -2,8 +2,6 @@
 using Microsoft.Azure.Cosmos;
 using Newtonsoft.Json;
 using System.Net;
-using Container = Microsoft.Azure.Cosmos.Container;
-using PartitionKey = Microsoft.Azure.Cosmos.PartitionKey;
 
 namespace Cosmos_Patterns_GlobalLock
 {
