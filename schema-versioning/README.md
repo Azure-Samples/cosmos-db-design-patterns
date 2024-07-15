@@ -198,7 +198,7 @@ When you need to keep track of schema changes, use this schema versioning patter
 
 In order to run the demos, you will need:
 
-- [.NET 6.0 Runtime](https://dotnet.microsoft.com/download/dotnet/6.0)
+- [.NET 8.0 Runtime](https://dotnet.microsoft.com/download)
 - [Azure Functions Core Tools v4](https://learn.microsoft.com/azure/azure-functions/functions-run-local#install-the-azure-functions-core-tools)
 
 ## Confirm required tools are installed

@@ -46,7 +46,7 @@ The TTL feature is used to automatically get rid of a lease object rather than h
 
 In order to run the demos, you will need:
 
-- [.NET 6.0 Runtime](https://dotnet.microsoft.com/download/dotnet/6.0)
+- [.NET 8.0 Runtime](https://dotnet.microsoft.com/download)
 
 ## Confirm required tools are installed
 
