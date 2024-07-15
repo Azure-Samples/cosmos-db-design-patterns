@@ -3,9 +3,9 @@ using AttributeArray.Services;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Configuration;
 using Spectre.Console;
+using Console = Spectre.Console.AnsiConsole;
 using Container = Microsoft.Azure.Cosmos.Container;
 using Database = Microsoft.Azure.Cosmos.Database;
-using Console = Spectre.Console.AnsiConsole;
 
 IConfigurationBuilder configuration = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
