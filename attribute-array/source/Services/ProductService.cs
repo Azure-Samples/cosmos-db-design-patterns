@@ -1,11 +1,11 @@
-using Bogus;
 using AttributeArray.Models;
+using Bogus;
 using Microsoft.Azure.Cosmos;
 using Spectre.Console;
 using Spectre.Console.Json;
 using System.Text.Json;
-using Container = Microsoft.Azure.Cosmos.Container;
 using Console = Spectre.Console.AnsiConsole;
+using Container = Microsoft.Azure.Cosmos.Container;
 
 namespace AttributeArray.Services;
 
