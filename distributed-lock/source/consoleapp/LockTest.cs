@@ -1,8 +1,4 @@
 ﻿using CosmosDistributedLock.Services;
-using Microsoft.Azure.Cosmos;
-using System.Collections;
-using System.Diagnostics.Metrics;
-using System.Threading;
 
 namespace Cosmos_Patterns_GlobalLock
 {
@@ -79,7 +75,7 @@ namespace Cosmos_Patterns_GlobalLock
                             //lock released because of TTL before task completed
                             postMessage(new ConsoleMessage($"{mutex.Name}: Lock [{lockName}] was lost because of TTL of {this.lockDuration} seconds ==> ERROR", this.color));
                         }
-                        // uncomment if  you want to explicitly want to release the lock.The  locka will get released when code exists using block 
+                        // uncomment if  you want to explicitly want to release the lock. The lock will get released when code exists using block 
                         /*
                         else
                         {

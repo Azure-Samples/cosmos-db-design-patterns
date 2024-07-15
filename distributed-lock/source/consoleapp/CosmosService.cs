@@ -1,16 +1,15 @@
-﻿using Microsoft.Azure.Cosmos;
-using System.Net;
+﻿using Cosmos_Patterns_GlobalLock;
+using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Configuration;
-using Cosmos_Patterns_GlobalLock;
-using System.ComponentModel;
-using Microsoft.Azure.Cosmos.Linq;
+using System.Net;
+using Container = Microsoft.Azure.Cosmos.Container;
 
 namespace CosmosDistributedLock.Services
 {
 
     public class CosmosService
     {
-        private Microsoft.Azure.Cosmos.Container _container;
+        private Container? _container;
         private readonly IConfiguration _configuration;
 
         public CosmosService(IConfiguration configuration)
@@ -20,11 +19,11 @@ namespace CosmosDistributedLock.Services
 
         public async Task InitDatabaseAsync()
         {
-            string uri = _configuration["CosmosUri"];
-            string key = _configuration["CosmosKey"];
+            string uri = _configuration["CosmosUri"]!;
+            string key = _configuration["CosmosKey"]!;
 
-            string databaseName = _configuration["CosmosDatabase"];
-            string containerName = _configuration["CosmosContainer"];
+            string databaseName = _configuration["CosmosDatabase"]!;
+            string containerName = _configuration["CosmosContainer"]!;
 
             CosmosClient client = new(
                 accountEndpoint: uri,
@@ -36,7 +35,7 @@ namespace CosmosDistributedLock.Services
             {
                 Id = containerName,
                 PartitionKeyPath = "/id",
-                DefaultTimeToLive = 60
+                DefaultTimeToLive = 60  //seconds
             };
             ThroughputProperties throughputProperties = ThroughputProperties.CreateManualThroughput(400);
             
@@ -85,7 +84,10 @@ namespace CosmosDistributedLock.Services
 
             try
             {
-                returnLock = await _container.ReadItemAsync<DistributedLock>(id: lockName, partitionKey: new PartitionKey(lockName));
+                returnLock = await _container.ReadItemAsync<DistributedLock>(
+                    id: lockName, 
+                    partitionKey: new PartitionKey(lockName)
+                );
             }
             catch (CosmosException ex)
             {
@@ -105,7 +107,7 @@ namespace CosmosDistributedLock.Services
         public async Task<long> CreateNewLockAsync(string lockName, string ownerId)
         {
 
-            //New Lock start with 1 for fence token to monotonically increment forever. (Should this start with zero?)
+            //New Lock start with 1 for fence token to monotonically increment forever.
             long fenceToken = 1;
 
             DistributedLock newLock = new DistributedLock { LockName = lockName, OwnerId = ownerId, FenceToken = fenceToken };
@@ -131,19 +133,18 @@ namespace CosmosDistributedLock.Services
             try
             {
                 // Take the lock
-                //updatedLock = await _container.ReplaceItemAsync<DistributedLock>(
-                //    item: distributedLock,
-                //    id: distributedLock.LockName,
-                //    partitionKey: new PartitionKey(distributedLock.LockName),
-                //    requestOptions: new ItemRequestOptions { IfMatchEtag = distributedLock.ETag }
-                //);
                 List<PatchOperation> operations = new()
                 {
                     PatchOperation.Set($"/OwnerId", distributedLock.OwnerId),
                     PatchOperation.Increment($"/FenceToken",1)
                 };
 
-                updatedLock = await _container.PatchItemAsync<DistributedLock>(distributedLock.LockName, new PartitionKey(distributedLock.LockName), patchOperations: operations, requestOptions: new PatchItemRequestOptions { IfMatchEtag = distributedLock.ETag});
+                updatedLock = await _container.PatchItemAsync<DistributedLock>(
+                    id: distributedLock.LockName, 
+                    partitionKey: new PartitionKey(distributedLock.LockName), 
+                    patchOperations: operations, 
+                    requestOptions: new PatchItemRequestOptions { IfMatchEtag = distributedLock.ETag}
+                );
 
                 return updatedLock;
             }
@@ -160,8 +161,6 @@ namespace CosmosDistributedLock.Services
                     throw new Exception("Error updating Lock");
                 }
             }
-
-            return null;
 
         }
 

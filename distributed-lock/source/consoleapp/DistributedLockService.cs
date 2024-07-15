@@ -1,5 +1,4 @@
 ﻿using Cosmos_Patterns_GlobalLock;
-using Microsoft.Azure.Cosmos.Serialization.HybridRow.Layouts;
 using Microsoft.Extensions.Configuration;
 
 namespace CosmosDistributedLock.Services
