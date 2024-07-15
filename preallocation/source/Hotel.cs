@@ -136,7 +136,7 @@ namespace Cosmos_Patterns_Preallocation
 
             Console.WriteLine("");
             Console.WriteLine("Press any key to continue.");
-            Console.ReadLine();2
+            Console.ReadLine();
 
         }
 
