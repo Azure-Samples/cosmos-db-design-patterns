@@ -1,8 +1,8 @@
 {
   "profiles": {
-    "Cosmos_Patterns_EventSourcing": {
+    "EventSourcing": {
       "commandName": "Project",
-      "commandLineArgs": "--port 7010",
+      "commandLineArgs": "--port 7086",
       "launchBrowser": false
     }
   }

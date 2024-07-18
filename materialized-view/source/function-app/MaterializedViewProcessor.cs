@@ -8,21 +8,29 @@ namespace MaterializedViews
     public static class MaterializedViewProcessor
     {
         [FunctionName("MaterializedViewProcessor")]
-        public static async Task Run([CosmosDBTrigger(
-            databaseName: "Sales",
-            containerName: "Sales",
-            Connection = "CosmosDBConnection",
-            LeaseContainerName = "leases", CreateLeaseContainerIfNotExists=true)]IReadOnlyList<Sales> input,
-            [CosmosDB(databaseName: "Sales",
-                        containerName: "SalesByProduct", 
-                        Connection="CosmosDBConnection", CreateIfNotExists=true, PartitionKey="/Product")] IAsyncCollector<SalesByProduct> salesByProduct,
+        public static async Task Run(
+            [CosmosDBTrigger(
+                databaseName: "MaterializedViewsDB",
+                containerName: "Sales",
+                Connection = "CosmosDBConnection",
+                LeaseContainerName = "leases", 
+                CreateLeaseContainerIfNotExists=true)]IReadOnlyList<Sales> input,
+            [CosmosDB(
+                databaseName: "MaterializedViewsDB",
+                containerName: "SalesByProduct", 
+                Connection="CosmosDBConnection", 
+                CreateIfNotExists=true, 
+                PartitionKey="/Product")] IAsyncCollector<SalesByProduct> salesByProduct,
             ILogger log)
         {           
             if (input != null && input.Count > 0)
             {
                 log.LogInformation("Document count: " + input.Count);
+                
                 foreach (Sales document in input){
+                    
                     await salesByProduct.AddAsync(new SalesByProduct(document));                                                
+
                 }
             }
         }

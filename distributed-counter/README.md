@@ -38,17 +38,13 @@ This sample is implemented as a C#/.NET application with three projects. The thr
 - **Counter** class library:
 
   - This class library implements the distributed counter pattern using two services.
-
   - The `DistributedCounterManagementService` creates the counter and manages on-demand splitting or merging.
-
   - The `DistributedCounterOperationalService` updates the counters in a high traffic workload. This service picks a random distributed counter from the pool of available counters and updates the counter using a partial document update (or HTTP PATCH request). This service's implementation ensures that there are no conflicts to updating the counter and each counter update is an atomic transaction.
 
 - **Visualizer** web application:
 
   - This Blazor web application renders a visual interface for the distributed counters.
-
   - The web application uses graphical charts to illustrate how the counters are performing in real-time.
-  
   - The web application polls the `DistributedCounterManagementService` for the data rendered in the chart.
 
   ![Screenshot of the Blazor web application with a chart visualizing the various distributed counters.](media/distributed-counter-chart-visualization.png)
@@ -56,9 +52,7 @@ This sample is implemented as a C#/.NET application with three projects. The thr
 - **Consumers** console application:
 
   - This console application mimics a high traffic workload.
-
   - The console application creates multiple concurrent threads. Each thread runs in a loop to update the distributed counters quickly.
-
   - The console application uses the `DistributedCounterOperationalService` to update the counters.
 
   ```output
@@ -87,7 +81,7 @@ First, check the .NET runtime with this command:
 dotnet --list-runtimes
 ```
 
-As you may have multiple versions of the runtime installed, make sure that .NET components with versions that start with 6.0 appear as part of the output.
+As you may have multiple versions of the runtime installed, make sure that .NET components with versions that start with 8.0 appear as part of the output.
 
 Next, check the version of Azure Functions Core Tools with this command:
 
@@ -125,41 +119,77 @@ You can try out this implementation by running the code in [GitHub Codespaces](h
 
     [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/azure-samples/cosmos-db-design-patterns?quickstart=1&devcontainer_path=.devcontainer%2Fdistributed-counter%2Fdevcontainer.json)
 
-## Create an Azure Cosmos DB for NoSQL account
+## Set up application configuration files
 
-1. Create a free Azure Cosmos DB for NoSQL account: (<https://cosmos.azure.com/try>)
+You need to configure **two** application configuration files to run this app.
 
-1. In the Data Explorer, create a new database and container with the following values with shared autoscale throughput:
+1. Go to your resource group.
 
-    | | Value |
-    | --- | --- |
-    | **Database name** | `CounterDB` |
-    | **Container name** | `Counters` |
-    | **Partition key path** | `/pk` |
-    | **Throughput** | `1000` (_AutoScale_) |
+1. Select the Serverless Azure Cosmos DB for NoSQL account that you created for this repository.
 
-**Note:** We are using shared database throughput because it can scale down to 100 RU/s when not running. This is the most cost efficient if running in a paid subscription and not using Free Tier.
+1. From the navigation, under **Settings**, select **Keys**. The values you need for the application settings for the demo are here.
 
-## Get Azure Cosmos DB connection information
+While on the Keys blade, make note of the `URI` and `PRIMARY KEY`. You will need these for the sections below.
 
-You will need a connection string for the Azure Cosmos DB account.
-
-1. Go to resource group
-
-1. Select the new Azure Cosmos DB for NoSQL account.
-
-1. Open the Keys blade, click the Eye icon to view the `PRIMARY KEY`. Keep this and the `URI` handy. You will need these for the next step.
-
-## Prepare the app configuration
-
-1. Open the code, create an **appsettings.Development.json** file in both the **/Visualizer** and **/ConsumerApp** folders. In each of the files, create a JSON object with **CosmosUri** and **CosmosKey** properties. Copy and paste the values for `URI` and `PRIMARY KEY` from the previous step:
+1. Open the Visualizer project and add a new **appsettings.development.json** file with the following contents:
 
     ```json
     {
-      "CosmosUri": "<endpoint>",
-      "CosmosKey": "<primary-key>"
+      "Logging": {
+        "LogLevel": {
+          "Default": "Information",
+          "Microsoft": "Warning",
+          "Microsoft.Hosting.Lifetime": "Information"
+        }
+      },
+      "AllowedHosts": "*",
+      "CosmosUri": "",
+      "CosmosKey": "",
+      "CosmosDatabase": "CounterDB",
+      "CosmosContainer": "Counters",
+      "DetailedErrors": true
     }
     ```
+
+1. Replace the `CosmosURI` and `CosmosKey` with the values from the Keys blade in the Azure Portal.
+1. Modify the **Copy to Output Directory** to **Copy Always** (For VS Code add the XML below to the csproj file)
+1. Save the file.
+
+Next move to the other project.
+
+1. Open the ConsumerApp project and add a new **appsettings.development.json** file with the following contents:
+
+    ```json
+    {
+      "Logging": {
+        "LogLevel": {
+          "Default": "Information",
+          "Microsoft": "Warning",
+          "Microsoft.Hosting.Lifetime": "Information"
+        }
+      },
+      "AllowedHosts": "*",
+      "CosmosUri": "",
+      "CosmosKey": "",
+      "CosmosDatabase": "CounterDB",
+      "CosmosContainer": "Counters",
+      "DetailedErrors": true
+    }
+    ```
+
+1. Replace the `CosmosURI` and `CosmosKey` with the values from the Keys blade in the Azure Portal.
+1. Modify the **Copy to Output Directory** to **Copy Always** (For VS Code add the XML below to the csproj file)
+1. Save the file.
+
+  ```xml
+    <ItemGroup>
+      <Content Update="appsettings.development.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+  ```
+
+## Run the demo locally
 
 1. Open a terminal and run the web application. The web application opens in a new browser window.
 

@@ -1,59 +1,65 @@
-﻿using Microsoft.Azure.Cosmos;
-using System.ComponentModel.DataAnnotations;
+﻿using data_generator.Options;
+using Microsoft.Azure.Cosmos;
+using Microsoft.Extensions.Configuration;
 
-namespace Versioning 
+namespace Versioning
 {
     internal class Program
     {
-       
-        static Database? db;
 
-        static Container? container;
+        static CosmosClient? _client;
+        static Container? _container;
+        static Cosmos? _config;
 
-        static string partitionKeyPath = "/id";
-
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
-            
+
+            IConfigurationBuilder configuration = new ConfigurationBuilder()
+            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+            .AddJsonFile("appsettings.development.json", optional: true);
+
+            _config = configuration
+                .Build()
+                .Get<Cosmos>();
+
+
+            _client = new CosmosClient(_config?.CosmosUri, _config?.CosmosKey);
+
+            await InitializeDatabase();
+
+            string userInput = string.Empty;
             Console.WriteLine("This code will generate sample carts and create them in an Azure Cosmos DB for NoSQL account.");
-            Console.WriteLine("The primary key for this container will be /id.\n\n");
-
-            Console.WriteLine("Enter the database name [default:CartsDemo]:");
-            string? userInput = Console.ReadLine();
             
-            string databaseName = string.IsNullOrWhiteSpace(userInput) ? "CartsDemo" : userInput;
-
-            CosmosClient client = new(
-                accountEndpoint: Environment.GetEnvironmentVariable("COSMOS_ENDPOINT")!,
-                authKeyOrResourceToken: Environment.GetEnvironmentVariable("COSMOS_KEY")!);
-
-            db = client.CreateDatabaseIfNotExistsAsync(databaseName).Result;
-
-            Console.WriteLine("Enter the container name [default:Carts]:");
-            userInput = Console.ReadLine();
-
-            string containerName = string.IsNullOrWhiteSpace(userInput) ? "Carts" : userInput;
-           
             Console.WriteLine("How many carts should be created?");
-            userInput = Console.ReadLine();
+            userInput = Console.ReadLine()!;
 
             int.TryParse(userInput, out int numOfCarts);
-            container = db.CreateContainerIfNotExistsAsync(id: containerName, partitionKeyPath: partitionKeyPath, throughput: 400).Result;
+
             for (int i = 0; i < numOfCarts; i++)
             {
               var cart = CartHelper.GenerateCart();
-              container.UpsertItemAsync(cart).Wait();
+              _container!.UpsertItemAsync(cart).Wait();
             }
 
             for (int i = 0; i < numOfCarts; i++)
             {
             var cart = CartHelper.GenerateVersionedCart();
-                    container.UpsertItemAsync(cart).Wait();
+                    _container!.UpsertItemAsync(cart).Wait();
             }
-            Console.WriteLine($"Check {containerName} for new carts");
+            Console.WriteLine($"Check {_config!.ContainerName} container for new carts");
             
             Console.WriteLine("Press Enter to exit.");
             Console.ReadKey();
+        }
+
+        async static Task InitializeDatabase()
+        {
+            Database database = await _client!.CreateDatabaseIfNotExistsAsync(id: _config?.DatabaseName!);
+
+            _container = await database.CreateContainerIfNotExistsAsync(
+                id: _config?.ContainerName!,
+                partitionKeyPath: _config?.PartitionKeyPath);
+
         }
     }
 }

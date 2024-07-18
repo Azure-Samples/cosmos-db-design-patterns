@@ -63,7 +63,7 @@ This pattern provides:
 
 In this section we will walk through a case study on how to design and implement event sourcing, provide code examples and review cost considerations that will impact the design.
 
-Consider a shopping cart application for an eCommerce company. All changes to the cart should be tracked as events but will be queried for multiple uses by different consuming services. Event sourcing pattern is chosen to ensure all history is retained and point in time state can be calculated. Each time a change is made to the cart there will be multiple calculations downstream. Rather than have the application update multiple containers, the single event store collection `shopping_cart_event` will be appended with the change. The partition key will be `/cartId` to support the most common queries by the shopping cart service. Other services will consume data from the change feed and use solutions like [materialized views](../materialized_views/README.md) to support different query patterns.
+Consider a shopping cart application for an eCommerce company. All changes to the cart should be tracked as events but will be queried for multiple uses by different consuming services. Event sourcing pattern is chosen to ensure all history is retained and point in time state can be calculated. Each time a change is made to the cart there will be multiple calculations downstream. Rather than have the application update multiple containers, the single event store collection `shopping_cart_event` will be appended with the change. The partition key will be `/CartId` to support the most common queries by the shopping cart service. Other services will consume data from the change feed and use solutions like [materialized views](../materialized_views/README.md) to support different query patterns.
 
 In this example the state of all products in the cart is maintained as `productsInCart`. However, this could also be derived by each query or consumer if the application that writes the data does not know the full state.
 
@@ -137,7 +137,7 @@ First, check the .NET runtime with this command:
 dotnet --list-runtimes
 ```
 
-As you may have multiple versions of the runtime installed, make sure that .NET components with versions that start with 6.0 appear as part of the output.
+As you may have multiple versions of the runtime installed, make sure that .NET components with versions that start with 8.0 appear as part of the output.
 
 Next, check the version of Azure Functions Core Tools with this command:
 
@@ -175,24 +175,9 @@ You can try out this implementation by running the code in [GitHub Codespaces](h
 
     [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/azure-samples/cosmos-db-design-patterns?quickstart=1&devcontainer_path=.devcontainer%2Fevent-sourcing%2Fdevcontainer.json)
 
-## Create an Azure Cosmos DB for NoSQL account
-
-1. If you don't already have an Azure Subscription, create a free Azure Cosmos DB for NoSQL account: (<https://cosmos.azure.com/try>)
-
-1. In the Data Explorer, create a new database and container with the following values:
-
-    | | Value |
-    | --- | --- |
-    | **Database name** | `Sales` |
-    | **Container name** | `CartEvents` |
-    | **Partition key path** | `/CartId` |
-    | **Throughput** | `1000` (*Autoscale*) |
-
-**Note:** We are using shared database throughput because it can scale down to 100 RU/s when not running. This is the most cost efficient if running in a paid subscription and not using Free Tier.
-
 ## Get Azure Cosmos DB connection information
 
-You will need a connection string for the Azure Cosmos DB account.
+You will need the connection string for the Azure Cosmos DB account for this repository.
 
 1. Go to resource group
 
@@ -206,7 +191,7 @@ You will need a connection string for the Azure Cosmos DB account.
 
 1. Open the application code.
 
-2. Add a file to the `source` folder called **local.settings.json** with the following contents:
+1. Add a file to the `source` folder called **local.settings.json** with the following contents:
 
     ```json
     {
@@ -219,9 +204,18 @@ You will need a connection string for the Azure Cosmos DB account.
     }
     ```
 
-    Make sure to replace `YOUR_PRIMARY_CONNECTION_STRING` with the `PRIMARY CONNECTION STRING` value noted earlier.
+1. Replace `YOUR_PRIMARY_CONNECTION_STRING` with the `PRIMARY CONNECTION STRING` value noted earlier.
+1. Modify the **Copy to Output Directory** to **Copy Always** (For VS Code add the XML below to the csproj file)
+1. Save the file.
 
-3. Edit **host.json** Set the `userAgentSuffix` to a value you prefer to use. This is used in tracking in Activity Monitor. See [host.json settings](https://learn.microsoft.com/azure/azure-functions/functions-bindings-cosmosdb-v2?tabs=in-process%2Cextensionv4&pivots=programming-language-csharp#hostjson-settings) for more details.
+  ```xml
+    <ItemGroup>
+      <None Update="local.settings.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+      </None>
+    </ItemGroup>
+  ```
 
 ## Run the demo
 

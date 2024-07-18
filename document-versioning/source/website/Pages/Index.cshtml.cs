@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Versioning;
+using Models;
+using Services;
 
 namespace website.Pages;
 
@@ -11,12 +12,14 @@ public class IndexModel : PageModel
     public List<VersionedOrder> FulfilledOrders = new List<VersionedOrder>();
     public List<VersionedOrder> DeliveredOrders = new List<VersionedOrder>();
     public List<VersionedOrder> CancelledOrders = new List<VersionedOrder>();
-    private OrderHelper helper = new OrderHelper();
+    //private OrderHelper helper = new OrderHelper();
 
+    private readonly OrderHelper _helper;
     private readonly ILogger<IndexModel> _logger;
 
-    public IndexModel(ILogger<IndexModel> logger)
+    public IndexModel(OrderHelper helper, ILogger<IndexModel> logger)
     {
+        _helper = helper;
         _logger = logger;
     }
 
@@ -29,8 +32,8 @@ public class IndexModel : PageModel
         int numberToCreate = Convert.ToInt32(Request.Form["DocCount"]);
         for (int counter = 0; counter < numberToCreate; counter++)
         {
-            Order newOrder = helper.GenerateOrder();
-            await helper.SaveOrder(newOrder);
+            Order newOrder = _helper.GenerateOrder();
+            await _helper.SaveOrder(newOrder);
         }
         await GetOrders();
         return Page();
@@ -38,7 +41,7 @@ public class IndexModel : PageModel
 
     private async Task GetOrders()
     {
-        List<VersionedOrder> orders = (await helper.RetrieveAllOrdersAsync()).ToList();
+        List<VersionedOrder> orders = (await _helper.RetrieveAllOrdersAsync()).ToList();
         SubmittedOrders = orders.Where(order => order.Status == "Submitted").ToList();
         FulfilledOrders = orders.Where(order => order.Status == "Fulfilled").ToList();
         DeliveredOrders = orders.Where(order => order.Status == "Delivered").ToList();

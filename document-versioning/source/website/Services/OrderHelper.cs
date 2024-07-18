@@ -1,21 +1,20 @@
 using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Cosmos.Linq;
+using Microsoft.Extensions.Options;
+using Options;
+using Models;
 
-namespace Versioning
+namespace Services
 {
     public class OrderHelper
     {
-        private CosmosClient client;
-        private Database? database;
-        private Container? container;
-        private string databaseName = "Orders";
-        private string containerName = "CurrentOrderStatus";
-        private string partitionKey = "/CustomerId";
+        private readonly CosmosDb _cosmosDb;
+                
 
-        public OrderHelper(){
-            client = new CosmosClient(
-                accountEndpoint: Environment.GetEnvironmentVariable("COSMOS_ENDPOINT")!,
-                authKeyOrResourceToken: Environment.GetEnvironmentVariable("COSMOS_KEY")!);           
+        public OrderHelper(CosmosDb cosmosDb)
+        {
+           
+            _cosmosDb = cosmosDb;
         }
 
         public Order GenerateOrder() {
@@ -70,15 +69,12 @@ namespace Versioning
             return orderItem;
         }
 
-        public async Task<IEnumerable<VersionedOrder>> RetrieveAllOrdersAsync(){
-            database = await client.CreateDatabaseIfNotExistsAsync(id: databaseName);
-            container = await database.CreateContainerIfNotExistsAsync(
-                id: containerName,
-                partitionKeyPath: partitionKey,
-                throughput: 400
-            );   
+        public async Task<IEnumerable<VersionedOrder>> RetrieveAllOrdersAsync()
+        {
+    
             List<VersionedOrder> orders = new();
-            using FeedIterator<VersionedOrder> feed = container.GetItemQueryIterator<VersionedOrder>(
+            
+            using FeedIterator<VersionedOrder> feed = _cosmosDb.OrderContainer!.GetItemQueryIterator<VersionedOrder>(
                 queryText: "SELECT * FROM Orders"
             );
             while (feed.HasMoreResults)
@@ -94,19 +90,19 @@ namespace Versioning
             return orders;
         }
 
-        public async Task<VersionedOrder> RetrieveOrderAsync(string orderId, int customerId){
-            database = await client.CreateDatabaseIfNotExistsAsync(id: databaseName);
-            container = await database.CreateContainerIfNotExistsAsync(
-                id: containerName,
-                partitionKeyPath: partitionKey,
-                throughput: 400
-            );
-            IOrderedQueryable<VersionedOrder> ordersQueryable = container.GetItemLinqQueryable<VersionedOrder>();
+        public async Task<VersionedOrder> RetrieveOrderAsync(string orderId, int customerId)
+        {
+            
+            IOrderedQueryable<VersionedOrder> ordersQueryable = _cosmosDb.OrderContainer!.GetItemLinqQueryable<VersionedOrder>();
+            
             var matches = ordersQueryable
                 .Where(order => order.CustomerId == customerId)
                 .Where(order => order.OrderId == orderId);
+            
             using FeedIterator<VersionedOrder> orderFeed = matches.ToFeedIterator();
+            
             VersionedOrder selectedOrder = new VersionedOrder();
+
             while (orderFeed.HasMoreResults)
             {
                 FeedResponse<VersionedOrder> response = await orderFeed.ReadNextAsync();
@@ -116,30 +112,19 @@ namespace Versioning
                 }
             }
             
-            //return orderResponse.Resource;
             return selectedOrder;
         }
 
         public async Task<Order> SaveOrder(Order orderToUpdate)
         {
-            database = await client.CreateDatabaseIfNotExistsAsync(id: databaseName);
-            container = await database.CreateContainerIfNotExistsAsync(
-                id: containerName,
-                partitionKeyPath: partitionKey,
-                throughput: 400
-            );
-            return await container.UpsertItemAsync(orderToUpdate);
+
+            return await _cosmosDb.OrderContainer!.UpsertItemAsync(orderToUpdate);
         }
 
         public async Task<VersionedOrder> SaveVersionedOrder(VersionedOrder orderToUpdate)
         {
-            database = await client.CreateDatabaseIfNotExistsAsync(id: databaseName);
-            container = await database.CreateContainerIfNotExistsAsync(
-                id: containerName,
-                partitionKeyPath: partitionKey,
-                throughput: 400
-            );
-            return await container.UpsertItemAsync(orderToUpdate);
+            
+            return await _cosmosDb.OrderContainer!.UpsertItemAsync(orderToUpdate);
         }
     }
 }

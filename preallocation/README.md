@@ -12,7 +12,7 @@ description: This is an example that shows how preallocation is used to optimize
 
 # Preallocation Pattern
 
-The pre-allocation pattern involves creating an initial empty structure that will be populated later. This approach simplifies the design of queries and logic compared to alternative methods. However, it should be noted that pre-allocating data can result in larger storage and RU usage.
+The pre-allocation pattern involves creating an initial empty structure that will be populated later. This approach simplifies the design of queries and logic compared to alternative methods. It should be noted that pre-allocating data can result in larger storage and RU usage but queries execute faster and the overall operations involved also tend to be faster as the query itself returns the necessary data versus having to manually merge data from multiple queries.
 
 This sample demonstrates:
 
@@ -39,7 +39,7 @@ The main components of the models used in the sample include:
 
 ### Non-preallocation
 
-In the non-preallocation pattern, you will see that a hotel is created with 10 rooms.  These rooms have no reservations and the process of checking for reservations would be to query for any existing reservations and then subtracting out all the dates.
+In the non-preallocation pattern, you will see that a hotel is created with 10 rooms.  These rooms have no reservations and the process of checking for reservations would be to query for all the rooms in the hotel, then querying for any existing reservations, then merging both datasets and subtracting out any rooms that have reservations for the dates being searched for.
 
 - An example hotel:
 
@@ -80,7 +80,7 @@ In the non-preallocation pattern, you will see that a hotel is created with 10 r
 }
 ```
 
-- An example reservation, where the room is a part of the reservation item:
+- An example reservation item, where the room is a part of the reservation item:
 
 ```json
 {
@@ -122,7 +122,7 @@ In the non-preallocation pattern, you will see that a hotel is created with 10 r
 
 ### Preallocation
 
-In the following example you will see the reservation dates for a room being pre-allocated in a collection with a simple `IsReserved` property for each date.  This will then make the process of finding available dates a bit easier when it comes to sending queries to the database.
+In the following example you will see the reservation dates for a room being pre-allocated in a collection with a simple `IsReserved` property for each date.  This will then make the process of finding available dates easier and faster.
 
 ```csharp
 DateTime start = DateTime.Parse(DateTime.Now.ToString("01/01/yyyy"));
@@ -214,7 +214,7 @@ First, check the .NET runtime with this command:
 dotnet --list-runtimes
 ```
 
-As you may have multiple versions of the runtime installed, make sure that .NET components with versions that start with 6.0 appear as part of the output.
+As you may have multiple versions of the runtime installed, make sure that .NET components with versions that start with 8.0 appear as part of the output.
 
 ## Getting the code
 
@@ -244,43 +244,46 @@ You can try out this implementation by running the code in [GitHub Codespaces](h
 
     [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/azure-samples/cosmos-db-design-patterns?quickstart=1&devcontainer_path=.devcontainer%2Fpreallocation%2Fdevcontainer.json)
 
-## Create an Azure Cosmos DB for NoSQL account
+## Set up application configuration files
 
-1. Create a free Azure Cosmos DB for NoSQL account: (<https://cosmos.azure.com/try>)
+You need to configure the application configuration file to run these demos.
 
-1. In the Data Explorer, create a new databased named **CosmosPatterns** with shared autoscale throughput and a container **WithPreallocation**:
+1. Go to resource group.
 
-    | | Value |
-    | --- | --- |
-    | **Database name** | `CosmosPatterns` |
-    | **Container name** | `WithPreallocation` |
-    | **Partition key path** | `/id` |
-    | **Throughput** | `1000` (*Autoscale*) |
+1. Select the Serverless Azure Cosmos DB for NoSQL account that you created for this repository.
 
-1. Create a second container in the same `CosmosPatterns` database named `WithoutPreallocation`:
+1. From the navigation, under **Settings**, select **Keys**. The values you need for the application settings for the demo are here.
 
-    | | Value |
-    | --- | --- |
-    | **Database name** | `CosmosPatterns` |
-    | **Container name** | `WithoutPreallocation` |
-    | **Partition key path** | `/id` |
+While on the Keys blade, make note of the `URI` and `PRIMARy KEY`. You will need these for the sections below.
 
-**Note:** We are using shared database throughput because it can scale down to 100 RU/s when not running. This is the most cost efficient if running in a paid subscription and not using Free Tier.
+1. Open the project and add a new **appsettings.development.json** file with the following contents:
 
-## Updating Azure Cosmos DB URI and Key in Code
+  ```json
+  {
+    "CosmosUri": "",
+    "CosmosKey": "",
+    "DatabaseName": "PreallocationDB",
+    "WithPreallocation": "WithPreallocation",
+    "WithoutPreallocation": "WithoutPreallocation"
+  }
+    ```
 
-1. Once the account deployment is complete, select the new Azure Cosmos DB for NoSQL account.
+1. Replace the `CosmosURI` and `CosmosKey` with the values from the Keys blade in the Azure Portal.
+1. Modify the **Copy to Output Directory** to **Copy Always** (For VS Code add the XML below to the csproj file)
+1. Save the file.
 
-1. Open the Keys blade, click the Eye icon to view the `PRIMARY KEY`. Keep this and the `URI` handy. You will need these for the next step.
-Update the following in the **appsettings.json**  before you run the code:
-
-- `CosmosUri`: Set to the `URI` value on the Azure Cosmos DB account Keys blade.
-- `CosmosKey`: Set to the Read-Write `PRIMARY KEY` for the Azure Cosmos DB for NoSQL account
+  ```xml
+    <ItemGroup>
+      <Content Update="appsettings.development.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+  ```
 
 ## Run the demo
 
 1. Open the application code.
-2. From Visual Studio Code, start the app by running the following:
+1. From Visual Studio Code, start the app by running the following:
 
     ```bash
     dotnet build
@@ -290,15 +293,18 @@ Update the following in the **appsettings.json**  before you run the code:
     or
     From Visual Studio, press **F5** to start the application.
 
-3. Select option `1` in the console application to build the sample database. This option will create a database called `CosmosPatterns` which will have 2 containers called `HotelApp_containerWithPreallocation` and `HotelApp_containerWithoutPreallocation`.
-    1. In Azure Portal, browse to you Cosmos DB resource.
-    2. Select **Data Explorer** in the left menu.
-    3. Review the data in both  container, notice that the 'Reservation' documents is not used in the *HotelApp_containerWithPreallocation*, instead the reservation dates for a room are pre-allocated in a collection.
+1. The application will automatically create a database called `PreallocationDB` with two containers, `WithPreallocation` and `WithoutPreallocation`.
+1. Select option `1` in the console application to load the hotel and room data. 
+    1. In Azure Portal, browse to the Azure Cosmos DB account for this respository.
+    1. Select **Data Explorer** in the left menu.
+    1. Locate and open the `PreallocationDB`
+    1. Review the data in both containers. Notice different structure for both containers. The 'Reservation' entity type documents are not used in the `WithPreallocation` container. Instead the reservation dates for a room are pre-allocated in an array in each room document.
 
-4. Select option `2` to run the query with out any Preallocation. Provide a date in DD-MM-YYYY format.
-5. Select option `3` to run the same query using Preallocation. Provide a date in DD-MM-YYYY format.
-6. Compare the code for both Step# 4 and Step# 5. Notice that Pre-allocation allows for a much simpler design for queries and logic versus other approaches however it can come at the cost of a larger document in storage and memory given the pre-allocation of the data.
+1. Select option `2` to run the query with out Preallocation. Provide a date in DD-MM-YYYY format. Note the RU Charge and elapsed time.
+1. Select option `3` to run the same query using Preallocation. Provide a date in DD-MM-YYYY format. Note the RU Charge and elapsed time.
+1. Compare the code for both options. Notice that Preallocation allows for faster response times. However it often comes at a cost of higher RU charge due to the larger document sizes. 
+1. In the `Hotel.cs` view the queries for each method. Note the simpler design for queries and application logic using Preallocation  versus when not using it.
 
 ## Summary
 
-Pre-allocation allows for a much simpler design for queries and logic versus other approaches however it can come at the cost of a larger document in storage and RU charge given the pre-allocation of the data.
+Pre-allocation allows for a much simpler design for queries and logic versus other approaches. It can often yield faster reponse times as well. However it can come at the cost of a larger document in storage and RU charge given the pre-allocation of the data.

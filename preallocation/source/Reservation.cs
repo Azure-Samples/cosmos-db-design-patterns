@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace Cosmos_Patterns_Preallocation
+namespace Preallocation
 {
     public class Reservation
     {

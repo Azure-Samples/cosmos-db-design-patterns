@@ -10,6 +10,7 @@
 appsettings.development.json
 appsettings.production.json
 appsettings.*.json
+local.settings.json
 
 # User-specific files
 *.rsuser
@@ -356,7 +357,6 @@ MigrationBackup/
 
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
-/distributed-lock/source/consoleapp/appsettings.development.json
-/distributed-counter/source/Visualizer/appsettings.Development.json
-/distributed-counter/source/ConsumerApp/appsettings.Development.json
-/data-binning/source/appsettings.development.json
+
+/document-versioning/source/website/appsettings.Development.json
+/schema-versioning/source/website/appsettings.Development.json

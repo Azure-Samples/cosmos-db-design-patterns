@@ -4,6 +4,7 @@ using CosmosDistributedCounter;
 using System.ComponentModel;
 using Microsoft.Azure.Cosmos.Linq;
 using Newtonsoft.Json.Linq;
+using Container = Microsoft.Azure.Cosmos.Container;
 
 namespace CosmosDistributedLock.Services
 {
@@ -12,7 +13,7 @@ namespace CosmosDistributedLock.Services
     {
         private readonly CosmosClient client;
         private readonly Database db;
-        private readonly Microsoft.Azure.Cosmos.Container container;
+        private readonly Container container;
 
 
         public CosmosService(string CosmosUri, string CosmosKey, string CosmosDatabase, string CosmosContainer)
@@ -22,9 +23,9 @@ namespace CosmosDistributedLock.Services
                 accountEndpoint: CosmosUri,
                 authKeyOrResourceToken: CosmosKey);
 
-            db = client.GetDatabase(CosmosDatabase);
-
-            container = db.GetContainer(CosmosContainer);
+            
+            db = client.CreateDatabaseIfNotExistsAsync(CosmosDatabase).Result;
+            container = db.CreateContainerIfNotExistsAsync(CosmosContainer, "/pk").Result;
         }
 
 
