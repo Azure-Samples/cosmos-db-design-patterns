@@ -68,7 +68,7 @@ This sample is implemented as a C#/.NET application with three projects. The thr
 
 In order to run the demos, you will need:
 
-- [.NET 8.0 Runtime](https://dotnet.microsoft.com/download/)
+- [.NET 8.0 Runtime](https://dotnet.microsoft.com/download)
 - [Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local#install-the-azure-functions-core-tools)
 
 ## Confirm required tools are installed
