@@ -65,6 +65,29 @@ Dive into the `schema-versioning` folder to learn how to manage changes to your 
 
 ## Getting Started
 
+### Prerequisites
+If running locally you will need to install some pre-requistes.
+
+- [.NET 8.0 Runtime](https://dotnet.microsoft.com/download)
+- [Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local#install-the-azure-functions-core-tools)
+
+To confirm you have the required versions of the tools installed.
+
+First, check the .NET runtime with this command. Make sure that .NET components with versions that start with 8.0 appear as part of the output:
+
+```bash
+dotnet --list-runtimes
+```
+
+Next, check the version of Azure Functions Core Tools with this command. You should have a version 4.*x* installed.:
+
+```bash
+func --version
+```
+
+If you do not have this version installed, you will need to uninstall the older version and follow [these instructions for installing Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local#install-the-azure-functions-core-tools).
+
+
 ### Using the Terminal:
 - Open the terminal on your computer.
 - Navigate to the directory where you want to clone the repository.
@@ -83,7 +106,7 @@ Dive into the `schema-versioning` folder to learn how to manage changes to your 
 
 Nearly all of these samples are configured to run from [GitHub Codespaces](https://docs.github.com/codespaces/overview).
 
-Navigate to the individual folders of each design pattern for a dedicated `README.md` file and look for the GitHub Codespaced badge. 
+Navigate to the individual folders of each design pattern for a dedicated `README.md` file and look for the GitHub Codespaced badge.
 
 ### Setting up Azure Cosmos DB
 
