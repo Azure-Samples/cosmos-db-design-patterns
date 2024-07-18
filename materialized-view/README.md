@@ -44,11 +44,11 @@ In essence, materialized views serve as a performance-enhancing layer that strik
 
 In this section, we will look at implementing materialized views using the change feed.
 
-Suppose Tailspin Toys stores its sales information in Azure Cosmos DB for NoSQL. As the sales details are coming, the sales details are written to a container named `Sales` and partitioned by the `/CustomerId`. However, the eCommerce site wants to show the products that are popular now, so it wants to show products with the most sales. Rather than querying the partitions by `CustomerId`, it makes more sense to query a container partitioned by the `Product`. The Azure Cosmos DB change feed can be used to help create the materialized view to speed up queries over a year.
+Tailspin Toys stores its sales information in Azure Cosmos DB for NoSQL. As the sales details are coming, the sales details are written to a container named `Sales` and partitioned by the `/CustomerId`. However, the eCommerce site wants to show the products that are popular now, so it wants to show products with the most sales. Rather than querying the partitions by `CustomerId`, it makes more sense to query a container partitioned by the `Product`. Azure Cosmos DB's Change Feed can be used to create and maintain a materialized view of the sales data for faster and more efficient queries for the most popular products.
 
 In the following diagram, there is a single Azure Cosmos DB for NoSQL account with two containers. The primary container is named **Sales** and stores the sales information. The secondary container named **SalesByProduct** stores the sales information by product, to meet Tailspin Toys' requirements for showing popular products.
 
-![Diagram of the Azure Cosmos DB for NoSQL materialized view processing. [This demo](./code/setup.md) starts with a container Sales that holds data with one partition key. The Azure Cosmos DB change feed captures the data written to Sales, and the Azure Function processing the change feed writes the data to the SalesByDate container that is partitioned by the year.](./images/materialized-views-aggregates.png)
+![Diagram of the Azure Cosmos DB for NoSQL materialized view processing. This demo starts with a container Sales that holds data with one partition key. The Azure Cosmos DB change feed captures the data written to Sales, and the Azure Function processing the change feed writes the data to the SalesByDate container that is partitioned by the year.](./images/materialized-views-aggregates.png)
 
 When implementing the materialized view pattern, there is a container for each materialized view.
 
@@ -58,23 +58,23 @@ Why would you want to create two containers? Why does the partition key matter? 
 SELECT c.Product, SUM(c.Qty) as NumberSold FROM c WHERE c.Product = "Widget" GROUP BY c.Product
 ```
 
-When running this query for the Sales container - the container where the source data is stored, Azure Cosmos DB will look at the WHERE clause and try to identify the partitions that contain the data filtered in the WHERE clause. When the partition key is not in the WHERE clause, Azure Cosmos DB will query all partitions. For this query, all customers may have widgets sold, so Azure Cosmos DB will query all customers' partitions for widget sales.
+When running this query for the Sales container - the container where the source data is stored, Azure Cosmos DB will look at the WHERE clause and try to identify the partitions that contain the data filtered in the WHERE clause. When the partition key is not in the WHERE clause, Azure Cosmos DB will query **all the partitions**. This may be ok for small containers with 1-2 partitions (up to 100GB) or data. However, as the container grows, this query will get progressively slower and more expensive. In short, *it will not scale*.
 
 ![Diagram of the widget total query with an arrow going from the query to the Sales container partitioned by CustomerId. There are arrows going from the Sales container to each customer's partition.](images/sales-partitioned-by-customer-id.png)
 
-However, when running the query to get the totals for a product in the SalesByProduct container, Azure Cosmos DB will only need to query one partition - the partition that holds the data for the product in the WHERE clause.
+The secret to Cosmos DB is that it can scale infinitely. However, for that to occur, you have to design for it. In the scenario here, the solution is to have this query be served by a container where it only needs to access a single partition. So for our query here where we want to filter by product, the query to get the totals for a product in the SalesByProduct container, Azure Cosmos DB will only need to query one partition - the partition that holds the data for the product in the WHERE clause.
 
 ![Diagram of the widget total query with an arrow going from the query to the SalesByProduct container partitioned by Product. There is another arrow going from the container to the partition with Widget sales as it is easy to identify which partition has the Widget product's sales.](images/sales-partitioned-by-product.png)
 
-In the demo, you may not see the performance implications with smaller sets of data - smaller in terms of the amount of data overall as well as diversity in the `CustomerId` column. However, when your data grows beyond 50 GB in storage or throughput of 10000 RU/s, you will see the performance implications at scale.
+In the demo, you will not notice the performance implications with smaller sets of data - smaller in terms of the amount of data overall as well as diversity in the `CustomerId` column. However, when your data grows beyond 50 GB in storage or throughput of 10000 RU/s, you will see the performance implications at scale. Again, this is the key to why Cosmos DB can scale to handle any number of requests and any amount of data. It is designed to **scale out**. The key is the *partition key* that is used to read and write the data in the container.
 
-**Note**: If you are running into aggregation analysis at scale, the materialized views would not be advised. For large-scale analysis, consider [Azure Cosmos DB analytical store](https://learn.microsoft.com/azure/cosmos-db/analytical-store-introduction) and [Azure Synapse Link for Azure Cosmos DB](https://learn.microsoft.com/azure/cosmos-db/synapse-link).
+**Note**: If you are running into aggregation analysis at scale, the materialized views would not be advised. For large-scale analysis, consider using [Azure Cosmos DB Mirroring for Azure Fabric](https://learn.microsoft.com/fabric/database/mirrored-database/azure-cosmos-db) or [Azure Synapse Link for Azure Cosmos DB](https://learn.microsoft.com/azure/cosmos-db/synapse-link).
 
 ## Try this implementation
 
 To run this demo, you will need to have:
 
-- [.NET 6.0 Runtime](https://dotnet.microsoft.com/download/dotnet/6.0)
+- [.NET 8.0 Runtime](https://dotnet.microsoft.com/download/)
 - [Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local#install-the-azure-functions-core-tools)
 
 ## Confirm required tools are installed
@@ -125,56 +125,45 @@ You can try out this implementation by running the code in [GitHub Codespaces](h
 
     [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/azure-samples/cosmos-db-design-patterns?quickstart=1&devcontainer_path=.devcontainer%2Fmaterialized-view%2Fdevcontainer.json)
 
-## Create an Azure Cosmos DB for NoSQL account
 
-1. Create a free Azure Cosmos DB for NoSQL account: (<https://cosmos.azure.com/try>)
+## Set up application configuration files
 
-1. In the Data Explorer, create a new database and container with the following values:
+You need to configure the application configuration file to run these demos.
 
-    | | Value |
-    | --- | --- |
-    | **Database name** | `Sales` |
-    | **Container name** | `Sales` |
-    | **Partition key path** | `/CustomerId` |
-    | **Throughput** | `1000` (*Autoscale*) |
+1. Go to resource group.
 
-1. In the Data Explorer, create a second container with the following values:
+1. Select the Serverless Azure Cosmos DB for NoSQL account that you created for this repository.
 
-    | | Value |
-    | --- | --- |
-    | **Database name** | `Orders` |
-    | **Container name** | `SalesByProduct` |
-    | **Partition key path** | `/Product` |
-    | **Throughput** | `1000` (*Autoscale*) |
+1. From the navigation, under **Settings**, select **Keys**. The values you need for the application settings for the demo are here.
 
-**Note:** We are using shared database throughput because it can scale down to 100 RU/s when not running. This is the most cost efficient if running in a paid subscription and not using Free Tier.
+While on the Keys blade, make note of the `URI`, `PRIMARy KEY` and `PRIMARY CONNECTION STRING`. You will need these for the sections below.
 
-## Get Azure Cosmos DB connection information
+## Prepare the data generator configuration
 
-You will need a connection string for the Azure Cosmos DB account.
+1. Navigate to the data-generator folder, open the project and add a new **appsettings.development.json** file with the following contents:
 
-1. Go to resource group
+  ```json
+  {
+    "CosmosUri": "",
+    "CosmosKey": ""
+  }
+    ```
 
-1. Select the new Azure Cosmos DB for NoSQL account.
+1. Replace the `CosmosURI` and `CosmosKey` with the values from the Keys blade in the Azure Portal.
+1. Modify the **Copy to Output Directory** to **Copy Always** (For VS Code add the XML below to the csproj file)
+1. Save the file.
 
-1. From the navigation, under **Settings**, select **Keys**. The values you need for the application configuration for the demo are here.
-
-1. While on the Keys blade, make note of the `PRIMARY CONNECTION STRING`. You will need this for the Azure Function App.
-
-## Generate data
-
-Open the application code.
-
-Run the data generator to generate sales data.
-
-```bash
-cd ./data-generator
-dotnet run
-```
+  ```xml
+    <ItemGroup>
+      <Content Update="appsettings.development.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+  ```
 
 ## Prepare the function app configuration
 
-1. Add a file to the `function-app` folder called **local.settings.json** with the following contents:
+1. Open the function-app folder, open the project and add a new **local.settings.json** file with the following contents:
 
     ```json
     {
@@ -187,9 +176,18 @@ dotnet run
     }
     ```
 
-    Make sure to replace `YOUR_PRIMARY_CONNECTION_STRING` with the `PRIMARY CONNECTION STRING` value noted earlier.
+1. Replace `YOUR_PRIMARY_CONNECTION_STRING` with the `PRIMARY CONNECTION STRING` value noted earlier.
+1. Modify the **Copy to Output Directory** to **Copy Always** (For VS Code add the XML below to the csproj file)
+1. Save the file.
 
-2. Edit **host.json** Set the `userAgentSuffix` to a value you prefer to use. This is used in tracking in Activity Monitor. See [host.json settings](https://learn.microsoft.com/azure/azure-functions/functions-bindings-cosmosdb-v2?tabs=in-process%2Cextensionv4&pivots=programming-language-csharp#hostjson-settings) for more details.
+  ```xml
+    <ItemGroup>
+      <None Update="local.settings.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+      </None>
+    </ItemGroup>
+  ```
 
 ## Run the demo locally
 
@@ -207,7 +205,7 @@ dotnet run
 
 As the data generator runs, switch to the function app's command window and show the logging to demonstrate what's happening using the change feed.
 
-You can confirm the entries by looking at the Sales and SalesByProduct containers in Data Explorer in the Azure portal in the Azure Cosmos DB for NoSQL account.
+You can confirm the entries by looking at the Sales and SalesByProduct containers in the MaterializedViewDB in Data Explorer in the Azure portal for this Azure Cosmos DB for NoSQL account.
 
 ## Run an in-partition query
 
@@ -219,11 +217,11 @@ SELECT c.Product, SUM(c.Qty) as NumberSold FROM c WHERE c.Product = "Widget" GRO
 
 ### Run the query in the Sales container
 
-Once data is loaded, you can test an in-partition query to make note of the difference in performance.
+Let's test an in-partition query versus a fan-out query. Because this example is at such a small scale, the impact here is minimal. But there is a slight difference in performance we can see in the Query Stats we'll look at here.
 
 1. Open the Azure Cosmos DB for NoSQL account in the Azure portal.
 2. From the lefthand navigation, select **Data Explorer**.
-3. In the NOSQL API navigation, expand the **Sales** database and the **Sales** container.
+3. In the NOSQL API navigation, expand the **MaterializedViewDB** database and the **Sales** container.
 4. Select the ellipsis at the end of **Items**, then select **New SQL Query**.
 5. In the query window, enter the following query:
 
@@ -239,7 +237,7 @@ Look at the values under **Query Stats**. For this demo, pay close attention to 
 
 ### Run the query in the SalesByProduct container
 
-1. In the NOSQL API Navigation, in the **Sales** database, expand the **SalesByProduct** container.
+1. In the NOSQL API Navigation, in the **MaterializedViewDB** database, expand the **SalesByProduct** container.
 2. Select the ellipsis at the end of **Items**, then select **New SQL Query**.
 3. In the query window, enter the following query:
 

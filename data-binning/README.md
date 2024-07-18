@@ -132,7 +132,7 @@ Note: In the demo application, aggregated events are collected based on system t
 
 In order to run the demos, you will need:
 
-- [.NET 6.0 Runtime](https://dotnet.microsoft.com/download/dotnet/6.0)
+- [.NET 8.0 Runtime](https://dotnet.microsoft.com/download/)
 
 ## Confirm required tools are installed
 
@@ -174,38 +174,19 @@ You can try out this implementation by running the code in [GitHub Codespaces](h
 
     [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/azure-samples/cosmos-db-design-patterns?quickstart=1&devcontainer_path=.devcontainer%2Fdata-binning%2Fdevcontainer.json)
 
-## Create an Azure Cosmos DB for NoSQL account
+## Set up application configuration files
 
-1. Create a free Azure Cosmos DB for NoSQL account: (<https://cosmos.azure.com/try>)
+You need to configure an application configuration file to run this app.
 
-1. In the Data Explorer, create a new database named **CosmosPatterns** with shared autoscale throughput:
+1. Go to your resource group.
 
-    | | Value |
-    | --- | --- |
-    | **Database name** | `CosmosPatterns` |
-    | **Throughput** | `1000` (*Autoscale*) |
+1. Select the Serverless Azure Cosmos DB for NoSQL account that you created for this repository.
 
-**Note:** We are using shared database throughput because it can scale down to 100 RU/s when not running. This is the most cost efficient when running at very small scale.
+1. From the navigation, under **Settings**, select **Keys**. The values you need for the application settings for the demo are here.
 
-1. Create a container **DataBinning** with the following values:
+While on the Keys blade, make note of the `URI` and `PRIMARY KEY`. You will need these for the sections below.
 
-    | | Value |
-    | --- | --- |
-    | **Database name** | `CosmosPatterns` |
-    | **Container name** | `DataBinning` |
-    | **Partition key path** | `/DeviceId` |
-
-## Get Azure Cosmos DB connection information
-
-You will need connection details for the Azure Cosmos DB account.
-
-1. Select the new Azure Cosmos DB for NoSQL account.
-
-1. Open the Keys blade, click the Eye icon to view the `PRIMARY KEY`. Keep this and the `URI` handy. You will need these for the next step.
-
-## Prepare the app configuration
-
-1. Open the application code, create an **appsettings.Development.json** file in the **/source** folder. In the file, create a JSON object with **CosmosUri** and **CosmosKey** properties. Copy and paste the values for `URI` and `PRIMARY KEY` from the previous step:
+1. Open the data-binning project and add a new **appsettings.development.json** file with the following contents:
 
     ```json
     {
@@ -213,6 +194,18 @@ You will need connection details for the Azure Cosmos DB account.
       "CosmosKey": "<primary-key>"
     }
     ```
+
+1. Replace the `CosmosURI` and `CosmosKey` with the values from the Keys blade in the Azure Portal.
+1. Modify the **Copy to Output Directory** to **Copy Always** (For VS Code add the XML below to the csproj file)
+1. Save the file.
+
+  ```xml
+    <ItemGroup>
+      <Content Update="appsettings.development.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+  ```
 
 ## Run the demo
 

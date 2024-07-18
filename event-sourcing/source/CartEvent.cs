@@ -1,12 +1,12 @@
 ﻿using Newtonsoft.Json;
 
-namespace Cosmos_Patterns_EventSourcing
+namespace EventSourcing
 {
     public class CartEvent
     {
         [JsonProperty("id")]
         public string Id { get; set; } = Guid.NewGuid().ToString();
-        public string CartId { get; set; } = Guid.NewGuid().ToString();
+        public string CartId { get; set; } = Guid.NewGuid().ToString();  //Partition Key
         public string SessionId { get; set; } = Guid.NewGuid().ToString();
         public int UserId { get; set; }
         public string EventType { get; set; } = "";

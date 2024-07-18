@@ -1,6 +1,7 @@
 ﻿@page
 @model IndexModel
 @using Versioning
+@using Versioning.Models
 @{
     ViewData["Title"] = "Home page";
 }
@@ -23,7 +24,7 @@
                         }
                     </tr>
                 </thead>
-            @foreach (var item in cart.Items)
+            @foreach (var item in cart.Items!)
             {
                 <tr>
                     @if(cart.SchemaVersion != null){

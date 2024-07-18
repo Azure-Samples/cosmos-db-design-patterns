@@ -1,4 +1,4 @@
-namespace Versioning {
+namespace Models {
     public class Order {    
         public string id { get; set; } = Guid.NewGuid().ToString();
         public string OrderId { get; set; } = default!;

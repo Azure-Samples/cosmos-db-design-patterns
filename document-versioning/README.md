@@ -56,7 +56,7 @@ Now, suppose the customer had to cancel the order. The replacement document coul
 }
 ```
 
-Looking at these documents, though, there is no easy way to tell which of these documents is the current document. By using document versioning, add a field to the document to track the version number. Update the current document in a `CurrentOrderStatus` container and add the change to the `HistoricalOrderStatus` container. While Azure Cosmos DB for NoSQL does not have a document versioning feature, you can build in the handling through an application. In [the demo](./code/setup.md), you can see how to implement the document versioning feature with the following components:
+Looking at these documents, though, there is no easy way to tell which of these documents is the current document. By using document versioning, add a field to the document to track the version number. Update the current document in a `CurrentOrderStatus` container and add the change to the `HistoricalOrderStatus` container. While Azure Cosmos DB for NoSQL does not have a document versioning feature, you can build in the handling through an application. In the two projects here, you can see how to implement the document versioning feature with the following components:
 
 - A website that allows you to create orders and change the order status. The website updates the document version and saves the document to the current status container.
 - A Function App that reads the data for the Azure Cosmos DB change feed and copies the versioned documents to the historical status container
@@ -69,7 +69,7 @@ The demo website includes links to update the orders to the different statuses.
 
 In order to run the demos, you will need:
 
-- [.NET 6.0 Runtime](https://dotnet.microsoft.com/download/dotnet/6.0)
+- [.NET 8.0 Runtime](https://dotnet.microsoft.com/download)
 - [Azure Functions Core Tools v4](https://learn.microsoft.com/azure/azure-functions/functions-run-local#install-the-azure-functions-core-tools)
 
 ## Confirm required tools are installed
@@ -82,7 +82,7 @@ First, check the .NET runtime with this command:
 dotnet --list-runtimes
 ```
 
-As you may have multiple versions of the runtime installed, make sure that .NET components with versions that start with 6.0 appear as part of the output.
+As you may have multiple versions of the runtime installed, make sure that .NET components with versions that start with 8.0 appear as part of the output.
 
 Next, check the version of Azure Functions Core Tools with this command:
 
@@ -120,41 +120,46 @@ You can try out this implementation by running the code in [GitHub Codespaces](h
 
     [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/azure-samples/cosmos-db-design-patterns?quickstart=1&devcontainer_path=.devcontainer%2Fdocument-versioning%2Fdevcontainer.json)
 
-## Create an Azure Cosmos DB for NoSQL account
-
-1. Create a free Azure Cosmos DB for NoSQL account: (<https://cosmos.azure.com/try>)
-
-1. In the Data Explorer, create a new database and container with the following values:
-
-    | | Value |
-    | --- | --- |
-    | **Database name** | `Orders` |
-    | **Container name** | `CurrentOrderStatus` |
-    | **Partition key path** | `/CustomerId` |
-    | **Throughput** | `1000` (*Autoscale*) |
-
-1. In the Data Explorer, create a second container with the following values:
-
-    | | Value |
-    | --- | --- |
-    | **Database name** | `Orders` |
-    | **Container name** | `HistoricalOrderStatus` |
-    | **Partition key path** | `/CustomerId` |
-    | **Throughput** | `1000` (*Autoscale*) |
-
-**Note:** We are using shared database throughput because it can scale down to 100 RU/s when not running. This is the most cost efficient if running in a paid subscription and not using Free Tier.
-
-## Set up application configuration file
+## Set up application configuration files
 
 You need to configure the application configuration file to run these demos.
 
 1. Go to resource group.
 
-1. Select the new Azure Cosmos DB for NoSQL account.
+1. Select the Serverless Azure Cosmos DB for NoSQL account that you created for this repository.
 
 1. From the navigation, under **Settings**, select **Keys**. The values you need for the application settings for the demo are here.
 
-While on the Keys blade, make note of the `PRIMARY CONNECTION STRING`. You will need this for the Azure Function App.
+While on the Keys blade, make note of the `URI`, `PRIMARy KEY` and `PRIMARY CONNECTION STRING`. You will need these for the sections below.
+
+## Prepare the web app configuration
+
+1. Open the website project and add a new **appsettings.development.json** file with the following contents:
+
+  ```json
+  {
+    "CosmosDb": {
+      "CosmosUri": "",
+      "CosmosKey": "",
+      "Database": "DocumentVersionDB",
+      "CurrentOrderContainer": "CurrentOrderStatus",
+      "HistoricalOrderContainer": "HistoricalOrderStatus",
+      "PartitionKey": "/CustomerId"
+    }
+  }
+    ```
+
+1. Replace the `CosmosURI` and `CosmosKey` with the values from the Keys blade in the Azure Portal.
+1. Modify the **Copy to Output Directory** to **Copy Always** (For VS Code add the XML below to the csproj file)
+1. Save the file.
+
+  ```xml
+    <ItemGroup>
+      <Content Update="appsettings.development.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+  ```
 
 ## Prepare the function app configuration
 
@@ -171,13 +176,30 @@ While on the Keys blade, make note of the `PRIMARY CONNECTION STRING`. You will 
     }
     ```
 
-    Make sure to replace `YOUR_PRIMARY_CONNECTION_STRING` with the `PRIMARY CONNECTION STRING` value noted earlier.
+1. Replace `YOUR_PRIMARY_CONNECTION_STRING` with the `PRIMARY CONNECTION STRING` value noted earlier.
+1. Modify the **Copy to Output Directory** to **Copy Always** (For VS Code add the XML below to the csproj file)
+1. Save the file.
 
-2. Edit **host.json** Set the `userAgentSuffix` to a value you prefer to use. This is used in tracking in Activity Monitor. See [host.json settings](https://learn.microsoft.com/azure/azure-functions/functions-bindings-cosmosdb-v2?tabs=in-process%2Cextensionv4&pivots=programming-language-csharp#hostjson-settings) for more details.
+  ```xml
+    <ItemGroup>
+      <None Update="local.settings.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+      </None>
+    </ItemGroup>
+  ```
 
 ## Run the demo locally
 
-1. Switch to the `website` folder. Then start the website with:
+1. From the `function-app` folder, start the Azure Function with:
+
+    ```bash
+    func start
+    ```
+
+1. Open a new Terminal in VS Code or where ever you are running this.
+
+1. Navigate to the `website` folder, start the website with:
 
     ```bash
     dotnet run
@@ -187,15 +209,8 @@ While on the Keys blade, make note of the `PRIMARY CONNECTION STRING`. You will 
 
     ![Screenshot of the 'dotnet run' output. The URL to navigate to is highlighted. In the screenshot, the URL is 'http://localhost:5183'.](images/local-site-url.png)
 
-    **Don't do anything on this website yet. Continue to the next step.**
 
-1. At another command prompt, switch to the `function-app` folder. Then, run the Function App with:
-
-    ```bash
-    func start
-    ```
-
-Now that you have the website and function app started, create 5-10 orders with the website.
+1. With both the Azure Function and web app running, create 5-10 orders with the website.
 
 This is what the website will look like when starting out:
 

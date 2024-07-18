@@ -1,28 +1,17 @@
 ﻿using Newtonsoft.Json;
 
-namespace Cosmos_Patterns_Preallocation
+namespace Preallocation
 {
     public class Room
     {
         [JsonProperty("id")]
         public string? Id { get; set; }
-
-        [JsonProperty("_etag")]
-        public string? ETag { get; set; }
-
-        public string? EntityType { get; set; }
-        public string? LeaseId { get; set; }
-        public DateTime? LeasedUntil { get; set; }
         [JsonProperty("hotelId")]
-        public string? HotelId { get; set; }
+        public string? HotelId { get; set; } //Partition Key
+        public string? EntityType { get; set; }
         public string? Name { get; set; }
-
         public string? Type { get; set; }
-
         public string? Status { get; set; }
-
-        public int NoBeds { get; set; }
-
         public int SizeInSqFt { get; set; }
         public decimal Price { get; set; }
         public bool Available { get; set; }
@@ -43,12 +32,6 @@ namespace Cosmos_Patterns_Preallocation
     {
         public DateTime Date { get; set; }
         public bool IsReserved { get; set; }
-
-        //public ReservationDate(DateTime date)
-        //{
-        //    Date = date;
-        //    Confirmed = true;
-        //}
     }
 
     public class RoomAttibuteBased : Room

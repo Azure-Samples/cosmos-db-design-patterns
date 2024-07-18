@@ -1,4 +1,4 @@
-namespace Versioning {
+namespace Models {
     public class VersionedOrder : Order {
         public int DocumentVersion { get; set; } = 1;
 

@@ -9,7 +9,7 @@ using Database = Microsoft.Azure.Cosmos.Database;
 
 IConfigurationBuilder configuration = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-    .AddJsonFile($"appsettings.Development.json", optional: true);
+    .AddJsonFile($"appsettings.development.json", optional: true);
 
 Cosmos? config = configuration
     .Build()
@@ -37,8 +37,7 @@ CosmosClient client = new(
 );
 
 Database database = await client.CreateDatabaseIfNotExistsAsync(
-    id: "CosmosPatterns",
-    throughputProperties: ThroughputProperties.CreateAutoscaleThroughput(1000)
+    id: "AttributeArrayDB"
 );
 
 Console.Write(

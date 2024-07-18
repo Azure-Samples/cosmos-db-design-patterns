@@ -13,7 +13,7 @@
     <PackageReference Include="System.Text.Json" Version="8.0.4" />
   </ItemGroup>
   <ItemGroup>
-    <None Update="appsettings.Development.json">
+    <None Update="appsettings.development.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="appsettings.json">

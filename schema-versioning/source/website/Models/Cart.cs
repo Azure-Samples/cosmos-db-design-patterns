@@ -1,6 +1,7 @@
 using Newtonsoft.Json;
 
-namespace Versioning{
+namespace Versioning.Models
+{
     public class Cart
     {
         [JsonProperty("id")]
@@ -9,8 +10,9 @@ namespace Versioning{
         public long CustomerId { get; set; }
         public List<CartItemWithSpecialOrder>? Items { get; set;}
         public int? SchemaVersion {get; set;}
-        public bool HasSpecialOrders() { 
-            return this.Items.Where(x=>x.IsSpecialOrder == true).Count() > 0;
+        public bool HasSpecialOrders() 
+        { 
+            return this.Items!.Where(x=>x.IsSpecialOrder == true).Count() > 0;
         }
     }
 }

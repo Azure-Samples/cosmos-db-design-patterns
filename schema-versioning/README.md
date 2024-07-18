@@ -134,7 +134,7 @@ When it comes to data modeling, a schema version field in a JSON document can be
 
 If you use a nullable type for the version, this will allow the developers to check for the presence of a value and act accordingly.
 
-In [the demo](./source/setup.md), `SchemaVersion` is treated as a nullable integer with the `int?` data type. The developers added a `HasSpecialOrders()` method to help determine whether to show the special order details. This is what the Cart class looks like on the website side:
+In this demo, `SchemaVersion` is treated as a nullable integer with the `int?` data type. The developers added a `HasSpecialOrders()` method to help determine whether to show the special order details. This is what the Cart class looks like on the website side:
 
 ```csharp
 public class Cart
@@ -198,7 +198,7 @@ When you need to keep track of schema changes, use this schema versioning patter
 
 In order to run the demos, you will need:
 
-- [.NET 6.0 Runtime](https://dotnet.microsoft.com/download/dotnet/6.0)
+- [.NET 8.0 Runtime](https://dotnet.microsoft.com/download)
 - [Azure Functions Core Tools v4](https://learn.microsoft.com/azure/azure-functions/functions-run-local#install-the-azure-functions-core-tools)
 
 ## Confirm required tools are installed
@@ -249,42 +249,77 @@ You can try out this implementation by running the code in [GitHub Codespaces](h
 
     [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/azure-samples/cosmos-db-design-patterns?quickstart=1&devcontainer_path=.devcontainer%2Fschema-versioning%2Fdevcontainer.json)
 
-## Create an Azure Cosmos DB for NoSQL account
+## Set up application configuration files
 
-1. Create a free Azure Cosmos DB for NoSQL account: (<https://cosmos.azure.com/try>)
+You need to configure **two** application configuration files to run these demos.
 
-1. In the Data Explorer, create a new database and container with the following values:
+1. Go to your resource group.
 
-    | | Value |
-    | --- | --- |
-    | **Database name** | `Sales` |
-    | **Container name** | `Carts` |
-    | **Partition key path** | `/id` |
-    | **Throughput** | `1000` (*Autoscale*) |
+1. Select the Serverless Azure Cosmos DB for NoSQL account that you created for this repository.
 
-**Note:** We are using shared database throughput because it can scale down to 100 RU/s when not running. This is the most cost efficient if running in a paid subscription and not using Free Tier.
+1. From the navigation, under **Settings**, select **Keys**. The values you need for the application settings for the demo are here.
 
-## Set up environment variables
+While on the Keys blade, make note of the `URI` and `PRIMARY KEY`. You will need these for the sections below.
 
-You need 2 environment variables to run these demos.
+1. Open the data-generator project and add a new **appsettings.development.json** file with the following contents:
 
-1. Go to resource group.
+  ```json
+    {
+      "CosmosUri": "",
+      "CosmosKey": "",
+      "DatabaseName": "SchemaVersionDB",
+      "ContainerName": "ShoppingCart",
+      "PartitionKeyPath": "/id"
+    }
+  ```
 
-1. Select the new Azure Cosmos DB for NoSQL account.
+1. Replace the `CosmosURI` and `CosmosKey` with the values from the Keys blade in the Azure Portal.
+1. Modify the **Copy to Output Directory** to **Copy Always** (For VS Code add the XML below to the csproj file)
+1. Save the file.
 
-1. From the navigation, under **Settings**, select **Keys**. The values you need for the environment variables for the demo are here.
+  ```xml
+    <ItemGroup>
+      <Content Update="appsettings.development.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+  ```
 
-Create 2 environment variables to run the demos:
+Then repeat this for the next project.
 
-- `COSMOS_ENDPOINT`: set to the `URI` value on the Azure Cosmos DB account Keys blade.
-- `COSMOS_KEY`: set to the Read-Write `PRIMARY KEY` for the Azure Cosmos DB for NoSQL account
+1. Open the website project and add a new **appsettings.development.json** file with the following contents:
 
-Create your environment variables in a bash terminal with the following syntax:
+  ```json
+    {
+      "Logging": {
+        "LogLevel": {
+          "Default": "Information",
+          "Microsoft.AspNetCore": "Warning"
+        }
+      },
+      "AllowedHosts": "*",
+      "CosmosDb": {
+        "CosmosUri": "",
+        "CosmosKey": "",
+        "DatabaseName": "SchemaVersionDB",
+        "ContainerName": "ShoppingCart",
+        "PartitionKeyPath": "/id"
+      }
+    }
+  ```
 
-```bash
-export COSMOS_ENDPOINT="YOUR_COSMOS_ENDPOINT"
-export COSMOS_KEY="YOUR_COSMOS_KEY"
-```
+1. Replace the `CosmosURI` and `CosmosKey` with the values from the Keys blade in the Azure Portal.
+1. Modify the **Copy to Output Directory** to **Copy Always** (For VS Code add the XML below to the csproj file)
+1. Save the file.
+
+  ```xml
+    <ItemGroup>
+      <Content Update="appsettings.development.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+  ```
+
 
 ## Generate data
 

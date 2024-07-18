@@ -1,20 +1,33 @@
-﻿// See https://aka.ms/new-console-template for more information
-using System.Net.Http;
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
 
-namespace Cosmos_Patterns_EventSourcing
+var host = new HostBuilder()
+    .ConfigureFunctionsWebApplication()
+    .ConfigureServices(services =>
+    {
+        services.AddApplicationInsightsTelemetryWorkerService();
+        services.ConfigureFunctionsApplicationInsights();
+    })
+    .Build();
+
+host.Run();
+
+namespace EventSourcing
 {
-    internal class Program 
+
+    internal class Program
     {
         static string urlBase = "http://localhost:7071";
 
         public static async Task<string> CreateCartEvent(HttpClient client, CartEvent cartEvent)
         {
-            var url = $"{urlBase}/api/CosmosPatternsEventSourcingExample";
+            var url = $"{urlBase}/api/EventSourceFunction";
 
             string jsonBody = JsonConvert.SerializeObject(cartEvent);
             var body = new StringContent(jsonBody, System.Text.Encoding.UTF8, "application/json");
-            
+
             var response = await client.PostAsync(url, body);
             string result = await response.Content.ReadAsStringAsync();
             return result;
@@ -26,7 +39,7 @@ namespace Cosmos_Patterns_EventSourcing
             Random rng = new Random();
             string[] actions = new string[]
             {
-                "cart_created",                
+                "cart_created",
                 "product_added",
                 "product_deleted",
                 "cart_purchased"
@@ -86,15 +99,17 @@ namespace Cosmos_Patterns_EventSourcing
                             new CartItem("Product 1", product1Qty)
                         };
                         cartEvents.Add(cartEvent);
-                    }                        
-                } else {
+                    }
+                }
+                else
+                {
                     var cartEvent = new CartEvent();
                     cartEvent.CartId = cartId;
                     cartEvent.SessionId = sessionId;
                     cartEvent.UserId = userId;
                     cartEvent.EventType = action;
                     cartEvent.ProductsInCart = null;
-                    cartEvents.Add(cartEvent); 
+                    cartEvents.Add(cartEvent);
                 }
             }
             return cartEvents;
@@ -102,8 +117,17 @@ namespace Cosmos_Patterns_EventSourcing
 
         static async Task Main(string[] args)
         {
-            HttpClient client = new HttpClient();
-            client.Timeout = TimeSpan.FromMinutes(10);
+
+            HttpClient httpClient = new HttpClient();
+
+            //var services = new ServiceCollection();
+            //services.AddHttpClient(); // Add the HttpClientFactory service
+            //services.AddLogging(); // Add the logging service
+            //var serviceProvider = services.BuildServiceProvider();
+
+            //// Resolve the HttpClient from the service provider
+            //var httpClient = serviceProvider.GetRequiredService<HttpClient>();
+            httpClient.Timeout = TimeSpan.FromMinutes(10);
 
             Console.WriteLine("This code will demonstrate the Event Sourcing pattern by saving shopping cart events to Azure Cosmos DB for NoSQL account.");
 
@@ -116,14 +140,15 @@ namespace Cosmos_Patterns_EventSourcing
             {
                 // Create a list of cart events
                 List<CartEvent> cartEvents = GenerateCartEvents();
+
                 // Send each event to function which writes to Azure Cosmos DB for NoSQL
                 foreach (var cartEvent in cartEvents)
                 {
-                    var result1 = await CreateCartEvent(client, cartEvent);
+                    var result1 = await CreateCartEvent(httpClient, cartEvent);
                     System.Console.WriteLine(result1);
                 }
             }
-            
+
             System.Console.WriteLine($"Function completed generation of shopping cart events");
             Console.WriteLine($"Check CartEventContainer for new shopping cart events");
         }

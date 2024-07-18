@@ -54,19 +54,18 @@ namespace DataBinning
             //wait till all threads complete.
             await Task.Delay((durationSec +2) * 1000);
 
-            System.Console.WriteLine($"Completed generation events for {deviceCount} devices");
+            Console.WriteLine($"Completed generation events for {deviceCount} devices");
             Console.WriteLine($"Check DataBinning Container for sensor events");
         }
 
         private async static Task<Container> createCosmosDBArtifactsAsync()
         {
-            string partitionKeyPath = "/DeviceId";
-
+            
             Console.WriteLine($"Please wait while Cosmos DB database and container is created.");
 
             var configuration = new ConfigurationBuilder()
                  .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-                 .AddJsonFile($"appsettings.Development.json", optional: true);
+                 .AddJsonFile($"appsettings.development.json", optional: true);
 
             var config = configuration.Build();
 
@@ -76,10 +75,10 @@ namespace DataBinning
             CosmosClient client = new(accountEndpoint: uri, authKeyOrResourceToken: key);
 
             Database database = await client.CreateDatabaseIfNotExistsAsync(
-                    id: "CosmosPatterns",
-                    throughputProperties: ThroughputProperties.CreateAutoscaleThroughput(1000)
+                    id: "DataBinningDB"
                 );
 
+            string partitionKeyPath = "/DeviceId";
             Container container = await database.CreateContainerIfNotExistsAsync(
                     id: "DataBinning",
                     partitionKeyPath: partitionKeyPath

@@ -1,4 +1,4 @@
-﻿namespace Cosmos_Patterns_EventSourcing
+﻿namespace EventSourcing
 {
     public class CartItem {
         public string ProductName { get; set; } = "";

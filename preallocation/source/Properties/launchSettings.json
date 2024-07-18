@@ -1,6 +1,6 @@
 {
   "profiles": {
-    "Cosomos_Patterns": {
+    "Preallocation": {
       "commandName": "Project",
       "environmentVariables": {
         

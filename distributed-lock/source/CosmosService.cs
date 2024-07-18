@@ -37,9 +37,8 @@ namespace CosmosDistributedLock.Services
                 PartitionKeyPath = "/id",
                 DefaultTimeToLive = 60  //seconds
             };
-            ThroughputProperties throughputProperties = ThroughputProperties.CreateManualThroughput(400);
             
-            _container = await database.CreateContainerIfNotExistsAsync(containerProperties, throughputProperties);
+            _container = await database.CreateContainerIfNotExistsAsync(containerProperties);
         }
 
         public async Task<Lease> CreateUpdateLeaseAsync(string ownerId, int leaseDuration)

@@ -1,4 +1,4 @@
-namespace Versioning
+namespace Models
 {
     public class OrderItem {
         public string ProductName { get; set; } = "";

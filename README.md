@@ -11,23 +11,14 @@ Design patterns play a crucial role in building robust applications and modeling
 ### Key Benefits of Using Design Patterns
 
 - **Efficiency and Best Practices**: Design patterns encapsulate proven solutions, saving you time and effort by leveraging established best practices.
-
 - **Scalability and Performance**: Many patterns are optimized for scalability, ensuring your application can handle growth without compromising performance.
-
 - **Consistency and Maintainability**: Patterns promote consistent architecture, making codebases easier to understand, maintain, and extend.
-
 - **Reliability and Resilience**: Patterns address fault tolerance and error handling, resulting in applications that gracefully recover from failures.
-
 - **Flexibility and Adaptability**: Patterns facilitate changes, enabling your application to evolve and adapt to new requirements seamlessly.
-
 - **Reusability and Accelerated Development**: Patterns encourage reusable components, speeding up development and reducing the risk of bugs.
-
 - **Effective Data Modeling**: In NoSQL databases like Azure Cosmos DB, choosing the right pattern ensures efficient data modeling for enhanced performance.
-
 - **Documentation and Communication**: Patterns provide a shared vocabulary, aiding communication and collaboration among team members.
-
 - **Adherence to Best Practices**: Design patterns ensure applications adhere to security, data integrity, and maintainability best practices.
-
 - **Reduced Learning Curve**: Developers familiar with patterns quickly understand and contribute to projects, reducing onboarding time.
 
 
@@ -74,15 +65,31 @@ Dive into the `schema-versioning` folder to learn how to manage changes to your 
 
 ## Getting Started
 
-Navigate to the individual folders of each design pattern for a dedicated `README.md` file that provides step-by-step instructions on how to implement and work with the pattern in your applications.
+### Using the Terminal:
+- Open the terminal on your computer.
+- Navigate to the directory where you want to clone the repository.
+- Type `git clone https://github.com/Azure-Samples/cosmos-db-design-patterns.git` and press enter.
+- The repository will be cloned to your local machine.
 
-### Trying Out the Design Patterns with Azure Cosmos DB for Free
+### Using Visual Studio Code:
+- Open Visual Studio Code.
+- Click on the **Source Control** icon in the left sidebar.
+- Click on the **Clone Repository** button at the top of the Source Control panel.
+- Paste `https://github.com/Azure-Samples/cosmos-db-design-patterns.git` into the text field and press enter.
+- Select a directory where you want to clone the repository.
+- The repository will be cloned to your local machine.
 
-You can try out these design patterns using a **free Azure Cosmos DB account**, making it easy to experiment with Azure Cosmos DB before making a commitment. No credit card is required to get started, and your account is free for 30 days. After the initial 30-day period, you can create a new sandbox account. Additionally, you have the option to extend the trial beyond 30 days for an additional 24 hours. If you decide to upgrade, you can do so at any time during the 30-day trial period.
+### Using GitHub Codespaces
 
-**Sign up for your free Azure Cosmos DB account at [aka.ms/trycosmosdb](https://aka.ms/trycosmosdb).**
+Nearly all of these samples are configured to run from [GitHub Codespaces](https://docs.github.com/codespaces/overview).
 
-This opportunity provides a risk-free environment to explore these design patterns and see how Azure Cosmos DB can enhance your application development and data modeling efforts. Whether you're an experienced developer or just getting started, the free trial allows you to discover the benefits firsthand.
+Navigate to the individual folders of each design pattern for a dedicated `README.md` file and look for the GitHub Codespaced badge. 
+
+### Setting up Azure Cosmos DB
+
+All of these design patterns are built to run from a single Serverless Azure Cosmos DB account. Before running any of the samples, click the Deploy to Azure button below to create a Serverless Azure Cosmos DB account. You will need the URI Primary Key and Connection String for these. Keep those handy as you prepare each sample to run.
+
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fgithub.com%2FAzureCosmosDB%2Fdesign-patterns%2Ftree%2Fmain%2Fazuredeploy.json)
 
 Happy coding with Azure Cosmos DB and these powerful design patterns!
 

@@ -17,14 +17,14 @@ namespace Cosmos_Patterns_DistributedCounter
 
             var configuration = new ConfigurationBuilder()
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-                .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")}.json", optional: true);
+                .AddJsonFile($"appsettings.development.json", optional: true);
 
             var config = configuration.Build();
 
-            string endpoint = config["CosmosUri"];
-            string key = config["CosmosKey"];
-            string databaseName = config["CosmosDatabase"];
-            string containerName = config["CosmosContainer"];
+            string endpoint = config["CosmosUri"]!;
+            string key = config["CosmosKey"]!;
+            string databaseName = config["CosmosDatabase"]!;
+            string containerName = config["CosmosContainer"]!;
 
             dcos = new DistributedCounterOperationalService(endpoint, key, databaseName, containerName);
 

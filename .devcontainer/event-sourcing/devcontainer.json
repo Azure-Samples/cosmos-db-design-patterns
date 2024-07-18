@@ -3,7 +3,7 @@
     "image": "ghcr.io/azure-samples/cosmos-db-design-patterns/devcontainer-base:latest",
     "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
     "workspaceFolder": "/workspace/event-sourcing/source/",
-    "postAttachCommand": "dotnet build Cosmos_Patterns_EventSourcing.csproj",
+    "postAttachCommand": "dotnet build EventSourcing.csproj",
     "customizations": {
         "codespaces": {
             "openFiles": [
