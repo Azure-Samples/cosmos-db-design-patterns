@@ -63,7 +63,8 @@ Explore the `preallocation` pattern to understand how to preallocate resources, 
 
 Dive into the `schema-versioning` folder to learn how to manage changes to your data model over time with the schema versioning pattern. Read more about this design pattern in this [blog post](https://aka.ms/cosmosdbdesignpatterns/schemaversioning).  
 
-## Getting Started
+## Getting Started 
+<a href="#get-started"></a>
 
 ### Using the Terminal:
 - Open the terminal on your computer.
