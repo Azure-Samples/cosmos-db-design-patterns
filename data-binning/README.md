@@ -132,7 +132,7 @@ Note: In the demo application, aggregated events are collected based on system t
 
 In order to run the demos, you will need:
 
-- [.NET 8.0 Runtime](https://dotnet.microsoft.com/download/)
+- [.NET 8.0 Runtime](https://dotnet.microsoft.com/download)
 
 ## Confirm required tools are installed
 
