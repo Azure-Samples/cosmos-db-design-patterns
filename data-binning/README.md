@@ -128,51 +128,18 @@ Once binning is applied to summarize to a 1 minute window, the resulting event w
 
 Note: In the demo application, aggregated events are collected based on system time. The `numberOfReadings` will likely be less than 12 on the earliest `eventTimestamp` because that is usually a partial minute (from whenever the application is started until the first time current timestamp has seconds value of `00`).
 
-## Try this implementation
-
-In order to run the demos, you will need:
-
-- [.NET 8.0 Runtime](https://dotnet.microsoft.com/download)
-
-## Confirm required tools are installed
-
-Confirm you have the required versions of the tools installed for this demo.
-
-First, check the .NET runtime with this command:
-
-```bash
-dotnet --list-runtimes
-```
-
-As you may have multiple versions of the runtime installed, make sure that .NET components with versions that start with 6.0 appear as part of the output.
-
 ## Getting the code
 
-### **Clone the Repository to Your Local Computer:**
+### Using Terminal or VS Code
 
-**Using the Terminal:**
+Directions installing pre-requisites to run locally and for cloning this repository using [Terminal or VS Code](../README.md?#getting-started)
 
-- Open the terminal on your computer.
-- Navigate to the directory where you want to clone the repository.
-- Type `git clone https://github.com/Azure-Samples/cosmos-db-design-patterns.git` and press enter.
-- The repository will be cloned to your local machine.
 
-**Using Visual Studio Code:**
+### GitHub Codespaces
 
-- Open Visual Studio Code.
-- Click on the **Source Control** icon in the left sidebar.
-- Click on the **Clone Repository** button at the top of the Source Control panel.
-- Paste `https://github.com/Azure-Samples/cosmos-db-design-patterns.git` into the text field and press enter.
-- Select a directory where you want to clone the repository.
-- The repository will be cloned to your local machine.
+Open the application code in GitHub Codespaces:
 
-### **GitHub Codespaces**
-
-You can try out this implementation by running the code in [GitHub Codespaces](https://docs.github.com/codespaces/overview)
-
-- Open the application code in a GitHub Codespace:
-
-    [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/azure-samples/cosmos-db-design-patterns?quickstart=1&devcontainer_path=.devcontainer%2Fdata-binning%2Fdevcontainer.json)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/azure-samples/cosmos-db-design-patterns?quickstart=1&devcontainer_path=.devcontainer%2Fdata-binning%2Fdevcontainer.json)
 
 ## Set up application configuration files
 
