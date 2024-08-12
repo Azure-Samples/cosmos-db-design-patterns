@@ -42,7 +42,7 @@ In essence, materialized views serve as a performance-enhancing layer that strik
 
 ### Scenario: Implementation of materialized views for different partition keys
 
-In this section, we will look at implementing materialized views using the change feed.
+In this section, we will look at implementing materialized views using Azure Cosmos DB's change feed.
 
 Tailspin Toys stores its sales information in Azure Cosmos DB for NoSQL. As the sales details are coming, the sales details are written to a container named `Sales` and partitioned by the `/CustomerId`. However, the eCommerce site wants to show the products that are popular now, so it wants to show products with the most sales. Rather than querying the partitions by `CustomerId`, it makes more sense to query a container partitioned by the `Product`. Azure Cosmos DB's Change Feed can be used to create and maintain a materialized view of the sales data for faster and more efficient queries for the most popular products.
 
@@ -57,6 +57,8 @@ Why would you want to create two containers? Why does the partition key matter? 
 ```sql
 SELECT c.Product, SUM(c.Qty) as NumberSold FROM c WHERE c.Product = "Widget" GROUP BY c.Product
 ```
+
+**Note**: Azure Cosmos DB has a [materialized view feature](https://learn.microsoft.com/azure/cosmos-db/nosql/materialized-views) currently in preview. Depending upon the specific use-case, this feature may be an option versus using Cosmos DB's Change Feed capability demonstrated in this pattern. There are however some limitations in this preview, including using a filter predicate (WHERE clause) to populate the materialized view. For more information see [Materialize View Current limitations](https://learn.microsoft.com/azure/cosmos-db/nosql/materialized-views?tabs=azure-portal#current-limitations).
 
 When running this query for the Sales container - the container where the source data is stored, Azure Cosmos DB will look at the WHERE clause and try to identify the partitions that contain the data filtered in the WHERE clause. When the partition key is not in the WHERE clause, Azure Cosmos DB will query **all the partitions**. This may be ok for small containers with 1-2 partitions (up to 100GB) or data. However, as the container grows, this query will get progressively slower and more expensive. In short, *it will not scale*.
 
