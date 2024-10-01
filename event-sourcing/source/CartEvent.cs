@@ -11,7 +11,7 @@ namespace EventSourcing
         public int UserId { get; set; }
         public string EventType { get; set; } = "";
         public string? Product { get; set; }
-        public int? QuantityChange { get; set; }
+        public int? QuantityChange { get; set; } = 0;
         public List<CartItem>? ProductsInCart { get; set; }
         public string EventTimestamp { get; set; } = DateTime.UtcNow.ToString();
     }
