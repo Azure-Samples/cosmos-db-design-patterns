@@ -1,10 +1,7 @@
-using System;
-using System.Collections.Generic;
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.Functions.Worker;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
 namespace EventSourcing
@@ -18,18 +15,17 @@ namespace EventSourcing
             _logger = logger;
         }
 
-        [Function("EventSourcing")]
+        [Function("EventSourceFunction")]
         [CosmosDBOutput(
                 databaseName: "EventSourcingDB",
                 containerName: "CartEvents",
                 Connection = "CosmosDBConnection",
                 CreateIfNotExists = true,
                 PartitionKey = "/CartId")]
-        public async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req, 
-                FunctionContext context)
+        public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Function, "get", "post")] HttpRequest req)
         {
-            _logger.LogInformation("C# HTTP trigger function processed a request.");
+            
+            _logger.LogInformation("HTTP trigger function processed a new Cart Event.");
 
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             string responseMessage;
@@ -39,7 +35,7 @@ namespace EventSourcing
                 CartEvent cartEvent = JsonConvert.DeserializeObject<CartEvent>(requestBody) ?? throw new ArgumentException("Request body is empty");
                 _logger.LogInformation(JsonConvert.SerializeObject(cartEvent, Formatting.Indented));
 
-                //responseMessage = $"HTTP function successful for event {cartEvent.EventType} for cart {cartEvent.CartId}.";
+                responseMessage = $"HTTP function successful for event {cartEvent.EventType} for cart {cartEvent.CartId}.";
                 return new OkObjectResult(cartEvent);
             }
             else
