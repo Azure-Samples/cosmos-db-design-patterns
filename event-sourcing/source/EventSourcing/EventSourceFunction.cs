@@ -1,36 +1,31 @@
-using System;
-using System.Collections.Generic;
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.Functions.Worker;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
 namespace EventSourcing
 {
     public class EventSourceFunction
     {
-        private readonly ILogger _logger;
+        private readonly ILogger<EventSourceFunction> _logger;
 
-        public EventSourceFunction(ILoggerFactory loggerFactory)
+        public EventSourceFunction(ILogger<EventSourceFunction> logger)
         {
-            _logger = loggerFactory.CreateLogger<EventSourceFunction>();
+            _logger = logger;
         }
 
-        [Function("EventSourcing")]
+        [Function("EventSourceFunction")]
         [CosmosDBOutput(
                 databaseName: "EventSourcingDB",
                 containerName: "CartEvents",
                 Connection = "CosmosDBConnection",
                 CreateIfNotExists = true,
                 PartitionKey = "/CartId")]
-        public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
-                IAsyncCollector<CartEvent> cartEventOut,
-                ILogger log)
+        public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Function, "get", "post")] HttpRequest req)
         {
-            log.LogInformation("C# HTTP trigger function processed a request.");
+            
+            _logger.LogInformation("HTTP trigger function processed a new Cart Event.");
 
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             string responseMessage;
@@ -38,9 +33,10 @@ namespace EventSourcing
             if (requestBody != null)
             {
                 CartEvent cartEvent = JsonConvert.DeserializeObject<CartEvent>(requestBody) ?? throw new ArgumentException("Request body is empty");
-                await cartEventOut.AddAsync(cartEvent);
+                _logger.LogInformation(JsonConvert.SerializeObject(cartEvent, Formatting.Indented));
 
                 responseMessage = $"HTTP function successful for event {cartEvent.EventType} for cart {cartEvent.CartId}.";
+                return new OkObjectResult(cartEvent);
             }
             else
             {
