@@ -1,3 +1,18 @@
+---
+page_type: sample
+languages:
+- azdeveloper
+- aspx-csharp
+- csharp
+- nosql
+products:
+- azure
+- azure-cosmos-db
+urlFragment: design-patterns
+name: Azure Cosmos DB Design Pattern
+description: A collection that showcases a variety of design patterns that can be employed to build robust and efficient applications using Azure Cosmos DB's NoSQL capabilities.
+---
+
 # Azure Cosmos DB Design Pattern Samples
 
 ![Azure Cosmos DB](/media/azure-cosmos-db-logo.jpg)
