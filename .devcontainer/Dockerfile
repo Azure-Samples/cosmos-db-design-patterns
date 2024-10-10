@@ -13,6 +13,7 @@ RUN wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor 
 # Set the working directory
 WORKDIR /workspace
 
+
 # Copy the project files
 COPY . .
 
