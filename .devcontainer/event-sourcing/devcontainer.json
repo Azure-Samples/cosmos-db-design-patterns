@@ -1,9 +1,20 @@
 {
     "name": "Event sourcing pattern",
-    "image": "ghcr.io/azure-samples/cosmos-db-design-patterns/devcontainer-base:latest",
+    "image": "mcr.microsoft.com/devcontainers/dotnet:8.0",
     "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
     "workspaceFolder": "/workspace/event-sourcing/source/",
     "postAttachCommand": "dotnet build EventSourcing.csproj",
+    "postCreateCommand": "npm install --global azure-functions-core-tools@v4",
+    "features": {
+        "ghcr.io/devcontainers/features/node": {},
+        "ghcr.io/devcontainers/features/azure-cli": {
+            "installBicep": true,
+            "extensions": "cosmosdb-preview"
+        }
+    },
+    "containerEnv": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+    },
     "customizations": {
         "codespaces": {
             "openFiles": [
@@ -11,6 +22,12 @@
             ]
         },
         "vscode": {
+            "extensions": [
+                "ms-dotnettools.csdevkit",
+                "ms-vscode.azurecli",                
+                "ms-azuretools.vscode-azurefunctions",
+                "ms-azuretools.vscode-bicep"
+            ],
             "settings": {
                 "git.openRepositoryInParentFolders": "always"
             }
