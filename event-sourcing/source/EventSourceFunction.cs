@@ -11,11 +11,11 @@ namespace EventSourcing
 {
     public class EventSourceFunction
     {
-        private readonly ILogger _logger;
+        private readonly ILogger<EventSourceFunction> _logger;
 
-        public EventSourceFunction(ILoggerFactory loggerFactory)
+        public EventSourceFunction(ILogger<EventSourceFunction> logger)
         {
-            _logger = loggerFactory.CreateLogger<EventSourceFunction>();
+            _logger = logger;
         }
 
         [Function("EventSourcing")]
@@ -25,12 +25,11 @@ namespace EventSourcing
                 Connection = "CosmosDBConnection",
                 CreateIfNotExists = true,
                 PartitionKey = "/CartId")]
-        public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
-                IAsyncCollector<CartEvent> cartEventOut,
-                ILogger log)
+        public async Task<IActionResult> Run(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req, 
+                FunctionContext context)
         {
-            log.LogInformation("C# HTTP trigger function processed a request.");
+            _logger.LogInformation("C# HTTP trigger function processed a request.");
 
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             string responseMessage;
@@ -38,9 +37,10 @@ namespace EventSourcing
             if (requestBody != null)
             {
                 CartEvent cartEvent = JsonConvert.DeserializeObject<CartEvent>(requestBody) ?? throw new ArgumentException("Request body is empty");
-                await cartEventOut.AddAsync(cartEvent);
+                _logger.LogInformation(JsonConvert.SerializeObject(cartEvent, Formatting.Indented));
 
-                responseMessage = $"HTTP function successful for event {cartEvent.EventType} for cart {cartEvent.CartId}.";
+                //responseMessage = $"HTTP function successful for event {cartEvent.EventType} for cart {cartEvent.CartId}.";
+                return new OkObjectResult(cartEvent);
             }
             else
             {

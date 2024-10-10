@@ -23,7 +23,7 @@ While event sourcing can be implemented with various types of databases, this pa
 
 1. Flexible schema: NoSQL databases generally allow for schema flexibility. Easy support for unstructured event data formats that are often in JSON formats align perfectly with the needs of event sourcing architectures.
 
-1. Scalability: NoSQL databases are typically designed for high scale. Data volumes in event sourcing patterns can range from the thousands to millions of messages per second. An underlying database needs to scale and do so seemlessly. Azure Cosmos DB's scale-out architecture is well-suited here with highly elastic throughput and storage.
+1. Scalability: NoSQL databases are typically designed for high scale. Data volumes in event sourcing patterns can range from the thousands to millions of messages per second. An underlying database needs to scale and do so seamlessly. Azure Cosmos DB's scale-out architecture is well-suited here with highly elastic throughput and storage.
 
 This sample demonstrates:
 

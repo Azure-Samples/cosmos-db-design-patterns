@@ -3,16 +3,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
 
-var host = new HostBuilder()
-    .ConfigureFunctionsWebApplication()
-    .ConfigureServices(services =>
-    {
-        services.AddApplicationInsightsTelemetryWorkerService();
-        services.ConfigureFunctionsApplicationInsights();
-    })
-    .Build();
-
-host.Run();
 
 namespace EventSourcing
 {
@@ -23,10 +13,11 @@ namespace EventSourcing
 
         public static async Task<string> CreateCartEvent(HttpClient client, CartEvent cartEvent)
         {
-            var url = $"{urlBase}/api/EventSourceFunction";
+            var url = $"{urlBase}/api/EventSourcing";
 
             string jsonBody = JsonConvert.SerializeObject(cartEvent);
             var body = new StringContent(jsonBody, System.Text.Encoding.UTF8, "application/json");
+            Console.WriteLine(jsonBody);
 
             var response = await client.PostAsync(url, body);
             string result = await response.Content.ReadAsStringAsync();
@@ -108,7 +99,7 @@ namespace EventSourcing
                     cartEvent.SessionId = sessionId;
                     cartEvent.UserId = userId;
                     cartEvent.EventType = action;
-                    cartEvent.ProductsInCart = null;
+                    cartEvent.ProductsInCart =  new List<CartItem>();
                     cartEvents.Add(cartEvent);
                 }
             }
@@ -118,15 +109,25 @@ namespace EventSourcing
         static async Task Main(string[] args)
         {
 
-            HttpClient httpClient = new HttpClient();
+            if (args.Length > 0 && args[0] != "console")
+            {
+                var host = new HostBuilder()
+                .ConfigureFunctionsWebApplication()
+                .ConfigureServices(services =>
+                {
+                    services.AddApplicationInsightsTelemetryWorkerService();
+                    services.ConfigureFunctionsApplicationInsights();
+                })
+                .Build();
 
-            //var services = new ServiceCollection();
-            //services.AddHttpClient(); // Add the HttpClientFactory service
-            //services.AddLogging(); // Add the logging service
-            //var serviceProvider = services.BuildServiceProvider();
+                await host.RunAsync();
+            }
 
-            //// Resolve the HttpClient from the service provider
-            //var httpClient = serviceProvider.GetRequiredService<HttpClient>();
+            else
+            {
+                HttpClient httpClient = new HttpClient();
+
+
             httpClient.Timeout = TimeSpan.FromMinutes(10);
 
             Console.WriteLine("This code will demonstrate the Event Sourcing pattern by saving shopping cart events to Azure Cosmos DB for NoSQL account.");
@@ -151,6 +152,7 @@ namespace EventSourcing
 
             System.Console.WriteLine($"Function completed generation of shopping cart events");
             Console.WriteLine($"Check CartEventContainer for new shopping cart events");
+            }
         }
     }
 }
