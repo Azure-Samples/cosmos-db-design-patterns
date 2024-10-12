@@ -61,7 +61,7 @@ namespace CosmosDistributedCounter
                     DistributedCounter dc= await cosmos.ReadDistributedCounterAsync(dcId,pc.Id);
                     if (dc.Value < MINVALUE_OF_DC_FOR_MERGE)
                     {
-                        MergeDistributedCountersWithLowValue(pc);//converge the dcList with  small values 
+                        await MergeDistributedCountersWithLowValue(pc);//converge the dcList with  small values 
                     }
                     return false;
                 }

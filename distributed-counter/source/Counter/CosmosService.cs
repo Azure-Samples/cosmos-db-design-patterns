@@ -39,7 +39,7 @@ namespace CosmosDistributedLock.Services
         }
 
 
-        public async Task<PrimaryCounter> ReadPrimaryCounterAsync(string counterId)
+        public async Task<PrimaryCounter?> ReadPrimaryCounterAsync(string counterId)
         {
 
             try

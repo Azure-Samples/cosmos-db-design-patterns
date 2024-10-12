@@ -156,11 +156,13 @@ Next move to the other project.
     dotnet run
     ```
 
+1. If a new browser window does not open, navigate to: `http://localhost:5000`
+
 1. In the web application, create a new counter using the default settings.
 
     ![Screenshot of the new distributed counter configuration settings.](media/distributed-counter-configuration-settings.png)
 
-1. Record the value of the **Counter ID** field in the web application.
+1. Click the clip board icon on the right to the value of the **Counter ID** field in the web application.
 
     ![Screenshot of the distributed counter starting page with the identifier rendered.](media/distributed-counter-identifier.png)
 
@@ -196,6 +198,8 @@ Next move to the other project.
 1. Go back to the web application and observe the counters values change over time.
 
     ![Screenshot of the dynamic graph updated with distributed counter values.](media/distributed-counter-graph.png)
+
+1. When all the counters drop to zero in the chart, return to the consumer app and press `ctrl-c` to stop the app.
 
 ## Summary
 
