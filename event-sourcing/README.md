@@ -156,7 +156,7 @@ You will need the connection string for the Azure Cosmos DB account for this rep
         "IsEncrypted": false,
         "Values": {
             "AzureWebJobsStorage": "UseDevelopmentStorage=true",
-            "FUNCTIONS_WORKER_RUNTIME": "dotnet",
+            "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
             "CosmosDBConnection" : "YOUR_PRIMARY_CONNECTION_STRING"
         }
     }
