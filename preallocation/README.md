@@ -227,7 +227,7 @@ Directions installing pre-requisites to run locally and for cloning this reposit
 
 Open the application code in GitHub Codespaces:
 
-    [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/azure-samples/cosmos-db-design-patterns?quickstart=1&devcontainer_path=.devcontainer%2Fpreallocation%2Fdevcontainer.json)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/azure-samples/cosmos-db-design-patterns?quickstart=1&devcontainer_path=.devcontainer%2Fpreallocation%2Fdevcontainer.json)
 
 ## Set up application configuration files
 
@@ -251,43 +251,39 @@ While on the Keys blade, make note of the `URI` and `PRIMARy KEY`. You will need
     "WithPreallocation": "WithPreallocation",
     "WithoutPreallocation": "WithoutPreallocation"
   }
-    ```
+  ```
 
 1. Replace the `CosmosURI` and `CosmosKey` with the values from the Keys blade in the Azure Portal.
-1. Modify the **Copy to Output Directory** to **Copy Always** (For VS Code add the XML below to the csproj file)
-1. Save the file.
 
-  ```xml
-    <ItemGroup>
-      <Content Update="appsettings.development.json">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </Content>
-    </ItemGroup>
-  ```
+1. Save the file.
 
 ## Run the demo
 
 1. Open the application code.
-1. From Visual Studio Code, start the app by running the following:
 
-    ```bash
-    dotnet build
-    dotnet run
-    ```
+1. From Codespaces or locally with Visual Studio Code, start the app by running the following:
 
-    or
-    From Visual Studio, press **F5** to start the application.
+```bash
+  dotnet build
+  dotnet run
+```
+
+or from Visual Studio, press **F5** to start the application.
 
 1. The application will automatically create a database called `PreallocationDB` with two containers, `WithPreallocation` and `WithoutPreallocation`.
+
 1. Select option `1` in the console application to load the hotel and room data. 
-    1. In Azure Portal, browse to the Azure Cosmos DB account for this respository.
-    1. Select **Data Explorer** in the left menu.
-    1. Locate and open the `PreallocationDB`
-    1. Review the data in both containers. Notice different structure for both containers. The 'Reservation' entity type documents are not used in the `WithPreallocation` container. Instead the reservation dates for a room are pre-allocated in an array in each room document.
+  1. In Azure Portal, browse to the Azure Cosmos DB account for this respository.
+  1. Select **Data Explorer** in the left menu.
+  1. Locate and open the `PreallocationDB`
+  1. Review the data in both containers. Notice different structure for both containers. The 'Reservation' entity type documents are not used in the `WithPreallocation` container. Instead the reservation dates for a room are pre-allocated in an array in each room document.
 
 1. Select option `2` to run the query with out Preallocation. Provide a date in DD-MM-YYYY format. Note the RU Charge and elapsed time.
+
 1. Select option `3` to run the same query using Preallocation. Provide a date in DD-MM-YYYY format. Note the RU Charge and elapsed time.
+
 1. Compare the code for both options. Notice that Preallocation allows for faster response times. However it often comes at a cost of higher RU charge due to the larger document sizes. 
+
 1. In the `Hotel.cs` view the queries for each method. Note the simpler design for queries and application logic using Preallocation  versus when not using it.
 
 ## Summary
