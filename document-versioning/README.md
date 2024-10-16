@@ -56,7 +56,7 @@ Now, suppose the customer had to cancel the order. The replacement document coul
 }
 ```
 
-Looking at these documents, though, there is no easy way to tell which of these documents is the current document. By using document versioning, add a field to the document to track the version number. Update the current document in a `CurrentOrderStatus` container and add the change to the `HistoricalOrderStatus` container. While Azure Cosmos DB for NoSQL does not have a document versioning feature, you can build in the handling through an application. In the two projects here, you can see how to implement the document versioning feature with the following components:
+Looking at these documents, though, there is no easy way to tell which of these documents is the current document. By using document versioning, add a property to the document to track the version number. Update the current document in a `CurrentOrderStatus` container and add the change to the `HistoricalOrderStatus` container. In the two projects here, you can see how to implement the document versioning feature with the following components:
 
 - A website that allows you to create orders and change the order status. The website updates the document version and saves the document to the current status container.
 - A Function App that reads the data for the Azure Cosmos DB change feed and copies the versioned documents to the historical status container
@@ -67,43 +67,21 @@ The demo website includes links to update the orders to the different statuses.
 
 ## Try this implementation
 
-In order to run the demos, you will need:
-
-- [.NET 8.0 Runtime](https://dotnet.microsoft.com/download)
-- [Azure Functions Core Tools v4](https://learn.microsoft.com/azure/azure-functions/functions-run-local#install-the-azure-functions-core-tools)
-
-## Confirm required tools are installed
-
-Confirm you have the required versions of the tools installed for this demo.
-
-First, check the .NET runtime with this command:
-
-```bash
-dotnet --list-runtimes
-```
-
-As you may have multiple versions of the runtime installed, make sure that .NET components with versions that start with 8.0 appear as part of the output.
-
-Next, check the version of Azure Functions Core Tools with this command:
-
-```bash
-func --version
-```
-
-You should have installed a version that starts with `4.`. If you do not have a v4 version installed, you will need to uninstall the older version and follow [these instructions for installing Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local#install-the-azure-functions-core-tools).
-
-## Getting the code
-
-### Using Terminal or VS Code
-
-Directions installing pre-requisites to run locally and for cloning this repository using [Terminal or VS Code](../README.md?#getting-started)
-
-
 ### GitHub Codespaces
 
 Open the application code in GitHub Codespaces:
 
-    [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/azure-samples/cosmos-db-design-patterns?quickstart=1&devcontainer_path=.devcontainer%2Fdocument-versioning%2Fdevcontainer.json)
+  [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/azure-samples/cosmos-db-design-patterns?quickstart=1&devcontainer_path=.devcontainer%2Fdocument-versioning%2Fdevcontainer.json)
+
+### Or Run locally
+
+```bash
+  git clone https://github.com/Azure-Samples/cosmos-db-design-patterns/
+```
+
+Directions installing pre-requisites to run locally and for cloning this repository using [Terminal or VS Code](../README.md?#getting-started)
+
+
 
 ## Set up application configuration files
 
@@ -121,78 +99,63 @@ While on the Keys blade, make note of the `URI`, `PRIMARy KEY` and `PRIMARY CONN
 
 1. Open the website project and add a new **appsettings.development.json** file with the following contents:
 
-  ```json
-  {
-    "CosmosDb": {
-      "CosmosUri": "",
-      "CosmosKey": "",
-      "Database": "DocumentVersionDB",
-      "CurrentOrderContainer": "CurrentOrderStatus",
-      "HistoricalOrderContainer": "HistoricalOrderStatus",
-      "PartitionKey": "/CustomerId"
-    }
+```json
+{
+  "CosmosDb": {
+    "CosmosUri": "",
+    "CosmosKey": "",
+    "Database": "DocumentVersionDB",
+    "CurrentOrderContainer": "CurrentOrderStatus",
+    "HistoricalOrderContainer": "HistoricalOrderStatus",
+    "PartitionKey": "/CustomerId"
   }
-    ```
+}
+```
 
 1. Replace the `CosmosURI` and `CosmosKey` with the values from the Keys blade in the Azure Portal.
-1. Modify the **Copy to Output Directory** to **Copy Always** (For VS Code add the XML below to the csproj file)
+
 1. Save the file.
 
-  ```xml
-    <ItemGroup>
-      <Content Update="appsettings.development.json">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </Content>
-    </ItemGroup>
-  ```
 
 ## Prepare the function app configuration
 
 1. Open the application code. Add a file to the `function-app` folder called **local.settings.json** with the following contents:
 
-    ```json
-    {
-      "IsEncrypted": false,
-      "Values": {
-        "AzureWebJobsStorage": "UseDevelopmentStorage=false",
-        "FUNCTIONS_WORKER_RUNTIME": "dotnet",
-        "CosmosDBConnection" : "YOUR_PRIMARY_CONNECTION_STRING"
-      }
-    }
-    ```
+```json
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=false",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet",
+    "CosmosDBConnection" : "YOUR_PRIMARY_CONNECTION_STRING"
+  }
+}
+```
 
 1. Replace `YOUR_PRIMARY_CONNECTION_STRING` with the `PRIMARY CONNECTION STRING` value noted earlier.
-1. Modify the **Copy to Output Directory** to **Copy Always** (For VS Code add the XML below to the csproj file)
+
 1. Save the file.
 
-  ```xml
-    <ItemGroup>
-      <None Update="local.settings.json">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        <CopyToPublishDirectory>Never</CopyToPublishDirectory>
-      </None>
-    </ItemGroup>
-  ```
 
-## Run the demo locally
+## Run the demo
 
-1. From the `function-app` folder, start the Azure Function with:
+1. In Codespaces or locally, navigate to the `function-app` folder, start the Azure Function with:
 
-    ```bash
-    func start
-    ```
+```bash
+  func start
+```
 
-1. Open a new Terminal in VS Code or where ever you are running this.
+1. Open a new Terminal.
 
 1. Navigate to the `website` folder, start the website with:
 
-    ```bash
-    dotnet run
-    ```
+```bash
+  dotnet run
+```
 
-    Navigate to the URL displayed in the output. In the example below, the URL is shown as part of the `info` output, following the "Now listening on:" text.
+Navigate to the URL displayed in the output. In the example below, the URL is shown as part of the `info` output, following the "Now listening on:" text.
 
-    ![Screenshot of the 'dotnet run' output. The URL to navigate to is highlighted. In the screenshot, the URL is 'http://localhost:5183'.](images/local-site-url.png)
+![Screenshot of the 'dotnet run' output. The URL to navigate to is highlighted. In the screenshot, the URL is 'http://localhost:5183'.](images/local-site-url.png)
 
 
 1. With both the Azure Function and web app running, create 5-10 orders with the website.
@@ -201,7 +164,7 @@ This is what the website will look like when starting out:
 
 ![Screenshot of the Document Versioning Demo website. There is a form at the top labeled 'Create New Orders'. It has a field labeled 'Number to create', an input box, and a 'Submit' button. There are tables for Submitted Orders, Fulfilled Orders, Delivered Orders, and Cancelled Orders.](images/document-versioning-demo-1.png)
 
- The Create New Orders form will create orders without the DocumentVersion property. Enter a number in the **Number to create** text box, then select **Submit**. This is how the new order appears on the website:
+The Create New Orders form will create orders without the DocumentVersion property. Enter a number in the **Number to create** text box, then select **Submit**. This is how the new order appears on the website:
 
 ![Screenshot of the Submitted Orders section with an order showing the Document Version of Submitted.](images/newly-submitted-order.png)
 
@@ -215,21 +178,21 @@ Unversioned documents will still show as document version 1 due to the `Versione
 
 Select any of the links in the Links columns to change the status on the document.
 
-- As you advance the status of the orders, notice that the Document Version field increments. The document version numbering is managed by the application, specifically in the `HandleVersioning()` function in the `OrderHelper` class in the `Services` folder.
+As you advance the status of the orders, notice that the Document Version field increments. The document version numbering is managed by the application, specifically in the `HandleVersioning()` function in the `OrderHelper` class in the `Services` folder.
 
-    ![Screenshot of the Document Versioning Demo website. There are tables for Submitted Orders, Fulfilled Orders, Delivered Orders, and Cancelled Orders. Fulfilled Orders and Cancelled Orders show a Document Version of 2. Delivered Orders show a Document Version of 3.](images/document-versioning-demo-2.png)
+![Screenshot of the Document Versioning Demo website. There are tables for Submitted Orders, Fulfilled Orders, Delivered Orders, and Cancelled Orders. Fulfilled Orders and Cancelled Orders show a Document Version of 2. Delivered Orders show a Document Version of 3.](images/document-versioning-demo-2.png)
 
-- You can query the `CurrentOrderStatus` container in Data Explorer for the order number (`OrderId`) and Customer Id (`CustomerId`) and should only get back 1 document - the current document.
+You can query the `CurrentOrderStatus` container in Data Explorer for the order number (`OrderId`) and Customer Id (`CustomerId`) and should only get back 1 document - the current document.
 
-    In this example, the previously shown document was fulfilled. Notice in the Azure Data Explorer results that the `DocumentVersion` property is now a part of the document in `CurrentOrderStatus`.
+In this example, the previously shown document was fulfilled. Notice in the Azure Data Explorer results that the `DocumentVersion` property is now a part of the document in `CurrentOrderStatus`.
 
-    ![Screenshot of Azure Data Explorer with the document from the previous example. The query is querying for a specific OrderId and CustomerId in the CurrentOrderStatus container. The Status for this document is now Fulfilled. The DocumentVersion property appears at the top of the document and is now at 2.](images/newly-submitted-order-fulfilled-with-document-version.png)
+![Screenshot of Azure Data Explorer with the document from the previous example. The query is querying for a specific OrderId and CustomerId in the CurrentOrderStatus container. The Status for this document is now Fulfilled. The DocumentVersion property appears at the top of the document and is now at 2.](images/newly-submitted-order-fulfilled-with-document-version.png)
 
-- You can also query the `HistoricalOrderStatus` container for that order number and customer Id and get back the entire order status history.
+You can also query the `HistoricalOrderStatus` container for that order number and customer Id and get back the entire order status history.
 
-    In this example, the previously shown document was fulfilled. Notice in the Azure Data Explorer results that the `DocumentVersion` property is now a part of the document in `CurrentOrderStatus`.
+In this example, the previously shown document was fulfilled. Notice in the Azure Data Explorer results that the `DocumentVersion` property is now a part of the document in `CurrentOrderStatus`.
 
-    ![Screenshot of Azure Data Explorer querying HistoricalOrderStatus with the OrderId and CustomerId from the previous example. The Status is now Fulfilled. The DocumentVersion property appears at the top of the document and is now at 2. There are 2 results in the results list.](images/newly-submitted-order-fulfilled-with-history.png)
+![Screenshot of Azure Data Explorer querying HistoricalOrderStatus with the OrderId and CustomerId from the previous example. The Status is now Fulfilled. The DocumentVersion property appears at the top of the document and is now at 2. There are 2 results in the results list.](images/newly-submitted-order-fulfilled-with-history.png)
 
 ## Summary
 
