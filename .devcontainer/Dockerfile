@@ -16,6 +16,8 @@ RUN wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor 
     && apt-get update \
     && apt-get install -y azure-functions-core-tools-4
 
-RUN apt-get update
+# Add the installation directory to the PATH environment variable
+ENV PATH="/usr/bin:${PATH}"
 
-RUN apt-get install --yes azure-functions-core-tools-4
+# Verify installation
+RUN func --version
