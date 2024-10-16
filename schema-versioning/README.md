@@ -215,22 +215,13 @@ You need to configure **two** application configuration files to run these demos
 1. Open the website folder and add a new **appsettings.development.json** file with the following contents:
 
   ```json
-    {
-      "Logging": {
-        "LogLevel": {
-          "Default": "Information",
-          "Microsoft.AspNetCore": "Warning"
-        }
-      },
-      "AllowedHosts": "*",
-      "CosmosDb": {
-        "CosmosUri": "",
-        "CosmosKey": "",
-        "DatabaseName": "SchemaVersionDB",
-        "ContainerName": "ShoppingCart",
-        "PartitionKeyPath": "/id"
-      }
-    }
+  "CosmosDb": {
+    "CosmosUri": "",
+    "CosmosKey": "",
+    "DatabaseName": "SchemaVersionDB",
+    "ContainerName": "ShoppingCart",
+    "PartitionKeyPath": "/id"
+  }
   ```
 
 1. Replace the `CosmosURI` and `CosmosKey` with the values from the Keys blade in the Azure Portal.
