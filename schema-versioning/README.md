@@ -18,16 +18,16 @@ Schema versioning allows NoSQL databases to evolve with applications, minimizing
 
 This sample demonstrates:
 
-- ✅ Using a data generator to generate original carts and schema-versioned carts.
+- ✅ Using a data generator to generate data with an original schema, and data with a schema-version.
 - ✅ Running a website to show data generated in Azure Cosmos DB.
 
 ## Common scenario
 
-As the amount of data grows and the usage of the data grows, it may make sense to restructure the document. Schema versioning makes it possible to track the changes of schema through a schema tracking field. When using schema versioning, it is also advised to keep a file with release notes that explain what changes were made in each version.
+A major benefit of NoSQL databases is its ability to handle changes to schema. This is especially helpful in cases where an application has gone into production and it is necessary to adapt to changing data requirements. NoSQL databases like Azure Cosmos DB, not only make it possible to adapt to these changes but also to enable versioning of these changes by adding an additional property to track which version of the changes the data represents. This version can be used to handle and process the changing data at run-time.
 
 ## Sample implementation of schema versioning
 
-Suppose the Wide World Importers had an online store with data in Azure Cosmos DB for NoSQL. This is the initial cart object.
+In this scenario we have an online retailer, Wide World Importers, with data in Azure Cosmos DB for NoSQL. This is the initial cart object in their application.
 
 ```csharp
 public class Cart
@@ -65,7 +65,7 @@ When stored in Azure Cosmos DB for NoSQL, a cart would look like this:
 }
 ```
 
-This model was initially designed assuming products were ordered as-is without customizations. However, after feedback, they realized they needed to track special order details. It does not make sense to update all cart items with this feature, so adding a schema version field to the cart can be used to distinguish schema changes. The changes in the document would be handled at the application level.
+This model was initially designed assuming products were ordered as-is without customizations. However, after feedback, they realized they needed to track special order details. It does not make sense to update all cart items with this feature, so adding a schema version property to the cart can be used to distinguish schema changes. The changes in the document would be handled at the application level.
 
 This could be the updated class with schema versioning:
 
@@ -75,7 +75,7 @@ public class CartWithVersion
     [JsonProperty("id")]
     public string Id { get; set; } = Guid.NewGuid().ToString();
     public string SessionId { get; set; } = Guid.NewGuid().ToString();
-    public long CustomerId { get; set; }
+    public int CustomerId { get; set; }
     public List<CartItemWithSpecialOrder>? Items { get; set;}
     // Track the schema version
     public int SchemaVersion = 2;
@@ -151,88 +151,38 @@ public class Cart
 }
 ```
 
-The website demo shows the output based on conditional handling.
-
-```razor
-@foreach (Cart cart in Model.Carts){
-    <section data-id="@cart.Id">
-        <p><strong>Customer </strong>@cart.CustomerId</p>
-        <table>
-            <thead>
-                <tr>
-                    @if(cart.SchemaVersion != null){
-                        <th>Schema Version</th>
-                    }
-                    <th>Product Name</th>
-                    <th>Quantity</th>
-                    @if (cart.HasSpecialOrders()){
-                        <th>Special Order Notes</th>
-                    }
-                </tr>
-            </thead>
-        @foreach (var item in cart.Items)
-        {
-            <tr>
-                @if(cart.SchemaVersion != null){
-                    <td>@cart.SchemaVersion</td>
-                }
-                <td>@item.ProductName</td>
-                <td>@item.Quantity</td>
-                @if (cart.HasSpecialOrders()){
-                    <td>
-                    @if (item.IsSpecialOrder){
-                        @item.SpecialOrderNotes
-                    }
-                    </td>
-                }
-            </tr>
-        }
-        </table>
-    </section>
-}
-```
-
-When you need to keep track of schema changes, use this schema versioning pattern.
 
 ## Try this implementation
 
-In order to run the demos, you will need:
-
-- [.NET 8.0 Runtime](https://dotnet.microsoft.com/download)
-- [Azure Functions Core Tools v4](https://learn.microsoft.com/azure/azure-functions/functions-run-local#install-the-azure-functions-core-tools)
-
-## Confirm required tools are installed
-
-Confirm you have the required versions of the tools installed for this demo.
-
-First, check the .NET runtime with this command:
-
-```bash
-dotnet --list-runtimes
-```
-
-As you may have multiple versions of the runtime installed, make sure that .NET components with versions that start with 6.0 appear as part of the output.
-
-Next, check the version of Azure Functions Core Tools with this command:
-
-```bash
-func --version
-```
-
-You should have installed a version that starts with `4.`. If you do not have a v4 version installed, you will need to uninstall the older version and follow [these instructions for installing Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local#install-the-azure-functions-core-tools).
-
-## Getting the code
-
-### Using Terminal or VS Code
-
-Directions installing pre-requisites to run locally and for cloning this repository using [Terminal or VS Code](../README.md?#getting-started)
-
+You can run this sample locally or in GitHub Codespaces:
 
 ### GitHub Codespaces
 
 Open the application code in GitHub Codespaces:
 
-    [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/azure-samples/cosmos-db-design-patterns?quickstart=1&devcontainer_path=.devcontainer%2Fschema-versioning%2Fdevcontainer.json)
+  [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/azure-samples/cosmos-db-design-patterns?quickstart=1&devcontainer_path=.devcontainer%2Fschema-versioning%2Fdevcontainer.json)
+
+
+### Run locally
+
+```bash
+  git clone https://github.com/Azure-Samples/cosmos-db-design-patterns/
+```
+
+### Prerequisites
+
+If running locally you will need to install .NET 8.
+
+- [.NET 8.0 Runtime](https://dotnet.microsoft.com/download)
+
+To confirm you have the required versions of the tools installed.
+
+First, check the .NET runtime with this command. Make sure that .NET components with versions that start with 8.0 appear as part of the output:
+
+```bash
+dotnet --list-runtimes
+```
+
 
 ## Set up application configuration files
 
@@ -244,9 +194,9 @@ You need to configure **two** application configuration files to run these demos
 
 1. From the navigation, under **Settings**, select **Keys**. The values you need for the application settings for the demo are here.
 
-While on the Keys blade, make note of the `URI` and `PRIMARY KEY`. You will need these for the sections below.
+1. While on the Keys blade, make note of the `URI` and `PRIMARY KEY`. You will need these for the sections below.
 
-1. Open the data-generator project and add a new **appsettings.development.json** file with the following contents:
+1. In Codespace or locally, open the data-generator folder and add a new **appsettings.development.json** file with the following contents:
 
   ```json
     {
@@ -259,20 +209,10 @@ While on the Keys blade, make note of the `URI` and `PRIMARY KEY`. You will need
   ```
 
 1. Replace the `CosmosURI` and `CosmosKey` with the values from the Keys blade in the Azure Portal.
-1. Modify the **Copy to Output Directory** to **Copy Always** (For VS Code add the XML below to the csproj file)
+
 1. Save the file.
 
-  ```xml
-    <ItemGroup>
-      <Content Update="appsettings.development.json">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </Content>
-    </ItemGroup>
-  ```
-
-Then repeat this for the next project.
-
-1. Open the website project and add a new **appsettings.development.json** file with the following contents:
+1. Open the website folder and add a new **appsettings.development.json** file with the following contents:
 
   ```json
     {
@@ -294,21 +234,13 @@ Then repeat this for the next project.
   ```
 
 1. Replace the `CosmosURI` and `CosmosKey` with the values from the Keys blade in the Azure Portal.
-1. Modify the **Copy to Output Directory** to **Copy Always** (For VS Code add the XML below to the csproj file)
-1. Save the file.
 
-  ```xml
-    <ItemGroup>
-      <Content Update="appsettings.development.json">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </Content>
-    </ItemGroup>
-  ```
+1. Save the file.
 
 
 ## Generate data
 
-Open the application code. Run the data generator to generate original carts and schema-versioned carts.
+Navigate to the data-generator folder. Run the data generator to generate original carts and schema-versioned carts.
 
 ```bash
 cd ./data-generator
@@ -353,16 +285,6 @@ The output will show a variety of randomly generated carts and include the schem
 
 ## Summary
 
-Schema versioning is a valuable design pattern within Azure Cosmos DB due to its NoSQL nature and the dynamic requirements of modern applications. In the context of Azure Cosmos DB:
-
-- **Flexibility**: Azure Cosmos DB's schema-less nature aligns well with schema versioning. As applications evolve, schema changes can be seamlessly introduced without disrupting existing data.
-
-- **Adaptability**: With multiple API options like SQL, MongoDB, Cassandra, and Gremlin, Azure Cosmos DB caters to diverse data needs. Schema versioning ensures smooth transitions across APIs and helps maintain consistency.
-
-- **Continuous Development**: Azure Cosmos DB is a cornerstone of cloud-native applications that demand rapid iteration. Schema versioning empowers continuous development by accommodating changing data structures while upholding data integrity.
-
-- **Backward Compatibility**: The ability to coexist with multiple schema versions guarantees backward compatibility. Applications can function with data in both old and new formats during the transition period.
-
-- **Data Security**: By minimizing abrupt schema changes, schema versioning reduces the risk of data loss and corruption. It enables gradual and controlled adaptation to evolving requirements.
+Schema versioning is a valuable design pattern within Azure Cosmos DB. Azure Cosmos DB's schema-less nature aligns well with schema versioning. As applications evolve, schema changes can be seamlessly introduced without disrupting existing data. The ability to coexist with multiple schema versions guarantees backward compatibility. Applications can function with data in both old and new formats during the transition period.
 
 In summary, schema versioning is a crucial design pattern for Azure Cosmos DB, promoting agility, compatibility, and robust data management within the dynamic landscape of modern applications.
