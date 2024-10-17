@@ -31,11 +31,11 @@ namespace DistributedCounterDashboard
         {
             services.AddRazorPages();
             services.AddServerSideBlazor();
-            services.AddSingleton<DistributedCounterManagementService>(InitializeDistributedCounterManagementServiceAsync(Configuration).GetAwaiter().GetResult());
+            services.AddSingleton<DistributedCounterManagementService>(InitializeDistributedCounterManagementServiceAsync(Configuration));
         }
 
 
-        private static async Task<DistributedCounterManagementService> InitializeDistributedCounterManagementServiceAsync(IConfiguration configuration)
+        private static DistributedCounterManagementService InitializeDistributedCounterManagementServiceAsync(IConfiguration configuration)
         {
 
             string endpoint = configuration["CosmosUri"];

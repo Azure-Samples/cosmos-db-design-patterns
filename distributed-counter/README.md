@@ -29,7 +29,7 @@ Typically, you can avoid concurrency issues by implementing optimistic concurren
 
 ## Solution
 
-In a distributed counter solution, a group of distributed counter items are used to keep track of the number. By having the solution distribute the counter across multiple items, update operations can be performed on a random item without causing contention. Even more, the solution can calculate the total of all counters at any time using an aggregation of the values from each individual counter.
+In a distributed counter solution, a group of distributed counters, implemented as documents, are used to keep track of the number. By having the solution distribute the counter across multiple documents, update operations can be performed on a random document without causing contention. Calculating the current counter value can be done at any time by performing an aggregation of the values across all the documents in a query.
 
 ## Sample implementation
 
@@ -89,7 +89,7 @@ You need to configure **two** application configuration files to run this app.
 
 While on the Keys blade, make note of the `URI` and `PRIMARY KEY`. You will need these for the sections below.
 
-1. Open the Visualizer project and add a new **appsettings.development.json** file with the following contents:
+1. Open the **Visualizer** project and add a new **appsettings.development.json** file with the following contents:
 
     ```json
     {
@@ -115,7 +115,7 @@ While on the Keys blade, make note of the `URI` and `PRIMARY KEY`. You will need
 
 Next move to the other project.
 
-1. Open the ConsumerApp project and add a new **appsettings.development.json** file with the following contents:
+1. Open the **ConsumerApp** project and add a new **appsettings.development.json** file with the following contents:
 
     ```json
     {
@@ -156,11 +156,13 @@ Next move to the other project.
     dotnet run
     ```
 
+1. If a new browser window does not open, navigate to: `http://localhost:5000`
+
 1. In the web application, create a new counter using the default settings.
 
     ![Screenshot of the new distributed counter configuration settings.](media/distributed-counter-configuration-settings.png)
 
-1. Record the value of the **Counter ID** field in the web application.
+1. Click the clip board icon on the right to the value of the **Counter ID** field in the web application.
 
     ![Screenshot of the distributed counter starting page with the identifier rendered.](media/distributed-counter-identifier.png)
 
@@ -197,12 +199,14 @@ Next move to the other project.
 
     ![Screenshot of the dynamic graph updated with distributed counter values.](media/distributed-counter-graph.png)
 
+1. When all the counters drop to zero in the chart, return to the consumer app and press `ctrl-c` to stop the app.
+
 ## Summary
 
-In conclusion, the Distributed Counter design pattern offers a powerful solution for managing count-related data in NoSQL databases. By leveraging distributed systems' capabilities, this pattern enables the seamless tracking of numeric values across various nodes, ensuring accuracy and scalability. Through careful design and implementation, applications can efficiently handle scenarios involving likes, votes, or any form of quantifiable interactions.
+In conclusion, the Distributed Counter design pattern offers a powerful solution for managing count-related data in NoSQL databases. By leveraging multiple documents and randomizing access to reduce concurrency issues, this pattern enables the tracking of numeric values at any scale with accuracy. Through careful design and implementation, applications can efficiently handle scenarios involving likes, votes, product inventory or any form of quantifiable interactions where concurrency is an issue.
 
-The beauty of the Distributed Counter lies in its ability to maintain consistency in a distributed environment, achieving high availability and fault tolerance. By leveraging atomic operations and optimized data structures, it minimizes contention while delivering rapid and accurate count updates.
+The beauty of the Distributed Counter lies in its ability to maintain consistency, achieving high availability and fault tolerance. By leveraging atomic operations and optimized data structures, it minimizes contention while delivering rapid and accurate count updates.
 
-From social media interactions to monitoring system metrics, the Distributed Counter pattern empowers applications to handle dynamic, high-velocity scenarios. By incorporating this pattern, developers can harness the full potential of NoSQL databases, ensuring reliable count management that scales alongside user engagement and system growth.
+From social media interactions, ecommerce or monitoring high-volume system metrics, the Distributed Counter pattern empowers applications to handle dynamic, high-velocity scenarios. By incorporating this pattern, developers can harness the full potential of NoSQL databases, ensuring reliable count management that scales alongside user engagement and system growth.
 
 As technology continues to evolve, and as user interactions become increasingly diverse and complex, the Distributed Counter design pattern remains an essential tool in a developer's toolkit, providing a solid foundation for effective count management in the dynamic world of modern distributed applications.

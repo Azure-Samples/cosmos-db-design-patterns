@@ -1,9 +1,21 @@
 {
     "name": "Document versioning pattern",
-    "image": "ghcr.io/azure-samples/cosmos-db-design-patterns/devcontainer-base:latest",
+    "image": "mcr.microsoft.com/devcontainers/dotnet:1-8.0-bookworm",
     "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
     "workspaceFolder": "/workspace/document-versioning/source/",
     "postAttachCommand": "dotnet build function-app/function-app.csproj && dotnet build website/website.csproj",
+    "postCreateCommand": "npm install --global azure-functions-core-tools@v4",
+    "features": {
+        "ghcr.io/devcontainers/features/node": {},
+        "ghcr.io/azure/azure-dev/azd:0": {},
+        "ghcr.io/devcontainers/features/azure-cli": {
+            "installBicep": true,
+            "extensions": "cosmosdb-preview"
+        }
+    },
+    "containerEnv": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+    },
     "customizations": {
         "codespaces": {
             "openFiles": [
@@ -11,6 +23,18 @@
             ]
         },
         "vscode": {
+            "extensions": [
+                "ms-dotnettools.csdevkit",
+                "ms-vscode.azurecli",
+                "ms-dotnettools.vscode-dotnet-runtime",
+                "dbaeumer.vscode-eslint",
+                "esbenp.prettier-vscode",
+                "GitHub.vscode-github-actions",
+                "ms-azuretools.azure-dev",
+                "ms-azuretools.vscode-bicep",
+                "ms-azuretools.vscode-docker",
+                "ms-vscode.js-debug"
+            ],
             "settings": {
                 "git.openRepositoryInParentFolders": "always"
             }

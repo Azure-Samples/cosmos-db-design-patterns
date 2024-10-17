@@ -14,11 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Remove="C:\Users\sandnair\.nuget\packages\microsoft.azure.cosmos\3.31.2\contentFiles\any\netstandard2.0\ThirdPartyNotice.txt" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.41.0" />
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.4*" />
   </ItemGroup>
 
 </Project>

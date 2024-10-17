@@ -8,9 +8,9 @@ namespace Cosmos_Patterns_DistributedCounter
 {
     internal class Program
     {
-        private static DistributedCounterOperationalService dcos;
-        private static PrimaryCounter pc;
-        private static object _lock;
+        private static DistributedCounterOperationalService? dcos;
+        private static PrimaryCounter? pc;
+        private static object? _lock;
 
         static async Task Main(string[] args)
         {
