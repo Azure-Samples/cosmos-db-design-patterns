@@ -1,4 +1,3 @@
-using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
@@ -9,19 +8,35 @@ namespace EventSourcing
 
     internal class Program
     {
-        static string urlBase = "http://localhost:7071";
+        static string urlBase = "http://localhost:7071";  //7086
 
         public static async Task<string> CreateCartEvent(HttpClient client, CartEvent cartEvent)
         {
-            var url = $"{urlBase}/api/EventSourcing";
+            var url = $"{urlBase}/api/EventSourceFunction";
 
             string jsonBody = JsonConvert.SerializeObject(cartEvent);
             var body = new StringContent(jsonBody, System.Text.Encoding.UTF8, "application/json");
             Console.WriteLine(jsonBody);
 
-            var response = await client.PostAsync(url, body);
-            string result = await response.Content.ReadAsStringAsync();
-            return result;
+            try
+            {
+                var response = await client.PostAsync(url, body);
+                if (!response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"Error: {response.StatusCode} - {response.ReasonPhrase}");
+                    string errorResult = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"Error details: {errorResult}");
+                    return $"Error: {response.StatusCode} - {response.ReasonPhrase}";
+                }
+
+                string result = await response.Content.ReadAsStringAsync();
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception: {ex.Message}");
+                return $"Exception: {ex.Message}";
+            }
         }
 
         public static List<CartEvent> GenerateCartEvents()
@@ -112,11 +127,11 @@ namespace EventSourcing
             if (args.Length > 0 && args[0] != "console")
             {
                 var host = new HostBuilder()
-                .ConfigureFunctionsWebApplication()
+                //.ConfigureFunctionsWebApplication()
                 .ConfigureServices(services =>
                 {
-                    services.AddApplicationInsightsTelemetryWorkerService();
-                    services.ConfigureFunctionsApplicationInsights();
+                    //services.AddApplicationInsightsTelemetryWorkerService();
+                    //services.ConfigureFunctionsApplicationInsights();
                 })
                 .Build();
 
