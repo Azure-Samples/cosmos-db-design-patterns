@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Options;
-using Options;
 using Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -37,23 +36,25 @@ static class ProgramExtensions
     {
         builder.Configuration.AddJsonFile("appsettings.json");
         builder.Configuration.AddJsonFile($"appsettings.development.json", optional: true);
-        
+        builder.Configuration.AddEnvironmentVariables();
+        builder.Configuration.AddUserSecrets<Options.CosmosDb>();
+
         builder.Services.AddOptions<Options.CosmosDb>()
             .Bind(builder.Configuration.GetSection(nameof(Options.CosmosDb)));
 
     }
     public static void RegisterServices(this IServiceCollection services)
     {
-        services.AddSingleton<Services.CosmosDb, Services.CosmosDb>((provider) =>
+        services.AddSingleton<CosmosDb, CosmosDb>((provider) =>
         {
             var cosmosOptions = provider.GetRequiredService<IOptions<Options.CosmosDb>>();
             if (cosmosOptions is null)
             {
-                throw new ArgumentException($"{nameof(IOptions<Options.CosmosDb>)} was not resolved through dependency injection.");
+                throw new ArgumentException($"{nameof(IOptions<CosmosDb>)} was not resolved through dependency injection.");
             }
             else
             {
-                return new Services.CosmosDb(
+                return new CosmosDb(
                     cosmosUri: cosmosOptions.Value?.CosmosUri ?? string.Empty,
                     cosmosKey: cosmosOptions.Value?.CosmosKey ?? string.Empty,
                     database: cosmosOptions.Value?.Database ?? string.Empty,
@@ -64,18 +65,31 @@ static class ProgramExtensions
             }
                 
         });
-        services.AddSingleton<OrderHelper>((provider) =>
+        services.AddSingleton<ArchiveService, ArchiveService>((provider) =>
         {
-            var cosmosDb = provider.GetRequiredService<Services.CosmosDb>();
+            var cosmosDb = provider.GetRequiredService<CosmosDb>();
             if (cosmosDb is null)
             {
-                throw new ArgumentException($"{nameof(Services.CosmosDb)} was not resolved through dependency injection.");
+                throw new ArgumentException($"{nameof(CosmosDb)} was not resolved through dependency injection.");
+            }
+            else
+            {
+                return new ArchiveService(cosmosDb);
+            }
+        });
+        services.AddSingleton<OrderHelper, OrderHelper>((provider) =>
+        {
+            var cosmosDb = provider.GetRequiredService<CosmosDb>();
+            if (cosmosDb is null)
+            {
+                throw new ArgumentException($"{nameof(CosmosDb)} was not resolved through dependency injection.");
             }
             else
             {
                 return new OrderHelper(cosmosDb);
             }
         });
+        
     }
 }
 
