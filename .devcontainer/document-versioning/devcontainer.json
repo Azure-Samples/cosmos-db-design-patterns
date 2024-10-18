@@ -2,8 +2,9 @@
     "name": "Document versioning pattern",
     "image": "mcr.microsoft.com/devcontainers/dotnet:1-8.0-bookworm",
     "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
-    "workspaceFolder": "/workspace/document-versioning/source/",
+    "workspaceFolder": "/workspace/document-versioning/source",
     "postAttachCommand": "dotnet build website/website.csproj",
+    "postCreateCommand": "dotnet dev-certs https --trust",
     "features": {
         "ghcr.io/devcontainers/features/node": {},
         "ghcr.io/azure/azure-dev/azd:0": {},
@@ -18,7 +19,7 @@
     "customizations": {
         "codespaces": {
             "openFiles": [
-                "/workspace/document-versioning/readme.md"
+                "../workspace/document-versioning/readme.md"
             ]
         },
         "vscode": {
