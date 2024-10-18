@@ -3,8 +3,7 @@
     "image": "mcr.microsoft.com/devcontainers/dotnet:1-8.0-bookworm",
     "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
     "workspaceFolder": "/workspace/document-versioning/source/",
-    "postAttachCommand": "dotnet build function-app/function-app.csproj && dotnet build website/website.csproj",
-    "postCreateCommand": "npm install --global azure-functions-core-tools@v4",
+    "postAttachCommand": "dotnet build website/website.csproj",
     "features": {
         "ghcr.io/devcontainers/features/node": {},
         "ghcr.io/azure/azure-dev/azd:0": {},
@@ -19,7 +18,7 @@
     "customizations": {
         "codespaces": {
             "openFiles": [
-                "readme.md"
+                "/workspace/document-versioning/readme.md"
             ]
         },
         "vscode": {
