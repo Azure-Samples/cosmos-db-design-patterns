@@ -1,23 +1,20 @@
 ﻿using Microsoft.Azure.Cosmos;
+using Microsoft.Extensions.Hosting;
 using Models;
 
 
 namespace Services
 {
-    public class ArchiveService
+    public class ArchiveService(CosmosDb cosmosDb): BackgroundService
     {
         
-        private readonly CosmosDb cosmosDb;
-        private readonly ChangeFeedProcessor? changeFeedProcessor;
+        private ChangeFeedProcessor? changeFeedProcessor;
 
-        public ArchiveService(CosmosDb cosmosDb)
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            this.cosmosDb = cosmosDb;
-
-            changeFeedProcessor = StartChangeFeedProcessorAsync(cosmosDb.OrderContainer, cosmosDb.LeasesContainer).Result;
+            changeFeedProcessor = await StartChangeFeedProcessorAsync(cosmosDb.OrderContainer, cosmosDb.LeasesContainer);
         }
 
-        
 
         //create a function to start Cosmos DB Change Feed Processor
         private async Task<ChangeFeedProcessor> StartChangeFeedProcessorAsync(Container monitoredContainer, Container leasesContainer)

@@ -18,7 +18,7 @@ This sample demonstrates:
 
 - ✅ It showcases how to implement document versioning in Azure Cosmos DB to track and manage the current and historical versions of documents.
 - ✅  The example illustrates the separation of current document versions stored in a `CurrentOrderStatus` collection and historical document versions stored in a `HistoricalOrderStatus` collection.
-- ✅ It highlights the integration of Azure Cosmos DB change feed with a Function App to capture and copy the versioned documents to the historical collection, enabling efficient tracking and management of document versions.
+- ✅ It highlights the integration of Azure Cosmos DB change feed processor running as a .NET [BackGroundService] (https://learn.microsoft.com/dotnet/architecture/microservices/multi-container-microservice-net-applications/background-tasks-with-ihostedservice) capture and copy the versioned documents to the historical collection, enabling efficient tracking and management of document versions.
 
 ## Common scenario
 
@@ -117,37 +117,9 @@ While on the Keys blade, make note of the `URI`, `PRIMARy KEY` and `PRIMARY CONN
 1. Save the file.
 
 
-## Prepare the function app configuration
-
-1. Open the application code. Add a file to the `function-app` folder called **local.settings.json** with the following contents:
-
-```json
-{
-  "IsEncrypted": false,
-  "Values": {
-    "AzureWebJobsStorage": "UseDevelopmentStorage=false",
-    "FUNCTIONS_WORKER_RUNTIME": "dotnet",
-    "CosmosDBConnection" : "YOUR_PRIMARY_CONNECTION_STRING"
-  }
-}
-```
-
-1. Replace `YOUR_PRIMARY_CONNECTION_STRING` with the `PRIMARY CONNECTION STRING` value noted earlier.
-
-1. Save the file.
-
-
 ## Run the demo
 
-1. In Codespaces or locally, navigate to the `function-app` folder, start the Azure Function with:
-
-```bash
-  func start
-```
-
-1. Open a new Terminal.
-
-1. Navigate to the `website` folder, start the website with:
+1. In Codespaces or locally, navigate to the `website` folder, start the website with:
 
 ```bash
   dotnet run
@@ -158,7 +130,7 @@ Navigate to the URL displayed in the output. In the example below, the URL is sh
 ![Screenshot of the 'dotnet run' output. The URL to navigate to is highlighted. In the screenshot, the URL is 'http://localhost:5183'.](images/local-site-url.png)
 
 
-1. With both the Azure Function and web app running, create 5-10 orders with the website.
+1. With the web app running, create 5-10 orders with the website.
 
 This is what the website will look like when starting out:
 
@@ -172,7 +144,7 @@ This is what the new order looks like in Azure Cosmos DB. Notice that the `Docum
 
 ![Screenshot of a query in Azure Data Explorer for the order above. The JSON result does not include the 'DocumentVersion' property.](images/newly-submitted-order-data-explorer.png)
 
-The Azure Function is working directly with a `VersionedDocument` type, so it will carry the `DocumentVersion` field into the `HistoricalOrderStatus` container. For new documents, this will assume the DocumentVersion is 1 when it isn't specified.
+The `Archive Service` in the web application is working directly with a `VersionedDocument` type, so it will carry the `DocumentVersion` field into the `HistoricalOrderStatus` container. For new documents, this will assume the DocumentVersion is 1 when it isn't specified.
 
 Unversioned documents will still show as document version 1 due to the `VersionedOrder` C# class.
 

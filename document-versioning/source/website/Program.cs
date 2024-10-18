@@ -65,31 +65,11 @@ static class ProgramExtensions
             }
                 
         });
-        services.AddSingleton<ArchiveService, ArchiveService>((provider) =>
-        {
-            var cosmosDb = provider.GetRequiredService<CosmosDb>();
-            if (cosmosDb is null)
-            {
-                throw new ArgumentException($"{nameof(CosmosDb)} was not resolved through dependency injection.");
-            }
-            else
-            {
-                return new ArchiveService(cosmosDb);
-            }
-        });
-        services.AddSingleton<OrderHelper, OrderHelper>((provider) =>
-        {
-            var cosmosDb = provider.GetRequiredService<CosmosDb>();
-            if (cosmosDb is null)
-            {
-                throw new ArgumentException($"{nameof(CosmosDb)} was not resolved through dependency injection.");
-            }
-            else
-            {
-                return new OrderHelper(cosmosDb);
-            }
-        });
         
+        services.AddHostedService<ArchiveService>();
+        services.AddSingleton<OrderHelper>();
+
+
     }
 }
 
