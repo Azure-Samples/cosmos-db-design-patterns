@@ -4,16 +4,19 @@
       "commandName": "IISExpress",
       "launchBrowser": true,
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development`"
+        "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
     "DistributedCounterDashboard": {
       "commandName": "Project",
+      "dotnetRunMessages": true,
       "launchBrowser": true,
+      "applicationUrl": "https://localhost:5001;http://localhost:5000",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
-      },
-      "applicationUrl": "http://localhost:5000"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_Kestrel__Certificates__Default__Path": "${HOME}/.aspnet/https/aspnetapp.pfx",
+        "ASPNETCORE_Kestrel__Certificates__Default__Password": "your_password"
+      }
     }
   },
   "iisSettings": {
