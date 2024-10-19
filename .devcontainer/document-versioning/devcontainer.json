@@ -4,8 +4,7 @@
     "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
     "workspaceFolder": "/workspace/document-versioning/source",
     "postAttachCommand": "dotnet build website/website.csproj",
-    "postCreateCommand": "dotnet dev-certs https -ep ${HOME}/.aspnet/https/aspnetapp.pfx -p your_password",
-    "remoteUser": "vscode",
+
     "features": {
         "ghcr.io/devcontainers/features/node": {},
         "ghcr.io/azure/azure-dev/azd:0": {},
@@ -15,9 +14,7 @@
         }
     },
     "containerEnv": {
-        "ASPNETCORE_ENVIRONMENT": "Development",
-        "ASPNETCORE_Kestrel__Certificates__Default__Path": "${HOME}/.aspnet/https/aspnetapp.pfx",
-        "ASPNETCORE_Kestrel__Certificates__Default__Password": "your_password"
+        "ASPNETCORE_ENVIRONMENT": "Development"
     },
     "customizations": {
         "codespaces": {
