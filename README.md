@@ -19,6 +19,10 @@ description: A collection that showcases a variety of design patterns that can b
 
 Welcome to the Azure Cosmos DB Design Pattern Samples repository! This collection showcases a variety of design patterns that can be employed to build robust and efficient applications using Azure Cosmos DB's NoSQL capabilities. Each pattern addresses specific scenarios and challenges, offering guidance and best practices for implementation.
 
+<p style="font-size: 20px;"><strong>📝 Note:</strong> For this and other great samples, visit the <a href="https://azurecosmosdb.github.io/gallery/" target="_blank">Azure Cosmos DB Samples Gallery</a>.</p>
+
+
+
 ## Importance of Design Patterns in Application Development and Data Modeling
 
 Design patterns play a crucial role in building robust applications and modeling data effectively. They offer structured solutions to common challenges, providing numerous benefits that contribute to the success of your projects.
