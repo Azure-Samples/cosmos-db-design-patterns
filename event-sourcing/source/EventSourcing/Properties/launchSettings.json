@@ -2,7 +2,7 @@
   "profiles": {
     "EventSourcing": {
       "commandName": "Project",
-      "commandLineArgs": "--port 7086",
+      "commandLineArgs": "--port 7152",
       "launchBrowser": false
     }
   }
