@@ -17,7 +17,7 @@ description: This is an example that will simulate shopping cart events for an e
 
 A simple implementation would be a container that is used to track append-only events, (no updates or deletes). This gives you a full log of historical events which can feed into multiple others systems.
 
-There are multiple notable benefits to this type of approach in application design. It is often paired with another architecture pattern, Command Query Responsibility System (CQRS) in a way that combines Cosmos DB's Change Feed to facilitate the read layer in this architecture, including implementing another architecture pattern also used with CQRS, [Materialized Views](../materialized_views/README.md). It can also simply enable a communications layer for sets of loosely-coupled services.
+There are multiple notable benefits to this type of approach in application design. It is often paired with another architecture pattern, Command Query Responsibility System (CQRS) in a way that combines Cosmos DB's Change Feed to facilitate the read layer in this architecture, including implementing another architecture pattern also used with CQRS, [Materialized Views](../materialized-view/README.md). It can also simply enable a communications layer for sets of loosely-coupled services.
 
 While event sourcing can be implemented with various types of databases, this pattern is heavily used by developers building applications using Azure Cosmos DB. The ability for Change Feed to act as a centralized (and scalable) message publishing mechanism is a key reason for this. But there are other reasons as well, including:
 
@@ -131,7 +131,8 @@ Directions installing pre-requisites to run locally and for cloning this reposit
 
 Open the application code in GitHub Codespaces:
 
-    [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/azure-samples/cosmos-db-design-patterns?quickstart=1&devcontainer_path=.devcontainer%2Fevent-sourcing%2Fdevcontainer.json)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/azure-samples/cosmos-db-design-patterns?quickstart=1&devcontainer_path=.devcontainer%2Fevent-sourcing%2Fdevcontainer.json)
+
 
 ## Get Azure Cosmos DB connection information
 
