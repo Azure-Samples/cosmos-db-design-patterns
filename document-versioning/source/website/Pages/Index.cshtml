@@ -8,8 +8,8 @@
     <h1 class="display-4">Document Versioning Demo</h1>
     <p>This demo showcases how to implement the document versioning pattern in Azure Cosmos DB.  The demo has 2 components:</p>
     <ul>
-        <li>Azure Function - uses change feed to store statuses in a historical container</li>
-        <li>This website - used to manage the document version numbers</li>
+        <li>This website - used to create and manage Order documents</li>
+        <li>.NET Background Service - implements Cosmos DB Change Feed to copy document updates to a historical container</li>
     </ul>
     <section>
         <form method="post" class="form-horizontal">
