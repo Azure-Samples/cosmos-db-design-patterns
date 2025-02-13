@@ -56,10 +56,10 @@ Now, suppose the customer had to cancel the order. The replacement document coul
 }
 ```
 
-Looking at these documents, though, there is no easy way to tell which of these documents is the current document. By using document versioning, add a property to the document to track the version number. Update the current document in a `CurrentOrderStatus` container and add the change to the `HistoricalOrderStatus` container. In the two projects here, you can see how to implement the document versioning feature with the following components:
+Looking at these documents, though, there is no easy way to tell which of these documents is the current document. By using document versioning, add a property to the document to track the version number. Update the current document in a `CurrentOrderStatus` container and add the change to the `HistoricalOrderStatus` container. In the project here, you can see how to implement the document versioning feature with the following components:
 
 - A website that allows you to create orders and change the order status. The website updates the document version and saves the document to the current status container.
-- A Function App that reads the data for the Azure Cosmos DB change feed and copies the versioned documents to the historical status container
+- An Archiver Service implemented as a .NET Background service that itself implements Cosmos DB Change Feed that sees when the Order Helper updates the order and copies the versioned document to the historical status container.
 
 The demo website includes links to update the orders to the different statuses.
 
@@ -93,7 +93,7 @@ You need to configure the application configuration file to run these demos.
 
 1. From the navigation, under **Settings**, select **Keys**. The values you need for the application settings for the demo are here.
 
-While on the Keys blade, make note of the `URI`, `PRIMARy KEY` and `PRIMARY CONNECTION STRING`. You will need these for the sections below.
+While on the Keys blade, make note of the `URI` and `PRIMARY KEY`. You will need these for the sections below.
 
 ## Prepare the web app configuration
 
@@ -112,7 +112,7 @@ While on the Keys blade, make note of the `URI`, `PRIMARy KEY` and `PRIMARY CONN
 }
 ```
 
-1. Replace the `CosmosURI` and `CosmosKey` with the values from the Keys blade in the Azure Portal.
+1. Replace the `CosmosUri` and `CosmosKey` with the values from the Keys blade in the Azure Portal.
 
 1. Save the file.
 
