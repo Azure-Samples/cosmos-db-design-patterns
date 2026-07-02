@@ -1,4 +1,5 @@
-﻿using Microsoft.Azure.Cosmos;
+﻿using Azure.Identity;
+using Microsoft.Azure.Cosmos;
 using System.Net;
 using CosmosDistributedCounter;
 using System.ComponentModel;
@@ -18,10 +19,11 @@ namespace CosmosDistributedLock.Services
 
         public CosmosService(string CosmosUri, string CosmosKey, string CosmosDatabase, string CosmosContainer)
         {
-
-            client = new(
-                accountEndpoint: CosmosUri,
-                authKeyOrResourceToken: CosmosKey);
+            // Prefer keyless authentication via DefaultAzureCredential (managed identity / Azure CLI).
+            // Fall back to key-based authentication only when CosmosKey is explicitly set (e.g. local emulator).
+            client = string.IsNullOrEmpty(CosmosKey)
+                ? new CosmosClient(accountEndpoint: CosmosUri, tokenCredential: new DefaultAzureCredential())
+                : new CosmosClient(accountEndpoint: CosmosUri, authKeyOrResourceToken: CosmosKey);
 
             
             db = client.CreateDatabaseIfNotExistsAsync(CosmosDatabase).Result;

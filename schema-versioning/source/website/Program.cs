@@ -47,7 +47,7 @@ static class ProgramExtensions
             {
                 return new CosmosDbService(
                     cosmosUri: cosmosOptions.Value?.CosmosUri ?? string.Empty,
-                    cosmosKey: cosmosOptions.Value?.CosmosKey ?? string.Empty,
+                    cosmosKey: cosmosOptions.Value?.CosmosKey,
                     databaseName: cosmosOptions.Value?.DatabaseName ?? string.Empty,
                     containerName: cosmosOptions.Value?.ContainerName ?? string.Empty,
                     partitionKeyPath: cosmosOptions.Value?.PartitionKeyPath ?? string.Empty

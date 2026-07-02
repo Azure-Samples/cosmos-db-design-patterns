@@ -144,15 +144,48 @@ Open the application code in GitHub Codespaces:
 
 ## Set up application configuration files
 
-You need to configure **two** application configuration files to run these demos.
+You need to configure the application configuration file to run this demo.
 
-1. Go to your resource group.
+1. Go to your resource group and select the Serverless Azure Cosmos DB for NoSQL account that you created for this repository.
 
-1. Select the Serverless Azure Cosmos DB for NoSQL account that you created for this repository.
+1. From the navigation, under **Settings**, select **Keys** and copy the **URI** value.
 
-1. From the navigation, under **Settings**, select **Keys**. The values you need for the application settings for the demo are here.
+### Option 1: Keyless authentication via RBAC (Recommended)
 
-While on the Keys blade, make note of the `URI` and `PRIMARY KEY`. You will need these for the sections below.
+Keyless authentication using `DefaultAzureCredential` is the recommended approach. It works automatically with managed identity (Azure-hosted) and with the Azure CLI locally.
+
+1. Assign the **Cosmos DB Built-in Data Contributor** role to your identity:
+
+    ```bash
+    az cosmosdb sql role assignment create \
+      --account-name <cosmos-account-name> \
+      --resource-group <resource-group-name> \
+      --role-definition-name "Cosmos DB Built-in Data Contributor" \
+      --principal-id $(az ad signed-in-user show --query id -o tsv) \
+      --scope "/"
+    ```
+
+1. Sign in with the Azure CLI (for local development):
+
+    ```bash
+    az login
+    ```
+
+1. Open the attribute-array project and add a new **appsettings.development.json** file with the following contents:
+
+    ```json
+    {
+      "CosmosUri": "<endpoint>"
+    }
+    ```
+
+1. Replace `<endpoint>` with the **URI** value copied from the Keys blade.
+
+### Option 2: Key-based authentication (local emulator fallback)
+
+If you are using the Azure Cosmos DB Emulator or cannot use RBAC, set `CosmosKey` as well:
+
+1. From the Keys blade, copy both the **URI** and **PRIMARY KEY** values.
 
 1. Open the attribute-array project and add a new **appsettings.development.json** file with the following contents:
 
@@ -163,7 +196,8 @@ While on the Keys blade, make note of the `URI` and `PRIMARY KEY`. You will need
     }
     ```
 
-1. Replace the `CosmosURI` and `CosmosKey` with the values from the Keys blade in the Azure Portal.
+> **Note:** Never commit `appsettings.development.json` with real key values. The `.gitignore` already excludes `appsettings.development.json`.
+
 1. Modify the **Copy to Output Directory** to **Copy Always** (For VS Code add the XML below to the csproj file)
 1. Save the file.
 

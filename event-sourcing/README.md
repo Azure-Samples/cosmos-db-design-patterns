@@ -136,19 +136,32 @@ Open the application code in GitHub Codespaces:
 
 ## Get Azure Cosmos DB connection information
 
-You will need the connection string for the Azure Cosmos DB account for this repository.
+You will need the endpoint URI for the Azure Cosmos DB account for this repository.
 
 1. Go to resource group
 
 1. Select the new Azure Cosmos DB for NoSQL account.
 
-1. From the navigation, under **Settings**, select **Keys**. The values you need for the application settings for the demo are here.
-
-1. While on the Keys blade, make note of the `PRIMARY CONNECTION STRING`. You will need this for the Azure Function App.
+1. From the navigation, under **Settings**, select **Keys** and copy the **URI** value.
 
 ## Prepare the function app configuration
 
-1. Open the application code.
+The function app supports both managed identity and connection-string authentication.
+
+### Option 1: Managed identity (Recommended)
+
+Use the `__accountEndpoint` suffix to configure the Cosmos DB trigger/binding with managed identity — no connection string needed:
+
+1. Assign the **Cosmos DB Built-in Data Contributor** role to your identity or the function app's managed identity:
+
+    ```bash
+    az cosmosdb sql role assignment create \
+      --account-name <cosmos-account-name> \
+      --resource-group <resource-group-name> \
+      --role-definition-name "Cosmos DB Built-in Data Contributor" \
+      --principal-id $(az ad signed-in-user show --query id -o tsv) \
+      --scope "/"
+    ```
 
 1. Add a file to the `source` folder called **local.settings.json** with the following contents:
 
@@ -158,12 +171,34 @@ You will need the connection string for the Azure Cosmos DB account for this rep
         "Values": {
             "AzureWebJobsStorage": "UseDevelopmentStorage=true",
             "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
-            "CosmosDBConnection" : "YOUR_PRIMARY_CONNECTION_STRING"
+            "CosmosDBConnection__accountEndpoint": "<endpoint>"
         }
     }
     ```
 
-1. Replace `YOUR_PRIMARY_CONNECTION_STRING` with the `PRIMARY CONNECTION STRING` value noted earlier.
+1. Replace `<endpoint>` with the **URI** value. The Azure Functions runtime automatically uses `DefaultAzureCredential` when the `__accountEndpoint` suffix is set.
+
+### Option 2: Connection string (local emulator fallback)
+
+1. From the Keys blade, copy the **PRIMARY CONNECTION STRING** value.
+
+1. Add a file to the `source` folder called **local.settings.json** with the following contents:
+
+    ```json
+    {
+        "IsEncrypted": false,
+        "Values": {
+            "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+            "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+            "CosmosDBConnection" : "<primary-connection-string>"
+        }
+    }
+    ```
+
+1. Replace `<primary-connection-string>` with the `PRIMARY CONNECTION STRING` value noted earlier.
+
+  > **Note:** Never commit `local.settings.json` with real connection strings. `local.settings.json` is excluded from source control by the `.gitignore`.
+
 1. Modify the **Copy to Output Directory** to **Copy Always** (For VS Code add the XML below to the csproj file)
 1. Save the file.
 

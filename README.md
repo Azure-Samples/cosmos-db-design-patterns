@@ -129,9 +129,36 @@ Navigate to the individual folders of each design pattern for a dedicated `READM
 
 ### Setting up Azure Cosmos DB
 
-All of these design patterns are built to run from a single Serverless Azure Cosmos DB account. Before running any of the samples, click the Deploy to Azure button below to create a Serverless Azure Cosmos DB account. You will need the URI Primary Key and Connection String for these. Keep those handy as you prepare each sample to run.
+All of these design patterns are built to run from a single Serverless Azure Cosmos DB account. Before running any of the samples, click the Deploy to Azure button below to create a Serverless Azure Cosmos DB account.
 
 [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fgithub.com%2FAzureCosmosDB%2Fdesign-patterns%2Ftree%2Fmain%2Fazuredeploy.json)
+
+#### Authentication options
+
+Each sample supports two authentication methods — RBAC (keyless) is the recommended approach:
+
+**Option 1: Keyless authentication via RBAC (Recommended)**
+
+The samples use `DefaultAzureCredential` from `Azure.Identity`. When `CosmosKey` is left empty (or omitted), the application automatically uses RBAC-based authentication. This works with:
+- Azure managed identity (when hosted in Azure)
+- Azure CLI credentials (`az login`) for local development
+
+Assign the **Cosmos DB Built-in Data Contributor** role to your identity before running locally:
+
+```bash
+az cosmosdb sql role assignment create \
+  --account-name <cosmos-account-name> \
+  --resource-group <resource-group-name> \
+  --role-definition-name "Cosmos DB Built-in Data Contributor" \
+  --principal-id $(az ad signed-in-user show --query id -o tsv) \
+  --scope "/"
+```
+
+**Option 2: Key-based authentication (local emulator fallback)**
+
+Set `CosmosKey` in your `appsettings.development.json` (never commit this file) when using the Azure Cosmos DB Emulator or when RBAC is not available. See individual sample READMEs for the exact configuration format.
+
+> **Security note:** Never commit your Cosmos DB primary key or connection string to source control. The `.gitignore` already excludes `appsettings.development.json` and `local.settings.json`.
 
 Happy coding with Azure Cosmos DB and these powerful design patterns!
 

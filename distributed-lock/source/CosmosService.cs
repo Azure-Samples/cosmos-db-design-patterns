@@ -1,4 +1,5 @@
-﻿using Cosmos_Patterns_GlobalLock;
+﻿using Azure.Identity;
+using Cosmos_Patterns_GlobalLock;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Configuration;
 using System.Net;
@@ -20,14 +21,16 @@ namespace CosmosDistributedLock.Services
         public async Task InitDatabaseAsync()
         {
             string uri = _configuration["CosmosUri"]!;
-            string key = _configuration["CosmosKey"]!;
+            string key = _configuration["CosmosKey"] ?? string.Empty;
 
             string databaseName = _configuration["CosmosDatabase"]!;
             string containerName = _configuration["CosmosContainer"]!;
 
-            CosmosClient client = new(
-                accountEndpoint: uri,
-                authKeyOrResourceToken: key);
+            // Prefer keyless authentication via DefaultAzureCredential (managed identity / Azure CLI).
+            // Fall back to key-based authentication only when CosmosKey is explicitly set (e.g. local emulator).
+            CosmosClient client = string.IsNullOrEmpty(key)
+                ? new CosmosClient(accountEndpoint: uri, tokenCredential: new DefaultAzureCredential())
+                : new CosmosClient(accountEndpoint: uri, authKeyOrResourceToken: key);
 
             Database database = await client.CreateDatabaseIfNotExistsAsync(databaseName);
 

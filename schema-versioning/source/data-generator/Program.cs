@@ -1,4 +1,5 @@
-﻿using data_generator.Options;
+﻿using Azure.Identity;
+using data_generator.Options;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Configuration;
 
@@ -23,7 +24,11 @@ namespace Versioning
                 .Get<Cosmos>();
 
 
-            _client = new CosmosClient(_config?.CosmosUri, _config?.CosmosKey);
+            // Prefer keyless authentication via DefaultAzureCredential (managed identity / Azure CLI).
+            // Fall back to key-based authentication only when CosmosKey is explicitly set (e.g. local emulator).
+            _client = string.IsNullOrEmpty(_config?.CosmosKey)
+                ? new CosmosClient(_config?.CosmosUri, new DefaultAzureCredential())
+                : new CosmosClient(_config?.CosmosUri, _config?.CosmosKey);
 
             await InitializeDatabase();
 
