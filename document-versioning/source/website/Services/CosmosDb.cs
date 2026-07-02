@@ -20,7 +20,7 @@ namespace Services
             // Fall back to key-based authentication only when CosmosKey is explicitly set (e.g. local emulator).
             client = string.IsNullOrEmpty(cosmosKey)
                 ? new CosmosClient(accountEndpoint: cosmosUri, tokenCredential: new DefaultAzureCredential())
-                : new CosmosClient(accountEndpoint: cosmosUri!, authKeyOrResourceToken: cosmosKey!);
+                : new CosmosClient(accountEndpoint: cosmosUri, authKeyOrResourceToken: cosmosKey);
 
             InitializeAsync(database, currentOrderContainer, historicalOrderContainer, partitionKey).Wait();
         }
