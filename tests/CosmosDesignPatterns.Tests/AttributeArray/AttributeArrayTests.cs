@@ -91,8 +91,7 @@ public class ArrayQueryResult
 ///   - The array-based query (JOIN) returns matching items.
 ///   - Both queries agree on which products meet the threshold.
 /// </summary>
-[Collection("Emulator")]
-public class AttributeArrayTests : IAsyncLifetime
+public class AttributeArrayTests : IClassFixture<EmulatorFixture>, IAsyncLifetime
 {
     private readonly CosmosClient _client;
     private readonly string _databaseName = $"AttributeArrayTest-{Guid.NewGuid():N}";

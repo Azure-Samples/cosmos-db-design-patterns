@@ -74,8 +74,7 @@ public class SalesByProduct
 ///   - Multiple Sales for the same product all appear in the view.
 ///   - Aggregating the view gives the correct total quantity and revenue.
 /// </summary>
-[Collection("Emulator")]
-public class MaterializedViewTests : IAsyncLifetime
+public class MaterializedViewTests : IClassFixture<EmulatorFixture>, IAsyncLifetime
 {
     private readonly CosmosClient _client;
     private readonly string _databaseName = $"MaterializedViewTest-{Guid.NewGuid():N}";

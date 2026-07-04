@@ -66,8 +66,7 @@ public class CartEvent
 ///     stored and queried.
 ///   - Replaying events in order reconstructs the correct final cart state.
 /// </summary>
-[Collection("Emulator")]
-public class EventSourcingTests : IAsyncLifetime
+public class EventSourcingTests : IClassFixture<EmulatorFixture>, IAsyncLifetime
 {
     private readonly CosmosClient _client;
     private readonly string _databaseName = $"EventSourcingTest-{Guid.NewGuid():N}";

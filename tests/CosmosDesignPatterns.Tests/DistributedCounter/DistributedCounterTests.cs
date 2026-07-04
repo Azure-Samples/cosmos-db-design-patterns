@@ -69,8 +69,7 @@ public class DistributedCounter
 ///   - Incrementing / decrementing a shard is reflected in the total.
 ///   - Splitting a shard into two maintains the total value.
 /// </summary>
-[Collection("Emulator")]
-public class DistributedCounterTests : IAsyncLifetime
+public class DistributedCounterTests : IClassFixture<EmulatorFixture>, IAsyncLifetime
 {
     private readonly CosmosClient _client;
     private readonly string _databaseName = $"DistributedCounterTest-{Guid.NewGuid():N}";

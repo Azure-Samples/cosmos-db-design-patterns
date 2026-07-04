@@ -60,8 +60,7 @@ public class LockLease
 ///   - An outdated fence token fails validation.
 ///   - Deleting a lease (simulating expiry) causes validation to fail.
 /// </summary>
-[Collection("Emulator")]
-public class DistributedLockTests : IAsyncLifetime
+public class DistributedLockTests : IClassFixture<EmulatorFixture>, IAsyncLifetime
 {
     private readonly CosmosClient _client;
     private readonly string _databaseName = $"DistributedLockTest-{Guid.NewGuid():N}";

@@ -73,8 +73,7 @@ public class CartReadModel
 ///   - Both schema versions coexist in the same container.
 ///   - A query can distinguish versions by the presence of SchemaVersion.
 /// </summary>
-[Collection("Emulator")]
-public class SchemaVersioningTests : IAsyncLifetime
+public class SchemaVersioningTests : IClassFixture<EmulatorFixture>, IAsyncLifetime
 {
     private readonly CosmosClient _client;
     private readonly string _databaseName = $"SchemaVersionTest-{Guid.NewGuid():N}";

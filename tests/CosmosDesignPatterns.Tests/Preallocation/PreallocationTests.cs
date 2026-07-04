@@ -79,8 +79,7 @@ public class Reservation
 ///   - Marking a date as reserved removes that room from availability results.
 ///   - Without preallocation, reservation documents track bookings separately.
 /// </summary>
-[Collection("Emulator")]
-public class PreallocationTests : IAsyncLifetime
+public class PreallocationTests : IClassFixture<EmulatorFixture>, IAsyncLifetime
 {
     private readonly CosmosClient _client;
     private readonly string _databaseName = $"PreallocationTest-{Guid.NewGuid():N}";

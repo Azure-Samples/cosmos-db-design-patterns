@@ -62,8 +62,7 @@ public class SummarySensorEvent
 ///   - Bins for different devices are kept isolated.
 ///   - A query by DeviceId returns only that device's summaries.
 /// </summary>
-[Collection("Emulator")]
-public class DataBinningTests : IAsyncLifetime
+public class DataBinningTests : IClassFixture<EmulatorFixture>, IAsyncLifetime
 {
     private readonly CosmosClient _client;
     private readonly string _databaseName = $"DataBinningTest-{Guid.NewGuid():N}";

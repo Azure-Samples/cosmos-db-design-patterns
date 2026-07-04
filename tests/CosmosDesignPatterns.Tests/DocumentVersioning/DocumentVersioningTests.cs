@@ -61,8 +61,7 @@ public class OrderItem
 ///   - Multiple sequential transitions produce the correct final version.
 ///   - A cross-partition query returns all stored orders.
 /// </summary>
-[Collection("Emulator")]
-public class DocumentVersioningTests : IAsyncLifetime
+public class DocumentVersioningTests : IClassFixture<EmulatorFixture>, IAsyncLifetime
 {
     private readonly CosmosClient _client;
     // Each test class instance gets a unique database name to prevent
