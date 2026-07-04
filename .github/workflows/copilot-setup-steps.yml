@@ -64,3 +64,28 @@ jobs:
         run: |
           dotnet build schema-versioning/source/data-generator/data-generator.csproj --no-incremental
           dotnet build schema-versioning/source/website/website.csproj --no-incremental
+
+      - name: Build test project
+        run: dotnet build tests/CosmosDesignPatterns.Tests/CosmosDesignPatterns.Tests.csproj --no-incremental
+
+      # Pull and start the Cosmos DB Linux emulator in the background so that
+      # Copilot can run integration tests during its session.
+      # --privileged is required; without it the emulator process crashes on
+      # Linux runners after initialising all partitions.
+      - name: Start Cosmos DB Linux emulator
+        run: |
+          docker pull mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
+          docker run -d \
+            --name cosmos-emulator \
+            --privileged \
+            --network host \
+            mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
+
+      # Poll until the emulator's certificate endpoint responds (up to 180 s).
+      - name: Wait for emulator to be ready
+        run: |
+          echo "Waiting for Cosmos DB emulator..."
+          timeout 180 bash -c \
+            'until curl -k -s https://localhost:8081/_explorer/emulator.pem > /dev/null 2>&1; \
+             do echo "  ...not ready yet, retrying in 5 s"; sleep 5; done'
+          echo "Cosmos DB emulator is ready."

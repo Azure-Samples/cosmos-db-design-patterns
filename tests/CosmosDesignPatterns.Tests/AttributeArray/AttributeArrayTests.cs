@@ -13,13 +13,21 @@ public class AttributePropertyProduct
 {
     [JsonProperty("id")]
     public string Id { get; set; } = Guid.NewGuid().ToString();
+    [JsonProperty("productId")]
     public string ProductId { get; set; } = Guid.NewGuid().ToString();
+    [JsonProperty("name")]
     public string Name { get; set; } = string.Empty;
+    [JsonProperty("category")]
     public string Category { get; set; } = string.Empty;
+    [JsonProperty("price")]
     public string Price { get; set; } = "0.00";
+    [JsonProperty("sizeSmall")]
     public int SizeSmall { get; set; }
+    [JsonProperty("sizeMedium")]
     public int SizeMedium { get; set; }
+    [JsonProperty("sizeLarge")]
     public int SizeLarge { get; set; }
+    [JsonProperty("entityType")]
     public string EntityType { get; set; } = "Attribute Properties";
 }
 
@@ -28,17 +36,25 @@ public class AttributeArrayProduct
 {
     [JsonProperty("id")]
     public string Id { get; set; } = Guid.NewGuid().ToString();
+    [JsonProperty("productId")]
     public string ProductId { get; set; } = Guid.NewGuid().ToString();
+    [JsonProperty("name")]
     public string Name { get; set; } = string.Empty;
+    [JsonProperty("category")]
     public string Category { get; set; } = string.Empty;
+    [JsonProperty("price")]
     public string Price { get; set; } = "0.00";
+    [JsonProperty("sizes")]
     public List<ProductSize> Sizes { get; set; } = [];
+    [JsonProperty("entityType")]
     public string EntityType { get; set; } = "Attribute Array";
 }
 
 public class ProductSize
 {
+    [JsonProperty("size")]
     public string Size { get; set; } = string.Empty;
+    [JsonProperty("count")]
     public int Count { get; set; }
 }
 

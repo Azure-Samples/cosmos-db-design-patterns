@@ -32,18 +32,18 @@ jobs:
           docker pull mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
           docker run -d \
             --name cosmos-emulator \
-            -p 8081:8081 \
-            -p 10250-10255:10250-10255 \
+            --privileged \
+            --network host \
             mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
 
       # Poll the emulator's certificate endpoint until it responds, giving the
-      # container up to 120 seconds to initialise before timing out.
+      # container up to 180 seconds to initialise before timing out.
       - name: Wait for emulator to be ready
         run: |
           echo "Waiting for Cosmos DB emulator..."
-          timeout 120 bash -c \
+          timeout 180 bash -c \
             'until curl -k -s https://localhost:8081/_explorer/emulator.pem > /dev/null 2>&1; \
-             do echo "  ...not ready yet, retrying in 3 s"; sleep 3; done'
+             do echo "  ...not ready yet, retrying in 5 s"; sleep 5; done'
           echo "Cosmos DB emulator is ready."
 
       - name: Restore test project dependencies

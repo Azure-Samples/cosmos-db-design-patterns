@@ -177,7 +177,7 @@ public class SchemaVersioningTests : IAsyncLifetime
         var v2Carts = new List<CartReadModel>();
         using FeedIterator<CartReadModel> feed = _cartsContainer
             .GetItemQueryIterator<CartReadModel>(
-                "SELECT * FROM c WHERE IS_DEFINED(c.schemaVersion) AND c.schemaVersion = 2");
+                "SELECT * FROM c WHERE IS_DEFINED(c.SchemaVersion) AND c.SchemaVersion = 2");
 
         while (feed.HasMoreResults)
         {
