@@ -10,9 +10,7 @@ on:
 
 jobs:
   integration-tests:
-    # 4-core / 16 GB runner gives the Cosmos DB Linux emulator enough RAM to
-    # stay stable while multiple test databases are created in parallel.
-    runs-on: ubuntu-latest-4-cores
+    runs-on: ubuntu-latest
     timeout-minutes: 30
 
     permissions:
