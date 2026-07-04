@@ -28,38 +28,39 @@ jobs:
         with:
           dotnet-version: "10.0.x"
 
-      # Restore NuGet packages for all sample projects so that Copilot can
-      # build, lint, and test each sample without incurring an extra download step.
-      - name: Restore attribute-array
-        run: dotnet restore attribute-array/source/AttributeArray.csproj
+      # Restore and build all sample projects so that Copilot can work with
+      # each sample without incurring extra download or compilation steps, and
+      # to verify every project compiles cleanly on each push.
+      - name: Build attribute-array
+        run: dotnet build attribute-array/source/AttributeArray.csproj --no-incremental
 
-      - name: Restore data-binning
-        run: dotnet restore data-binning/source/DataBinning.csproj
+      - name: Build data-binning
+        run: dotnet build data-binning/source/DataBinning.csproj --no-incremental
 
-      - name: Restore distributed-counter
+      - name: Build distributed-counter
         run: |
-          dotnet restore distributed-counter/source/Counter/CosmosDistributedCounter.csproj
-          dotnet restore distributed-counter/source/ConsumerApp/DistributedCounterConsumerApp.csproj
-          dotnet restore distributed-counter/source/Visualizer/DistributedCounterDashboard.csproj
+          dotnet build distributed-counter/source/Counter/CosmosDistributedCounter.csproj --no-incremental
+          dotnet build distributed-counter/source/ConsumerApp/DistributedCounterConsumerApp.csproj --no-incremental
+          dotnet build distributed-counter/source/Visualizer/DistributedCounterDashboard.csproj --no-incremental
 
-      - name: Restore distributed-lock
-        run: dotnet restore distributed-lock/source/GlobalLock.csproj
+      - name: Build distributed-lock
+        run: dotnet build distributed-lock/source/GlobalLock.csproj --no-incremental
 
-      - name: Restore document-versioning
-        run: dotnet restore document-versioning/source/website/website.csproj
+      - name: Build document-versioning
+        run: dotnet build document-versioning/source/website/website.csproj --no-incremental
 
-      - name: Restore event-sourcing
-        run: dotnet restore event-sourcing/source/EventSourcing.csproj
+      - name: Build event-sourcing
+        run: dotnet build event-sourcing/source/EventSourcing.csproj --no-incremental
 
-      - name: Restore materialized-view
+      - name: Build materialized-view
         run: |
-          dotnet restore materialized-view/source/data-generator/data-generator.csproj
-          dotnet restore materialized-view/source/function-app/MaterializeViews.csproj
+          dotnet build materialized-view/source/data-generator/data-generator.csproj --no-incremental
+          dotnet build materialized-view/source/function-app/MaterializeViews.csproj --no-incremental
 
-      - name: Restore preallocation
-        run: dotnet restore preallocation/source/Preallocation.csproj
+      - name: Build preallocation
+        run: dotnet build preallocation/source/Preallocation.csproj --no-incremental
 
-      - name: Restore schema-versioning
+      - name: Build schema-versioning
         run: |
-          dotnet restore schema-versioning/source/data-generator/data-generator.csproj
-          dotnet restore schema-versioning/source/website/website.csproj
+          dotnet build schema-versioning/source/data-generator/data-generator.csproj --no-incremental
+          dotnet build schema-versioning/source/website/website.csproj --no-incremental
