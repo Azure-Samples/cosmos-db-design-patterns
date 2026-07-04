@@ -39,7 +39,7 @@ namespace DistributedCounterDashboard
         {
 
             string endpoint = configuration["CosmosUri"];
-            string key = configuration["CosmosKey"];
+            string key = configuration["CosmosKey"] ?? string.Empty;
             string databaseName = configuration["CosmosDatabase"];
             string containerName = configuration["CosmosContainer"];
 

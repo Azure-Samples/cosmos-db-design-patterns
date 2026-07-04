@@ -1,4 +1,5 @@
-﻿using Microsoft.Azure.Cosmos;
+﻿using Azure.Identity;
+using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Configuration;
 
 
@@ -70,9 +71,13 @@ namespace DataBinning
             var config = configuration.Build();
 
             string uri = config["CosmosUri"]!;
-            string key = config["CosmosKey"]!;
+            string key = config["CosmosKey"] ?? string.Empty;
 
-            CosmosClient client = new(accountEndpoint: uri, authKeyOrResourceToken: key);
+            // Prefer keyless authentication via DefaultAzureCredential (managed identity / Azure CLI).
+            // Fall back to key-based authentication only when CosmosKey is explicitly set (e.g. local emulator).
+            CosmosClient client = string.IsNullOrEmpty(key)
+                ? new CosmosClient(accountEndpoint: uri, tokenCredential: new DefaultAzureCredential())
+                : new CosmosClient(accountEndpoint: uri, authKeyOrResourceToken: key);
 
             Database database = await client.CreateDatabaseIfNotExistsAsync(
                     id: "DataBinningDB"

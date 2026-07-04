@@ -1,4 +1,5 @@
-﻿using MaterializedViews.Options;
+﻿using Azure.Identity;
+using MaterializedViews.Options;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Configuration;
 
@@ -30,9 +31,15 @@ namespace MaterializedViews
             Console.WriteLine("Press any key to continue.");
             Console.ReadKey();
 
-            CosmosClient client = new(
-                accountEndpoint: config?.CosmosUri,
-                authKeyOrResourceToken: config?.CosmosKey);
+            // Prefer keyless authentication via DefaultAzureCredential (managed identity / Azure CLI).
+            // Fall back to key-based authentication only when CosmosKey is explicitly set (e.g. local emulator).
+            CosmosClient client = string.IsNullOrEmpty(config?.CosmosKey)
+                ? new CosmosClient(
+                    accountEndpoint: config?.CosmosUri,
+                    tokenCredential: new DefaultAzureCredential())
+                : new CosmosClient(
+                    accountEndpoint: config?.CosmosUri,
+                    authKeyOrResourceToken: config?.CosmosKey);
 
             database = client.CreateDatabaseIfNotExistsAsync(id: databaseName).Result;
             container = database.CreateContainerIfNotExistsAsync(id: containerName, partitionKeyPath: partitionKeyPath).Result;

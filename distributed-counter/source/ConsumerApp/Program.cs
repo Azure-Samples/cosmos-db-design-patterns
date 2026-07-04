@@ -22,7 +22,7 @@ namespace Cosmos_Patterns_DistributedCounter
             var config = configuration.Build();
 
             string endpoint = config["CosmosUri"]!;
-            string key = config["CosmosKey"]!;
+            string key = config["CosmosKey"] ?? string.Empty;
             string databaseName = config["CosmosDatabase"]!;
             string containerName = config["CosmosContainer"]!;
 

@@ -56,7 +56,7 @@ static class ProgramExtensions
             {
                 return new CosmosDb(
                     cosmosUri: cosmosOptions.Value?.CosmosUri ?? string.Empty,
-                    cosmosKey: cosmosOptions.Value?.CosmosKey ?? string.Empty,
+                    cosmosKey: cosmosOptions.Value?.CosmosKey,
                     database: cosmosOptions.Value?.Database ?? string.Empty,
                     currentOrderContainer: cosmosOptions.Value?.CurrentOrderContainer ?? string.Empty,
                     historicalOrderContainer: cosmosOptions.Value?.HistoricalOrderContainer ?? string.Empty,
