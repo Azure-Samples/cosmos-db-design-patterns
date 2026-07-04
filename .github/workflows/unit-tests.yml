@@ -38,14 +38,23 @@ jobs:
             -e AZURE_COSMOS_EMULATOR_PARTITION_COUNT=3 \
             mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
 
-      # Poll the emulator's certificate endpoint until it responds, giving the
-      # container up to 180 seconds to initialise before timing out.
+      # Two-stage readiness check:
+      # 1. Wait for the TLS layer (/_explorer/emulator.pem) — the HTTPS server
+      #    starts quickly but before the Cosmos DB data plane is operational.
+      # 2. Wait for the data plane by polling GET /dbs until it returns HTTP 401
+      #    (Unauthorized). A 401 means the gateway is up and responding to real
+      #    Cosmos DB requests; a 503 or connection error means it is still
+      #    initialising its partition servers.
       - name: Wait for emulator to be ready
         run: |
-          echo "Waiting for Cosmos DB emulator..."
+          echo "Waiting for Cosmos DB emulator TLS layer..."
           timeout 180 bash -c \
             'until curl -k -s https://localhost:8081/_explorer/emulator.pem > /dev/null 2>&1; \
-             do echo "  ...not ready yet, retrying in 5 s"; sleep 5; done'
+             do echo "  ...TLS not ready yet, retrying in 5 s"; sleep 5; done'
+          echo "TLS layer ready. Waiting for Cosmos DB data plane..."
+          timeout 120 bash -c \
+            'until [ "$(curl -k -s -o /dev/null -w "%{http_code}" https://localhost:8081/dbs)" = "401" ]; \
+             do echo "  ...data plane not ready yet, retrying in 5 s"; sleep 5; done'
           echo "Cosmos DB emulator is ready."
 
       - name: Restore test project dependencies
