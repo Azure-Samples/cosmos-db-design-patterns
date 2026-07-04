@@ -35,6 +35,7 @@ jobs:
             --name cosmos-emulator \
             --privileged \
             --network host \
+            -e AZURE_COSMOS_EMULATOR_PARTITION_COUNT=3 \
             mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
 
       # Poll the emulator's certificate endpoint until it responds, giving the
