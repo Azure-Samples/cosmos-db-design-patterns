@@ -22,7 +22,7 @@ namespace Services
                 ? new CosmosClient(accountEndpoint: cosmosUri, tokenCredential: new DefaultAzureCredential())
                 : new CosmosClient(accountEndpoint: cosmosUri, authKeyOrResourceToken: cosmosKey);
 
-            InitializeAsync(database, currentOrderContainer, historicalOrderContainer, partitionKey).Wait();
+            InitializeAsync(database, currentOrderContainer, historicalOrderContainer, partitionKey).GetAwaiter().GetResult();
         }
 
         private async Task InitializeAsync(string databaseName, string currentOrderContainerName, string historicalOrderContainerName, string partitionKey)

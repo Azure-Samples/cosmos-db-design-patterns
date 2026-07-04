@@ -31,16 +31,19 @@ CosmosClientOptions options = new()
     MaxRetryAttemptsOnRateLimitedRequests = 10
 };
 
+if (config is null || string.IsNullOrEmpty(config.CosmosUri))
+    throw new InvalidOperationException("CosmosUri is required in configuration.");
+
 // Prefer keyless authentication via DefaultAzureCredential (managed identity / Azure CLI).
 // Fall back to key-based authentication only when CosmosKey is explicitly set (e.g. local emulator).
-CosmosClient client = string.IsNullOrEmpty(config?.CosmosKey)
+CosmosClient client = string.IsNullOrEmpty(config.CosmosKey)
     ? new CosmosClient(
-        accountEndpoint: config?.CosmosUri,
+        accountEndpoint: config.CosmosUri,
         tokenCredential: new DefaultAzureCredential(),
         clientOptions: options)
     : new CosmosClient(
-        accountEndpoint: config?.CosmosUri,
-        authKeyOrResourceToken: config?.CosmosKey,
+        accountEndpoint: config.CosmosUri,
+        authKeyOrResourceToken: config.CosmosKey,
         clientOptions: options);
 
 Database database = await client.CreateDatabaseIfNotExistsAsync(

@@ -46,11 +46,11 @@ static class ProgramExtensions
             else
             {
                 return new CosmosDbService(
-                    cosmosUri: cosmosOptions.Value?.CosmosUri ?? string.Empty,
-                    cosmosKey: cosmosOptions.Value?.CosmosKey,
-                    databaseName: cosmosOptions.Value?.DatabaseName ?? string.Empty,
-                    containerName: cosmosOptions.Value?.ContainerName ?? string.Empty,
-                    partitionKeyPath: cosmosOptions.Value?.PartitionKeyPath ?? string.Empty
+                    cosmosUri: cosmosOptions.Value.CosmosUri,
+                    cosmosKey: cosmosOptions.Value.CosmosKey,
+                    databaseName: cosmosOptions.Value.DatabaseName,
+                    containerName: cosmosOptions.Value.ContainerName,
+                    partitionKeyPath: cosmosOptions.Value.PartitionKeyPath
                 );
             }
 

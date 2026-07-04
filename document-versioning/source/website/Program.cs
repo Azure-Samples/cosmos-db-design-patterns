@@ -55,12 +55,12 @@ static class ProgramExtensions
             else
             {
                 return new CosmosDb(
-                    cosmosUri: cosmosOptions.Value?.CosmosUri ?? string.Empty,
-                    cosmosKey: cosmosOptions.Value?.CosmosKey,
-                    database: cosmosOptions.Value?.Database ?? string.Empty,
-                    currentOrderContainer: cosmosOptions.Value?.CurrentOrderContainer ?? string.Empty,
-                    historicalOrderContainer: cosmosOptions.Value?.HistoricalOrderContainer ?? string.Empty,
-                    partitionKey: cosmosOptions.Value?.PartitionKey ?? string.Empty
+                    cosmosUri: cosmosOptions.Value.CosmosUri,
+                    cosmosKey: cosmosOptions.Value.CosmosKey,
+                    database: cosmosOptions.Value.Database,
+                    currentOrderContainer: cosmosOptions.Value.CurrentOrderContainer,
+                    historicalOrderContainer: cosmosOptions.Value.HistoricalOrderContainer,
+                    partitionKey: cosmosOptions.Value.PartitionKey
                 );
             }
                 

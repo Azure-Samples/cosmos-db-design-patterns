@@ -18,7 +18,7 @@ namespace Versioning.Services
                 ? new CosmosClient(accountEndpoint: cosmosUri, tokenCredential: new DefaultAzureCredential())
                 : new CosmosClient(accountEndpoint: cosmosUri, authKeyOrResourceToken: cosmosKey);
 
-            _container = InitializeAsync(databaseName, containerName, partitionKeyPath).Result;
+            _container = InitializeAsync(databaseName, containerName, partitionKeyPath).GetAwaiter().GetResult();
         }
 
         private async Task<Container> InitializeAsync(string databaseName, string containerName, string partitionKeyPath)

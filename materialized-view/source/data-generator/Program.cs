@@ -31,15 +31,18 @@ namespace MaterializedViews
             Console.WriteLine("Press any key to continue.");
             Console.ReadKey();
 
+            if (config is null || string.IsNullOrEmpty(config.CosmosUri))
+                throw new InvalidOperationException("CosmosUri is required in configuration.");
+
             // Prefer keyless authentication via DefaultAzureCredential (managed identity / Azure CLI).
             // Fall back to key-based authentication only when CosmosKey is explicitly set (e.g. local emulator).
-            CosmosClient client = string.IsNullOrEmpty(config?.CosmosKey)
+            CosmosClient client = string.IsNullOrEmpty(config.CosmosKey)
                 ? new CosmosClient(
-                    accountEndpoint: config?.CosmosUri,
+                    accountEndpoint: config.CosmosUri,
                     tokenCredential: new DefaultAzureCredential())
                 : new CosmosClient(
-                    accountEndpoint: config?.CosmosUri,
-                    authKeyOrResourceToken: config?.CosmosKey);
+                    accountEndpoint: config.CosmosUri,
+                    authKeyOrResourceToken: config.CosmosKey);
 
             database = client.CreateDatabaseIfNotExistsAsync(id: databaseName).Result;
             container = database.CreateContainerIfNotExistsAsync(id: containerName, partitionKeyPath: partitionKeyPath).Result;

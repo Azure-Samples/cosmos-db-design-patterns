@@ -26,8 +26,8 @@ namespace CosmosDistributedLock.Services
                 : new CosmosClient(accountEndpoint: CosmosUri, authKeyOrResourceToken: CosmosKey);
 
             
-            db = client.CreateDatabaseIfNotExistsAsync(CosmosDatabase).Result;
-            container = db.CreateContainerIfNotExistsAsync(CosmosContainer, "/pk").Result;
+            db = client.CreateDatabaseIfNotExistsAsync(CosmosDatabase).GetAwaiter().GetResult();
+            container = db.CreateContainerIfNotExistsAsync(CosmosContainer, "/pk").GetAwaiter().GetResult();
         }
 
 
