@@ -1,0 +1,70 @@
+name: Integration Tests
+
+# Run integration tests against the Cosmos DB Linux emulator on every PR
+# targeting the main branch, and allow manual runs from the Actions tab.
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      # Pull and start the Cosmos DB Linux emulator in the background.
+      # The well-known endpoint is https://localhost:8081 and the account key
+      # is the public emulator key embedded in EmulatorFixture.cs.
+      - name: Start Cosmos DB Linux emulator
+        run: |
+          docker pull mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
+          docker run -d \
+            --name cosmos-emulator \
+            -p 8081:8081 \
+            -p 10250-10255:10250-10255 \
+            mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
+
+      # Poll the emulator's certificate endpoint until it responds, giving the
+      # container up to 120 seconds to initialise before timing out.
+      - name: Wait for emulator to be ready
+        run: |
+          echo "Waiting for Cosmos DB emulator..."
+          timeout 120 bash -c \
+            'until curl -k -s https://localhost:8081/_explorer/emulator.pem > /dev/null 2>&1; \
+             do echo "  ...not ready yet, retrying in 3 s"; sleep 3; done'
+          echo "Cosmos DB emulator is ready."
+
+      - name: Restore test project dependencies
+        run: dotnet restore tests/CosmosDesignPatterns.Tests/CosmosDesignPatterns.Tests.csproj
+
+      - name: Build test project
+        run: dotnet build tests/CosmosDesignPatterns.Tests/CosmosDesignPatterns.Tests.csproj --no-restore
+
+      - name: Run integration tests
+        run: |
+          dotnet test tests/CosmosDesignPatterns.Tests/CosmosDesignPatterns.Tests.csproj \
+            --no-build \
+            --verbosity normal \
+            --logger "trx;LogFileName=test-results.trx"
+        env:
+          COSMOS_ENDPOINT: "https://localhost:8081"
+          COSMOS_KEY: "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: "**/*.trx"
