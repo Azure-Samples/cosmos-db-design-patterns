@@ -1,4 +1,5 @@
-﻿using Microsoft.Azure.Cosmos;
+﻿using Azure.Identity;
+using Microsoft.Azure.Cosmos;
 
 namespace Services
 {
@@ -13,12 +14,13 @@ namespace Services
         public Container HistoryContainer => historyContainer ?? throw new InvalidOperationException("HistoryContainer is not initialized.");
         public Container LeasesContainer => leasesContainer ?? throw new InvalidOperationException("LeasesContainer is not initialized.");
 
-        public CosmosDb(string cosmosUri, string cosmosKey, string database, string currentOrderContainer, string historicalOrderContainer, string partitionKey)
+        public CosmosDb(string cosmosUri, string? cosmosKey, string database, string currentOrderContainer, string historicalOrderContainer, string partitionKey)
         {
-           
-            client = new CosmosClient(
-                accountEndpoint: cosmosUri!,
-                authKeyOrResourceToken: cosmosKey!);
+            // Prefer keyless authentication via DefaultAzureCredential (managed identity / Azure CLI).
+            // Fall back to key-based authentication only when CosmosKey is explicitly set (e.g. local emulator).
+            client = string.IsNullOrEmpty(cosmosKey)
+                ? new CosmosClient(accountEndpoint: cosmosUri, tokenCredential: new DefaultAzureCredential())
+                : new CosmosClient(accountEndpoint: cosmosUri, authKeyOrResourceToken: cosmosKey);
 
             InitializeAsync(database, currentOrderContainer, historicalOrderContainer, partitionKey).Wait();
         }

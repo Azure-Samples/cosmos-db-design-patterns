@@ -1,5 +1,6 @@
 ﻿using AttributeArray.Options;
 using AttributeArray.Services;
+using Azure.Identity;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Configuration;
 using Spectre.Console;
@@ -30,11 +31,17 @@ CosmosClientOptions options = new()
     MaxRetryAttemptsOnRateLimitedRequests = 10
 };
 
-CosmosClient client = new(
-    accountEndpoint: config?.CosmosUri,
-    authKeyOrResourceToken: config?.CosmosKey,
-    clientOptions: options
-);
+// Prefer keyless authentication via DefaultAzureCredential (managed identity / Azure CLI).
+// Fall back to key-based authentication only when CosmosKey is explicitly set (e.g. local emulator).
+CosmosClient client = string.IsNullOrEmpty(config?.CosmosKey)
+    ? new CosmosClient(
+        accountEndpoint: config?.CosmosUri,
+        tokenCredential: new DefaultAzureCredential(),
+        clientOptions: options)
+    : new CosmosClient(
+        accountEndpoint: config?.CosmosUri,
+        authKeyOrResourceToken: config?.CosmosKey,
+        clientOptions: options);
 
 Database database = await client.CreateDatabaseIfNotExistsAsync(
     id: "AttributeArrayDB"

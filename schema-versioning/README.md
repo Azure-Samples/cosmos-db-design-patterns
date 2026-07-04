@@ -188,45 +188,94 @@ dotnet --list-runtimes
 
 You need to configure **two** application configuration files to run these demos.
 
-1. Go to your resource group.
+1. Go to your resource group and select the Serverless Azure Cosmos DB for NoSQL account that you created for this repository.
 
-1. Select the Serverless Azure Cosmos DB for NoSQL account that you created for this repository.
+1. From the navigation, under **Settings**, select **Keys** and copy the **URI** value.
 
-1. From the navigation, under **Settings**, select **Keys**. The values you need for the application settings for the demo are here.
+### Option 1: Keyless authentication via RBAC (Recommended)
 
-1. While on the Keys blade, make note of the `URI` and `PRIMARY KEY`. You will need these for the sections below.
+Keyless authentication using `DefaultAzureCredential` is the recommended approach. It works automatically with managed identity (Azure-hosted) and with the Azure CLI locally.
+
+1. Assign the **Cosmos DB Built-in Data Contributor** role to your identity:
+
+    ```bash
+    az cosmosdb sql role assignment create \
+      --account-name <cosmos-account-name> \
+      --resource-group <resource-group-name> \
+      --role-definition-name "Cosmos DB Built-in Data Contributor" \
+      --principal-id $(az ad signed-in-user show --query id -o tsv) \
+      --scope "/"
+    ```
+
+1. Sign in with the Azure CLI (for local development):
+
+    ```bash
+    az login
+    ```
 
 1. In Codespace or locally, open the data-generator folder and add a new **appsettings.development.json** file with the following contents:
 
   ```json
-    {
-      "CosmosUri": "",
-      "CosmosKey": "",
-      "DatabaseName": "SchemaVersionDB",
-      "ContainerName": "ShoppingCart",
-      "PartitionKeyPath": "/id"
-    }
-  ```
-
-1. Replace the `CosmosURI` and `CosmosKey` with the values from the Keys blade in the Azure Portal.
-
-1. Save the file.
-
-1. Open the website folder and add a new **appsettings.development.json** file with the following contents:
-
-  ```json
-  "CosmosDb": {
-    "CosmosUri": "",
-    "CosmosKey": "",
+  {
+    "CosmosUri": "<endpoint>",
     "DatabaseName": "SchemaVersionDB",
     "ContainerName": "ShoppingCart",
     "PartitionKeyPath": "/id"
   }
   ```
 
-1. Replace the `CosmosURI` and `CosmosKey` with the values from the Keys blade in the Azure Portal.
+1. Replace `<endpoint>` with the **URI** value copied from the Keys blade.
 
-1. Save the file.
+1. Open the website folder and add a new **appsettings.development.json** file with the following contents:
+
+  ```json
+  {
+    "CosmosDb": {
+      "CosmosUri": "<endpoint>",
+      "DatabaseName": "SchemaVersionDB",
+      "ContainerName": "ShoppingCart",
+      "PartitionKeyPath": "/id"
+    }
+  }
+  ```
+
+1. Save both files.
+
+### Option 2: Key-based authentication (local emulator fallback)
+
+If you are using the Azure Cosmos DB Emulator or cannot use RBAC, set `CosmosKey` as well:
+
+1. From the Keys blade, copy both the **URI** and **PRIMARY KEY** values.
+
+1. In the data-generator **appsettings.development.json** file:
+
+  ```json
+  {
+    "CosmosUri": "<endpoint>",
+    "CosmosKey": "<primary-key>",
+    "DatabaseName": "SchemaVersionDB",
+    "ContainerName": "ShoppingCart",
+    "PartitionKeyPath": "/id"
+  }
+  ```
+
+1. In the website **appsettings.development.json** file:
+
+  ```json
+  {
+    "CosmosDb": {
+      "CosmosUri": "<endpoint>",
+      "CosmosKey": "<primary-key>",
+      "DatabaseName": "SchemaVersionDB",
+      "ContainerName": "ShoppingCart",
+      "PartitionKeyPath": "/id"
+    }
+  }
+  ```
+
+> **Note:** Never commit `appsettings.development.json` with real key values. The `.gitignore` already excludes `appsettings.development.json`.
+
+1. Save both files.
 
 
 ## Generate data

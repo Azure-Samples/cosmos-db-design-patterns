@@ -1,0 +1,65 @@
+name: "Copilot Setup Steps"
+
+# Run the setup steps when they are changed for easy validation,
+# and allow manual testing from the repository's "Actions" tab.
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+  pull_request:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+
+jobs:
+  # The job MUST be called `copilot-setup-steps` or it will not be picked up by Copilot.
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      # Restore NuGet packages for all sample projects so that Copilot can
+      # build, lint, and test each sample without incurring an extra download step.
+      - name: Restore attribute-array
+        run: dotnet restore attribute-array/source/AttributeArray.csproj
+
+      - name: Restore data-binning
+        run: dotnet restore data-binning/source/DataBinning.csproj
+
+      - name: Restore distributed-counter
+        run: |
+          dotnet restore distributed-counter/source/Counter/CosmosDistributedCounter.csproj
+          dotnet restore distributed-counter/source/ConsumerApp/DistributedCounterConsumerApp.csproj
+          dotnet restore distributed-counter/source/Visualizer/DistributedCounterDashboard.csproj
+
+      - name: Restore distributed-lock
+        run: dotnet restore distributed-lock/source/GlobalLock.csproj
+
+      - name: Restore document-versioning
+        run: dotnet restore document-versioning/source/website/website.csproj
+
+      - name: Restore event-sourcing
+        run: dotnet restore event-sourcing/source/EventSourcing.csproj
+
+      - name: Restore materialized-view
+        run: |
+          dotnet restore materialized-view/source/data-generator/data-generator.csproj
+          dotnet restore materialized-view/source/function-app/MaterializeViews.csproj
+
+      - name: Restore preallocation
+        run: dotnet restore preallocation/source/Preallocation.csproj
+
+      - name: Restore schema-versioning
+        run: |
+          dotnet restore schema-versioning/source/data-generator/data-generator.csproj
+          dotnet restore schema-versioning/source/website/website.csproj
