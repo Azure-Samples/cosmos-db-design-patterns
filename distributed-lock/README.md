@@ -138,6 +138,48 @@ If you are using the Azure Cosmos DB Emulator or cannot use RBAC, set `CosmosKey
 
 1. When prompted, enter the values for the lock name and the default TTL
 
+## (Optional) Deploy and run in Azure with `azd`
+
+The steps above run the sample **all-local** (against the Azure Cosmos DB emulator or your own account). If you'd rather run it against a dedicated, **keyless** Azure Cosmos DB account in Azure, this pattern includes an [Azure Developer CLI (`azd`)](https://aka.ms/azd) template. Running locally is unchanged; the deployment files (`azure.yaml`, `infra/`) have no effect unless you run `azd provision`.
+
+Because this sample is a **console app**, there is no service hosted in Azure — `azd` only provisions the data store, intentionally minimal and cheap:
+
+- A **serverless** Azure Cosmos DB account with local (key) authentication **disabled**.
+- The sample's `LockDB` database and `Locks` container (created with a 60-second TTL so leases auto-expire, matching the app), pre-created.
+- A data-plane role assignment granting **you** (the deploying user) keyless access, so you can run the console app locally against it.
+
+### Provision
+
+From the `distributed-lock` folder:
+
+```bash
+azd provision
+```
+
+When it finishes, point the app at the new account and run it locally — keyless, using your `az login` credentials:
+
+```bash
+# bash / zsh
+export CosmosUri="$(azd env get-value AZURE_COSMOS_ENDPOINT)"
+cd source && dotnet run
+```
+
+```powershell
+# PowerShell
+$env:CosmosUri = azd env get-value AZURE_COSMOS_ENDPOINT
+cd source; dotnet run
+```
+
+Leave `CosmosKey` empty — with only `CosmosUri` set, the app authenticates keyless via `DefaultAzureCredential`.
+
+> **Consistency note:** This template provisions a single-region **serverless** account, which uses **Session** consistency. The lock's correctness — mutual exclusion and monotonically increasing fence tokens — comes from optimistic concurrency (a unique-id insert plus `ETag`-checked patches), so it holds under any consistency level, not just Strong. For a multi-region *production* lock you would instead use provisioned throughput with **Strong** (or **Bounded staleness**) consistency; serverless accounts are single-region only.
+
+### Clean up
+
+```bash
+azd down
+```
+
 ## Summary
 
 Azure Cosmos DB makes implementing a global lock fairly simple by utilizing the `TTL` and 'ETag' features.
