@@ -19,35 +19,44 @@ namespace EventSourcing
         }
 
         [Function("EventSourcing")]
-        [CosmosDBOutput(
-                databaseName: "EventSourcingDB",
-                containerName: "CartEvents",
-                Connection = "CosmosDBConnection",
-                CreateIfNotExists = true,
-                PartitionKey = "/CartId")]
-        public async Task<IActionResult> Run(
+        public async Task<EventSourcingOutput> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req, 
                 FunctionContext context)
         {
             _logger.LogInformation("C# HTTP trigger function processed a request.");
 
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-            string responseMessage;
 
-            if (requestBody != null)
+            if (string.IsNullOrEmpty(requestBody))
             {
-                CartEvent cartEvent = JsonConvert.DeserializeObject<CartEvent>(requestBody) ?? throw new ArgumentException("Request body is empty");
-                _logger.LogInformation(JsonConvert.SerializeObject(cartEvent, Formatting.Indented));
-
-                //responseMessage = $"HTTP function successful for event {cartEvent.EventType} for cart {cartEvent.CartId}.";
-                return new OkObjectResult(cartEvent);
-            }
-            else
-            {
-                responseMessage = "No event sent in body";
+                return new EventSourcingOutput
+                {
+                    HttpResponse = new OkObjectResult("No event sent in body")
+                };
             }
 
-            return new OkObjectResult(responseMessage);
+            CartEvent cartEvent = JsonConvert.DeserializeObject<CartEvent>(requestBody) ?? throw new ArgumentException("Request body is empty");
+            _logger.LogInformation(JsonConvert.SerializeObject(cartEvent, Formatting.Indented));
+
+            return new EventSourcingOutput
+            {
+                CartEvent = cartEvent,
+                HttpResponse = new OkObjectResult(cartEvent)
+            };
         }
+    }
+
+    public class EventSourcingOutput
+    {
+        [CosmosDBOutput(
+            databaseName: "EventSourcingDB",
+            containerName: "CartEvents",
+            Connection = "CosmosDBConnection",
+            CreateIfNotExists = true,
+            PartitionKey = "/CartId")]
+        public CartEvent? CartEvent { get; set; }
+
+        [HttpResult]
+        public IActionResult HttpResponse { get; set; } = new OkResult();
     }
 }
