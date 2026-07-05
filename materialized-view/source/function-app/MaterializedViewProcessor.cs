@@ -1,38 +1,48 @@
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
 namespace MaterializedViews
 {
-    public static class MaterializedViewProcessor
+    public class MaterializedViewProcessor
     {
-        [FunctionName("MaterializedViewProcessor")]
-        public static async Task Run(
+        private readonly ILogger<MaterializedViewProcessor> _logger;
+
+        public MaterializedViewProcessor(ILogger<MaterializedViewProcessor> logger)
+        {
+            _logger = logger;
+        }
+
+        [Function(nameof(MaterializedViewProcessor))]
+        [CosmosDBOutput(
+            databaseName: "MaterializedViewsDB",
+            containerName: "SalesByProduct",
+            Connection = "CosmosDBConnection",
+            CreateIfNotExists = true,
+            PartitionKey = "/Product")]
+        public IReadOnlyList<SalesByProduct> Run(
             [CosmosDBTrigger(
                 databaseName: "MaterializedViewsDB",
                 containerName: "Sales",
                 Connection = "CosmosDBConnection",
-                LeaseContainerName = "leases", 
-                CreateLeaseContainerIfNotExists=true)]IReadOnlyList<Sales> input,
-            [CosmosDB(
-                databaseName: "MaterializedViewsDB",
-                containerName: "SalesByProduct", 
-                Connection="CosmosDBConnection", 
-                CreateIfNotExists=true, 
-                PartitionKey="/Product")] IAsyncCollector<SalesByProduct> salesByProduct,
-            ILogger log)
-        {           
-            if (input != null && input.Count > 0)
-            {
-                log.LogInformation("Document count: " + input.Count);
-                
-                foreach (Sales document in input){
-                    
-                    await salesByProduct.AddAsync(new SalesByProduct(document));                                                
+                LeaseContainerName = "leases",
+                CreateLeaseContainerIfNotExists = true)] IReadOnlyList<Sales> input)
+        {
+            var salesByProduct = new List<SalesByProduct>();
 
-                }
+            if (input is null || input.Count == 0)
+            {
+                return salesByProduct;
             }
+
+            _logger.LogInformation("Document count: {Count}", input.Count);
+
+            foreach (Sales document in input)
+            {
+                salesByProduct.Add(new SalesByProduct(document));
+            }
+
+            return salesByProduct;
         }
     }
 }
+
