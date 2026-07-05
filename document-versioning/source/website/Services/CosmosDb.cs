@@ -6,13 +6,16 @@ namespace Services
     public class CosmosDb
     {
         private readonly CosmosClient client;
-        private Container? orderContainer;
-        private Container? historyContainer;
-        private Container? leasesContainer;
+        private readonly string databaseName;
+        private readonly string currentOrderContainerName;
+        private readonly string historicalOrderContainerName;
+        private readonly string partitionKey;
 
-        public Container OrderContainer => orderContainer ?? throw new InvalidOperationException("OrderContainer is not initialized.");
-        public Container HistoryContainer => historyContainer ?? throw new InvalidOperationException("HistoryContainer is not initialized.");
-        public Container LeasesContainer => leasesContainer ?? throw new InvalidOperationException("LeasesContainer is not initialized.");
+        // Container handles are lightweight proxies (no network call), so they are safe to
+        // create up front. They become usable once the database/containers exist.
+        public Container OrderContainer { get; }
+        public Container HistoryContainer { get; }
+        public Container LeasesContainer { get; }
 
         public CosmosDb(string cosmosUri, string? cosmosKey, string database, string currentOrderContainer, string historicalOrderContainer, string partitionKey)
         {
@@ -22,29 +25,56 @@ namespace Services
                 ? new CosmosClient(accountEndpoint: cosmosUri, tokenCredential: new DefaultAzureCredential())
                 : new CosmosClient(accountEndpoint: cosmosUri, authKeyOrResourceToken: cosmosKey);
 
-            InitializeAsync(database, currentOrderContainer, historicalOrderContainer, partitionKey).Wait();
+            databaseName = database;
+            currentOrderContainerName = currentOrderContainer;
+            historicalOrderContainerName = historicalOrderContainer;
+            this.partitionKey = partitionKey;
+
+            OrderContainer = client.GetContainer(database, currentOrderContainer);
+            HistoryContainer = client.GetContainer(database, historicalOrderContainer);
+            LeasesContainer = client.GetContainer(database, "leases");
         }
 
-        private async Task InitializeAsync(string databaseName, string currentOrderContainerName, string historicalOrderContainerName, string partitionKey)
+        /// <summary>
+        /// Ensures the database and containers exist. Called in the background at startup rather
+        /// than synchronously in the constructor, so the app does not block (or crash) while
+        /// waiting on Cosmos DB. The call is retried to tolerate transient startup conditions such
+        /// as managed-identity token/role-assignment propagation when deployed to Azure.
+        /// When the account already has the database/containers (for example, provisioned by the
+        /// azd/Bicep deployment) these calls simply read and return.
+        /// </summary>
+        public async Task InitializeAsync(CancellationToken cancellationToken = default)
         {
-            Database database = await client.CreateDatabaseIfNotExistsAsync(databaseName);
+            const int maxAttempts = 30;
+            for (int attempt = 1; ; attempt++)
+            {
+                try
+                {
+                    Database database = await client.CreateDatabaseIfNotExistsAsync(databaseName, cancellationToken: cancellationToken);
 
-            orderContainer = await database.CreateContainerIfNotExistsAsync(
-                id: currentOrderContainerName,
-                partitionKeyPath: partitionKey
-            );
+                    await database.CreateContainerIfNotExistsAsync(
+                        id: currentOrderContainerName,
+                        partitionKeyPath: partitionKey,
+                        cancellationToken: cancellationToken);
 
-            historyContainer = await database.CreateContainerIfNotExistsAsync(
-                id: historicalOrderContainerName,
-                partitionKeyPath: partitionKey
-            );
+                    await database.CreateContainerIfNotExistsAsync(
+                        id: historicalOrderContainerName,
+                        partitionKeyPath: partitionKey,
+                        cancellationToken: cancellationToken);
 
-            leasesContainer = await database.CreateContainerIfNotExistsAsync(
-                id: "leases",
-                partitionKeyPath: "/id"
-            );
+                    await database.CreateContainerIfNotExistsAsync(
+                        id: "leases",
+                        partitionKeyPath: "/id",
+                        cancellationToken: cancellationToken);
+
+                    return;
+                }
+                catch (Exception) when (attempt < maxAttempts && !cancellationToken.IsCancellationRequested)
+                {
+                    // Back off (capped) and retry; covers transient auth/connectivity at startup.
+                    await Task.Delay(TimeSpan.FromSeconds(Math.Min(attempt * 3, 30)), cancellationToken);
+                }
+            }
         }
-
-        
     }
 }
