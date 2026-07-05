@@ -171,13 +171,13 @@ Open the application code in GitHub Codespaces:
 
 ### Prerequisites
 
-If running locally you will need to install .NET 8.
+If running locally you will need to install .NET 10.
 
-- [.NET 8.0 Runtime](https://dotnet.microsoft.com/download)
+- [.NET 10.0 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
 
 To confirm you have the required versions of the tools installed.
 
-First, check the .NET runtime with this command. Make sure that .NET components with versions that start with 8.0 appear as part of the output:
+First, check the .NET runtime with this command. Make sure that .NET components with versions that start with 10.0 appear as part of the output:
 
 ```bash
 dotnet --list-runtimes

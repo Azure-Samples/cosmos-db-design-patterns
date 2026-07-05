@@ -202,7 +202,7 @@ By not choosing the pre-allocation pattern, the alternative way to find availabl
 
 To run this demo, you will need to have:
 
-- [.NET 8.0 Runtime](https://dotnet.microsoft.com/download)
+- [.NET 10.0 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
 
 ## Confirm required tools are installed
 
@@ -214,7 +214,7 @@ First, check the .NET runtime with this command:
 dotnet --list-runtimes
 ```
 
-As you may have multiple versions of the runtime installed, make sure that .NET components with versions that start with 8.0 appear as part of the output.
+As you may have multiple versions of the runtime installed, make sure that .NET components with versions that start with 10.0 appear as part of the output.
 
 ## Getting the code
 

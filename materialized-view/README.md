@@ -76,7 +76,7 @@ In the demo, you will not notice the performance implications with smaller sets 
 
 To run this demo, you will need to have:
 
-- [.NET 8.0 Runtime](https://dotnet.microsoft.com/download)
+- [.NET 10.0 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
 - [Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local#install-the-azure-functions-core-tools)
 
 ## Confirm required tools are installed

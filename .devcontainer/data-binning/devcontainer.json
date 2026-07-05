@@ -1,6 +1,6 @@
 {
     "name": "Data binning pattern",
-    "image": "mcr.microsoft.com/devcontainers/dotnet:8.0",
+    "image": "mcr.microsoft.com/devcontainers/dotnet:10.0",
     "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
     "workspaceFolder": "/workspace/data-binning/source/",
     "postAttachCommand": "dotnet build DataBinning.csproj",
