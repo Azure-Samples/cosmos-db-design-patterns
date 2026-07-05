@@ -17,7 +17,8 @@ namespace Preallocation
         {
             IConfigurationBuilder configuration = new ConfigurationBuilder()
             .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-            .AddJsonFile("appsettings.development.json", optional: true);
+            .AddJsonFile("appsettings.development.json", optional: true)
+            .AddEnvironmentVariables();
 
             _config = configuration
                 .Build()

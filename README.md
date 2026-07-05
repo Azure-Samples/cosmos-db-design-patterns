@@ -133,13 +133,22 @@ All of these design patterns are built to run from a single Serverless Azure Cos
 
 [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fgithub.com%2FAzureCosmosDB%2Fdesign-patterns%2Ftree%2Fmain%2Fazuredeploy.json)
 
-#### Authentication options
+#### Configuration and authentication
 
-Each sample supports two authentication methods — RBAC (keyless) is the recommended approach:
+Each sample reads its Azure Cosmos DB endpoint (and, optionally, an account key) from configuration. The **recommended way to supply these values for local development is environment variables** — they keep secrets out of the source tree and work well with the emulator, containers, and CI. Every sample still also reads `appsettings.development.json` (git-ignored) as a file-based fallback if you prefer it.
+
+The console and data-generator samples bind these values at the root of configuration; the website samples bind them under a `CosmosDb` section (so their environment variables use the `__` separator). The Functions samples (`event-sourcing`, `materialized-view`) use `local.settings.json` / `CosmosDBConnection`.
+
+| Sample type | Endpoint variable | Key variable (optional) |
+| --- | --- | --- |
+| Console / data-generator | `CosmosUri` | `CosmosKey` |
+| Website (Razor/Blazor) | `CosmosDb__CosmosUri` | `CosmosDb__CosmosKey` |
+
+> Some samples read additional root-level settings (for example `distributed-lock` and `distributed-counter` use `CosmosDatabase` and `CosmosContainer`). See each sample's README for its full list.
 
 **Option 1: Keyless authentication via RBAC (Recommended)**
 
-The samples use `DefaultAzureCredential` from `Azure.Identity`. When `CosmosKey` is left empty (or omitted), the application automatically uses RBAC-based authentication. This works with:
+The samples use `DefaultAzureCredential` from `Azure.Identity`. When the key is left empty (or unset), the application automatically uses RBAC-based authentication. This works with:
 - Azure managed identity (when hosted in Azure)
 - Azure CLI credentials (`az login`) for local development
 
@@ -154,11 +163,31 @@ az cosmosdb sql role assignment create \
   --scope "/"
 ```
 
+Then set only the endpoint (console/data-generator example shown):
+
+```powershell
+# PowerShell
+$env:CosmosUri = "<endpoint>"
+```
+```bash
+# bash
+export CosmosUri="<endpoint>"
+```
+
 **Option 2: Key-based authentication (local emulator fallback)**
 
-Set `CosmosKey` in your `appsettings.development.json` (never commit this file) when using the Azure Cosmos DB Emulator or when RBAC is not available. See individual sample READMEs for the exact configuration format.
+When using the Azure Cosmos DB Emulator or when RBAC is not available, also set the key:
 
-> **Security note:** Never commit your Cosmos DB primary key or connection string to source control. The `.gitignore` already excludes `appsettings.development.json` and `local.settings.json`.
+```powershell
+# PowerShell
+$env:CosmosUri = "<endpoint>"; $env:CosmosKey = "<primary-key>"
+```
+```bash
+# bash
+export CosmosUri="<endpoint>"; export CosmosKey="<primary-key>"
+```
+
+> **Security note:** Never commit your Cosmos DB primary key or connection string to source control. Prefer environment variables (or RBAC). The `.gitignore` already excludes `appsettings.development.json` and `local.settings.json`, which remain supported as a fallback.
 
 Happy coding with Azure Cosmos DB and these powerful design patterns!
 

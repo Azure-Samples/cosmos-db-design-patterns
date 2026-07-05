@@ -37,7 +37,6 @@ static class ProgramExtensions
         builder.Configuration.AddJsonFile("appsettings.json");
         builder.Configuration.AddJsonFile($"appsettings.development.json", optional: true);
         builder.Configuration.AddEnvironmentVariables();
-        builder.Configuration.AddUserSecrets<Options.CosmosDb>();
 
         builder.Services.AddOptions<Options.CosmosDb>()
             .Bind(builder.Configuration.GetSection(nameof(Options.CosmosDb)));

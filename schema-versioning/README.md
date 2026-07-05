@@ -213,7 +213,7 @@ Keyless authentication using `DefaultAzureCredential` is the recommended approac
     az login
     ```
 
-1. In Codespace or locally, open the data-generator folder and add a new **appsettings.development.json** file with the following contents:
+1. In Codespace or locally, open the data-generator folder and set these values as environment variables (recommended — see [Configuration and authentication](../README.md#configuration-and-authentication)), or add an **appsettings.development.json** file with the following contents:
 
   ```json
   {
@@ -226,7 +226,7 @@ Keyless authentication using `DefaultAzureCredential` is the recommended approac
 
 1. Replace `<endpoint>` with the **URI** value copied from the Keys blade.
 
-1. Open the website folder and add a new **appsettings.development.json** file with the following contents:
+1. Open the website folder and set these values as environment variables (recommended — see [Configuration and authentication](../README.md#configuration-and-authentication)), or add an **appsettings.development.json** file with the following contents:
 
   ```json
   {

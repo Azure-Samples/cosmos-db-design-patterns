@@ -106,7 +106,7 @@ Keyless authentication using `DefaultAzureCredential` is the recommended approac
     az login
     ```
 
-1. Open the **Visualizer** project and add a new **appsettings.development.json** file with the following contents:
+1. Open the **Visualizer** project and set these values as environment variables (recommended — see [Configuration and authentication](../README.md#configuration-and-authentication)), or add an **appsettings.development.json** file with the following contents:
 
     ```json
     {
@@ -120,7 +120,7 @@ Keyless authentication using `DefaultAzureCredential` is the recommended approac
 
 Next move to the other project.
 
-1. Open the **ConsumerApp** project and add a new **appsettings.development.json** file with the same contents.
+1. Open the **ConsumerApp** project and set the same values as environment variables, or add an **appsettings.development.json** file with the same contents.
 
 ### Option 2: Key-based authentication (local emulator fallback)
 
@@ -128,7 +128,7 @@ If you are using the Azure Cosmos DB Emulator or cannot use RBAC, set `CosmosKey
 
 1. From the Keys blade, copy both the **URI** and **PRIMARY KEY** values.
 
-1. Open the **Visualizer** project and add a new **appsettings.development.json** file with the following contents:
+1. Open the **Visualizer** project and set these values as environment variables (recommended — see [Configuration and authentication](../README.md#configuration-and-authentication)), or add an **appsettings.development.json** file with the following contents:
 
     ```json
     {
@@ -139,7 +139,7 @@ If you are using the Azure Cosmos DB Emulator or cannot use RBAC, set `CosmosKey
     }
     ```
 
-1. Open the **ConsumerApp** project and add a new **appsettings.development.json** file with the same contents.
+1. Open the **ConsumerApp** project and set the same values as environment variables, or add an **appsettings.development.json** file with the same contents.
 
 > **Note:** Never commit `appsettings.development.json` with real key values. The `.gitignore` already excludes `appsettings.development.json`.
 

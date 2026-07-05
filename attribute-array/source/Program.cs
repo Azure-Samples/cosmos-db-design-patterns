@@ -10,7 +10,8 @@ using Database = Microsoft.Azure.Cosmos.Database;
 
 IConfigurationBuilder configuration = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-    .AddJsonFile($"appsettings.development.json", optional: true);
+    .AddJsonFile($"appsettings.development.json", optional: true)
+    .AddEnvironmentVariables();
 
 Cosmos? config = configuration
     .Build()
