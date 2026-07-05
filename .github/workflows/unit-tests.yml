@@ -1,18 +1,10 @@
 name: Integration Tests
 
-# Run integration tests against the Cosmos DB Linux emulator on every PR
-# targeting the main branch, and allow manual runs from the Actions tab.
-# Path-based test filtering is controlled by USE_PATH_FILTER (see below).
-# Set USE_PATH_FILTER to 'true' once the full test suite has passed end-to-end;
-# until then every trigger runs the complete test suite.
+# Run the full integration test suite against the Cosmos DB Linux emulator on
+# every PR targeting the main branch, and allow manual runs from the Actions
+# tab. The suite completes in under a minute, so every trigger runs all tests.
 on:
   workflow_dispatch:
-    inputs:
-      use_path_filter:
-        description: "Use path-based test filtering (true) or run all tests (false)"
-        required: false
-        default: "false"
-        type: string
   pull_request:
     branches:
       - main
@@ -25,11 +17,6 @@ jobs:
     permissions:
       contents: read
 
-    # Set USE_PATH_FILTER to 'true' here (or via workflow_dispatch input) to
-    # enable path-based filtering once the full test suite has passed.
-    env:
-      USE_PATH_FILTER: ${{ github.event_name == 'workflow_dispatch' && inputs.use_path_filter || 'false' }}
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -40,68 +27,6 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "10.0.x"
-
-      # Determine which pattern namespaces are covered by this PR so we can
-      # pass a targeted --filter to dotnet test.
-      # Path-based filtering is skipped unless USE_PATH_FILTER is 'true'
-      # (see the env block at the top of this job).
-      - name: Determine test filter
-        id: test-filter
-        run: |
-          # Map from pattern directory name to test namespace suffix
-          get_test_ns() {
-            case "$1" in
-              attribute-array)       echo "AttributeArray" ;;
-              data-binning)          echo "DataBinning" ;;
-              distributed-counter)   echo "DistributedCounter" ;;
-              distributed-lock)      echo "DistributedLock" ;;
-              document-versioning)   echo "DocumentVersioning" ;;
-              event-sourcing)        echo "EventSourcing" ;;
-              materialized-view)     echo "MaterializedView" ;;
-              preallocation)         echo "Preallocation" ;;
-              schema-versioning)     echo "SchemaVersioning" ;;
-              *)                     echo "" ;;
-            esac
-          }
-
-          if [ "$USE_PATH_FILTER" != "true" ]; then
-            echo "test_filter=" >> "$GITHUB_OUTPUT"
-            echo "Path-based filtering is disabled (USE_PATH_FILTER != true) — executing all tests."
-            exit 0
-          fi
-
-          BASE_REF="${{ github.base_ref }}"
-          git fetch origin "${BASE_REF}" --depth=1 2>/dev/null || true
-          CHANGED=$(git diff --name-only "origin/${BASE_REF}...HEAD" 2>/dev/null || echo "")
-
-          RUN_ALL=false
-          NAMESPACES=""
-
-          while IFS= read -r file; do
-            [ -z "$file" ] && continue
-            if [[ "$file" == tests/* || "$file" == .github/* ]]; then
-              RUN_ALL=true
-              break
-            fi
-            dir="${file%%/*}"
-            ns=$(get_test_ns "$dir")
-            if [ -n "$ns" ] && ! echo "$NAMESPACES" | grep -qw "$ns"; then
-              NAMESPACES="$NAMESPACES $ns"
-            fi
-          done <<< "$CHANGED"
-
-          if $RUN_ALL || [ -z "$NAMESPACES" ]; then
-            echo "test_filter=" >> "$GITHUB_OUTPUT"
-            echo "Running all tests."
-          else
-            EXPR=""
-            for ns in $NAMESPACES; do
-              [ -n "$EXPR" ] && EXPR="$EXPR|"
-              EXPR="${EXPR}FullyQualifiedName~CosmosDesignPatterns.Tests.${ns}"
-            done
-            echo "test_filter=$EXPR" >> "$GITHUB_OUTPUT"
-            echo "Running tests matching: $EXPR"
-          fi
 
       # Start the Cosmos DB Linux emulator (vNext) in the background.
       # The vNext emulator (now GA) replaces the legacy emulator, which crashed
@@ -141,19 +66,10 @@ jobs:
 
       - name: Run integration tests
         run: |
-          FILTER="${{ steps.test-filter.outputs.test_filter }}"
-          if [ -n "$FILTER" ]; then
-            dotnet test tests/CosmosDesignPatterns.Tests/CosmosDesignPatterns.Tests.csproj \
-              --no-build \
-              --verbosity normal \
-              --logger "trx;LogFileName=test-results.trx" \
-              --filter "$FILTER"
-          else
-            dotnet test tests/CosmosDesignPatterns.Tests/CosmosDesignPatterns.Tests.csproj \
-              --no-build \
-              --verbosity normal \
-              --logger "trx;LogFileName=test-results.trx"
-          fi
+          dotnet test tests/CosmosDesignPatterns.Tests/CosmosDesignPatterns.Tests.csproj \
+            --no-build \
+            --verbosity normal \
+            --logger "trx;LogFileName=test-results.trx"
         env:
           COSMOS_ENDPOINT: "https://localhost:8081"
           COSMOS_KEY: "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="
