@@ -223,12 +223,6 @@ As you may have multiple versions of the runtime installed, make sure that .NET 
 Directions installing pre-requisites to run locally and for cloning this repository using [Terminal or VS Code](../README.md?#getting-started)
 
 
-### GitHub Codespaces
-
-Open the application code in GitHub Codespaces:
-
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/azure-samples/cosmos-db-design-patterns?quickstart=1&devcontainer_path=.devcontainer%2Fpreallocation%2Fdevcontainer.json)
-
 ## Set up application configuration files
 
 You need to configure the application configuration file to run these demos.
@@ -297,7 +291,7 @@ If you are using the Azure Cosmos DB Emulator or cannot use RBAC, set `CosmosKey
 
 1. Open the application code.
 
-1. From Codespaces or locally with Visual Studio Code, start the app by running the following:
+1. From a terminal or Visual Studio Code, start the app by running the following:
 
 ```bash
   dotnet build

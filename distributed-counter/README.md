@@ -71,12 +71,6 @@ This sample is implemented as a C#/.NET application with three projects. The thr
 Directions installing pre-requisites to run locally and for cloning this repository using [Terminal or VS Code](../README.md?#getting-started)
 
 
-### GitHub Codespaces
-
-Open the application code in GitHub Codespaces:
-
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/azure-samples/cosmos-db-design-patterns?quickstart=1&devcontainer_path=.devcontainer%2Fdistributed-counter%2Fdevcontainer.json)
-
 ## Set up application configuration files
 
 You need to configure **two** application configuration files to run this app.
@@ -156,7 +150,7 @@ If you are using the Azure Cosmos DB Emulator or cannot use RBAC, set `CosmosKey
 
 ## Run the demo locally
 
-> This sample can be run **two ways**: *all-local* (this section — the Visualizer and ConsumerApp on your machine or in Codespaces, against the emulator or your own account) or *all-Azure* (the Visualizer hosted in Azure with the ConsumerApp run locally — see [Deploy and run in Azure](#optional-deploy-and-run-in-azure-with-azd) below). You don't need Azure to learn the pattern.
+> This sample can be run **two ways**: *all-local* (this section — the Visualizer and ConsumerApp on your machine, against the emulator or your own account) or *all-Azure* (the Visualizer hosted in Azure with the ConsumerApp run locally — see [Deploy and run in Azure](#optional-deploy-and-run-in-azure-with-azd) below). You don't need Azure to learn the pattern.
 
 1. Open a terminal and run the web application. The web application opens in a new browser window.
 

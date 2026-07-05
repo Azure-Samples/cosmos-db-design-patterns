@@ -34,13 +34,30 @@ namespace MaterializedViews
 
             // Prefer keyless authentication via DefaultAzureCredential (managed identity / Azure CLI).
             // Fall back to key-based authentication only when CosmosKey is explicitly set (e.g. local emulator).
+            // When targeting the local emulator (localhost), use Gateway mode and accept its
+            // self-signed certificate. This only ever applies to a local emulator endpoint.
+            CosmosClientOptions? clientOptions = null;
+            if (!string.IsNullOrEmpty(config?.CosmosUri) && new Uri(config!.CosmosUri).Host is "localhost" or "127.0.0.1")
+            {
+                clientOptions = new CosmosClientOptions
+                {
+                    ConnectionMode = ConnectionMode.Gateway,
+                    HttpClientFactory = () => new System.Net.Http.HttpClient(new System.Net.Http.HttpClientHandler
+                    {
+                        ServerCertificateCustomValidationCallback = System.Net.Http.HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+                    })
+                };
+            }
+
             CosmosClient client = string.IsNullOrEmpty(config?.CosmosKey)
                 ? new CosmosClient(
                     accountEndpoint: config?.CosmosUri,
-                    tokenCredential: new DefaultAzureCredential())
+                    tokenCredential: new DefaultAzureCredential(),
+                    clientOptions: clientOptions)
                 : new CosmosClient(
                     accountEndpoint: config?.CosmosUri,
-                    authKeyOrResourceToken: config?.CosmosKey);
+                    authKeyOrResourceToken: config?.CosmosKey,
+                    clientOptions: clientOptions);
 
             database = client.CreateDatabaseIfNotExistsAsync(id: databaseName).Result;
             container = database.CreateContainerIfNotExistsAsync(id: containerName, partitionKeyPath: partitionKeyPath).Result;

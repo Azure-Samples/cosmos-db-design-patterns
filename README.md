@@ -89,6 +89,7 @@ If running locally you will need to install some pre-requistes.
 
 - [.NET 10.0 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
 - [Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local#install-the-azure-functions-core-tools)
+- [Docker](https://www.docker.com/) — to run the Azure Cosmos DB Linux emulator locally
 
 To confirm you have the required versions of the tools installed.
 
@@ -121,24 +122,36 @@ If you do not have this version installed, you will need to uninstall the older 
 - Select a directory where you want to clone the repository.
 - The repository will be cloned to your local machine.
 
-### Using GitHub Codespaces
-
-Nearly all of these samples are configured to run from [GitHub Codespaces](https://docs.github.com/codespaces/overview).
-
-Navigate to the individual folders of each design pattern for a dedicated `README.md` file and look for the GitHub Codespaced badge.
-
 ### Setting up Azure Cosmos DB
 
-All of these design patterns are built to run from a single Serverless Azure Cosmos DB account. Before running any of the samples, click the Deploy to Azure button below to create a Serverless Azure Cosmos DB account.
+You can run every sample entirely locally against the **Azure Cosmos DB Linux (vNext) emulator** — no Azure subscription or account required. This is the default, recommended way to explore the patterns. Each sample also includes an optional [Azure Developer CLI (`azd`)](https://aka.ms/azd) template if you'd rather run it in Azure.
+
+#### Run locally with the emulator (default)
+
+From the root of this repository, start the emulator with Docker:
+
+```bash
+docker compose up -d
+```
+
+This starts the [Azure Cosmos DB Linux (vNext) emulator](https://learn.microsoft.com/azure/cosmos-db/emulator-linux) with its gateway on `https://localhost:8081` and the Data Explorer on `http://localhost:1234`. Point the samples at it with the well-known emulator endpoint and key:
+
+| Setting | Value |
+| --- | --- |
+| Endpoint | `https://localhost:8081` |
+| Key | `C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==` |
+
+The console and website samples accept the emulator's self-signed certificate automatically when the endpoint is `localhost`, so no certificate setup is needed. The Functions samples (`event-sourcing`, `materialized-view`) run their Cosmos binding in the Functions **host** process, so they require trusting the emulator certificate once — see those samples' README for the steps.
+
+When you're done, stop the emulator with `docker compose down`.
+
+#### (Optional) Run in Azure
+
+Each sample includes an [Azure Developer CLI (`azd`)](https://aka.ms/azd) template that provisions a dedicated, **keyless** (Microsoft Entra ID / managed identity) set of Azure resources for that one sample — and, for the web and Functions samples, deploys the app. Look for the **"(Optional) Deploy and run in Azure with `azd`"** section in each sample's `README.md`.
+
+Alternatively, to create a single shared Serverless Azure Cosmos DB account to point the samples at, use the Deploy to Azure button:
 
 [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fgithub.com%2FAzureCosmosDB%2Fdesign-patterns%2Ftree%2Fmain%2Fazuredeploy.json)
-
-#### Two ways to run each sample
-
-You can run these samples **two ways**:
-
-- **All-local** — run the sample on your machine or in GitHub Codespaces against the Azure Cosmos DB emulator or your own account (such as the shared account from the button above). This is all you need to learn the patterns; no Azure deployment is required.
-- **All-Azure** — most samples include an [Azure Developer CLI (`azd`)](https://aka.ms/azd) template that provisions a dedicated, **keyless** (Microsoft Entra ID / managed identity) set of Azure resources for that one sample — and, for the web samples, deploys the app. Look for the **"(Optional) Deploy and run in Azure with `azd`"** section in the sample's `README.md`.
 
 The `azd` templates are intentionally minimal and inexpensive — this repository teaches Cosmos DB **design patterns**, not production or enterprise architecture — and each is fully removed with `azd down` when you're finished.
 

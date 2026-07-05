@@ -154,15 +154,9 @@ public class Cart
 
 ## Try this implementation
 
-> This sample can be run **two ways**: *all-local* (this section — your machine or Codespaces against the Cosmos DB emulator or your own account) or *all-Azure* (deployed and running in Azure — see [Deploy and run in Azure](#optional-deploy-and-run-in-azure-with-azd) below). You don't need Azure to learn the pattern.
+> This sample can be run **two ways**: *all-local* (this section — your machine against the Cosmos DB emulator or your own account) or *all-Azure* (deployed and running in Azure — see [Deploy and run in Azure](#optional-deploy-and-run-in-azure-with-azd) below). You don't need Azure to learn the pattern.
 
-You can run this sample locally or in GitHub Codespaces:
-
-### GitHub Codespaces
-
-Open the application code in GitHub Codespaces:
-
-  [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/azure-samples/cosmos-db-design-patterns?quickstart=1&devcontainer_path=.devcontainer%2Fschema-versioning%2Fdevcontainer.json)
+You can run this sample locally:
 
 
 ### Run locally
