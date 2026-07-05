@@ -227,6 +227,49 @@ Open a new terminal and run the included Console App (Program.cs) which generate
 dotnet run
 ```
 
+## (Optional) Deploy to Azure with `azd`
+
+> **This step is optional.** Everything above runs locally against the Azure Cosmos DB emulator or your own account — you do **not** need to deploy anything to Azure to learn this pattern. This section is only for when you *also* want to see the sample running in Azure with a secure, keyless (Microsoft Entra ID + managed identity) deployment.
+
+This sample includes an [Azure Developer CLI (`azd`)](https://aka.ms/azd) template that provisions the infrastructure and deploys the function with a single command. It is intentionally minimal and cheap:
+
+- A **Flex Consumption** Function App — scales to zero, so you only pay when it actually runs.
+- A **serverless** Azure Cosmos DB account with local (key) authentication **disabled**.
+- The Function App reaches both Cosmos DB and its storage account using its **managed identity** — no keys or connection strings are stored anywhere.
+
+The deployment files (`azure.yaml` and the `infra/` folder) are self-contained; they have no effect on running the sample locally.
+
+### Prerequisites
+
+- [Azure Developer CLI (`azd`)](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd)
+- An Azure subscription
+
+### Deploy
+
+From the `event-sourcing` folder:
+
+```bash
+azd up
+```
+
+`azd` prompts for an environment name, subscription, and location, then provisions the resources and deploys the function. When it finishes it prints the function's URL, for example `https://func-xxxxx.azurewebsites.net/`.
+
+Send a cart event to the deployed function (replace the URL with the one `azd` printed):
+
+```bash
+curl -X POST "https://func-xxxxx.azurewebsites.net/api/EventSourcing" \
+  -H "Content-Type: application/json" \
+  -d '{"id":"11111111-1111-1111-1111-111111111111","CartId":"22222222-2222-2222-2222-222222222222","SessionId":"33333333-3333-3333-3333-333333333333","UserId":1,"EventType":"cart_created","ProductsInCart":[]}'
+```
+
+### Clean up
+
+To delete every resource the deployment created:
+
+```bash
+azd down
+```
+
 ## Querying the event source data
 
 Once you have run [the demo](./code/setup.md) which generates data, you can run queries directly against the event source container by using **Data Explorer** in the Azure Portal.
