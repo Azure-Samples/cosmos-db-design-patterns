@@ -1,0 +1,8 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: cosmos-db-design-patterns-data-binning
+metadata:
+  template: cosmos-db-design-patterns-data-binning
+# This is a console sample: azd only provisions the (keyless, serverless) Cosmos DB
+# account and grants the deploying user data-plane access. There is no service to
+# deploy; run the console app locally with `dotnet run` after `azd provision`.

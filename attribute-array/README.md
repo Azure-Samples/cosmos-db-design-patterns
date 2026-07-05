@@ -268,6 +268,46 @@ If you are using the Azure Cosmos DB Emulator or cannot use RBAC, set `CosmosKey
 
     Notice the remarkable difference in query construction. It is very clean. It also concisely returns the product name, size and count in stock for that size.
 
+## (Optional) Deploy and run in Azure with `azd`
+
+The steps above run the sample **all-local** (against the Azure Cosmos DB emulator or your own account). If you'd rather run it against a dedicated, **keyless** Azure Cosmos DB account in Azure, this pattern includes an [Azure Developer CLI (`azd`)](https://aka.ms/azd) template. Running locally is unchanged; the deployment files (`azure.yaml`, `infra/`) have no effect unless you run `azd provision`.
+
+Because this sample is a **console app**, there is no service hosted in Azure — `azd` only provisions the data store, intentionally minimal and cheap:
+
+- A **serverless** Azure Cosmos DB account with local (key) authentication **disabled**.
+- The sample's `AttributeArrayDB` database and `ArrayAttributes` container, pre-created.
+- A data-plane role assignment granting **you** (the deploying user) keyless access, so you can run the console app locally against it.
+
+### Provision
+
+From the `attribute-array` folder:
+
+```bash
+azd provision
+```
+
+When it finishes, point the app at the new account and run it locally — keyless, using your `az login` credentials:
+
+```bash
+# bash / zsh
+export CosmosUri="$(azd env get-value AZURE_COSMOS_ENDPOINT)"
+cd source && dotnet run
+```
+
+```powershell
+# PowerShell
+$env:CosmosUri = azd env get-value AZURE_COSMOS_ENDPOINT
+cd source; dotnet run
+```
+
+Leave `CosmosKey` empty — with only `CosmosUri` set, the app authenticates keyless via `DefaultAzureCredential`.
+
+### Clean up
+
+```bash
+azd down
+```
+
 ## Summary
 
 By applying this pattern to similar properties in data model, you can reduce and simplify your indexing, simplify your queries, making them less prone to future bugs, and improve performance and cost.
