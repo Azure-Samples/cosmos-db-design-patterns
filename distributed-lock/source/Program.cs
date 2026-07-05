@@ -16,7 +16,8 @@ namespace Cosmos_Patterns_GlobalLock
 
             var configuration = new ConfigurationBuilder()
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-                .AddJsonFile($"appsettings.development.json", optional: true);
+                .AddJsonFile($"appsettings.development.json", optional: true)
+                .AddEnvironmentVariables();
 
             var config = configuration.Build();
 

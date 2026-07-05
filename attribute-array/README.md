@@ -171,7 +171,7 @@ Keyless authentication using `DefaultAzureCredential` is the recommended approac
     az login
     ```
 
-1. Open the attribute-array project and add a new **appsettings.development.json** file with the following contents:
+1. Open the attribute-array project and set these values as environment variables (recommended — see [Configuration and authentication](../README.md#configuration-and-authentication)), or add an **appsettings.development.json** file with the following contents:
 
     ```json
     {
@@ -187,7 +187,7 @@ If you are using the Azure Cosmos DB Emulator or cannot use RBAC, set `CosmosKey
 
 1. From the Keys blade, copy both the **URI** and **PRIMARY KEY** values.
 
-1. Open the attribute-array project and add a new **appsettings.development.json** file with the following contents:
+1. Open the attribute-array project and set these values as environment variables (recommended — see [Configuration and authentication](../README.md#configuration-and-authentication)), or add an **appsettings.development.json** file with the following contents:
 
     ```json
     {

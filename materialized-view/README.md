@@ -144,7 +144,7 @@ Keyless authentication using `DefaultAzureCredential` is the recommended approac
 
 ## Prepare the data generator configuration
 
-1. Navigate to the data-generator folder, open the project and add a new **appsettings.development.json** file with the following contents:
+1. Navigate to the data-generator folder, open the project and set these values as environment variables (recommended — see [Configuration and authentication](../README.md#configuration-and-authentication)), or add an **appsettings.development.json** file with the following contents:
 
   ```json
   {

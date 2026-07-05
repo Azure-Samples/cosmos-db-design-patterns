@@ -17,7 +17,8 @@ namespace Cosmos_Patterns_DistributedCounter
 
             var configuration = new ConfigurationBuilder()
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-                .AddJsonFile($"appsettings.development.json", optional: true);
+                .AddJsonFile($"appsettings.development.json", optional: true)
+                .AddEnvironmentVariables();
 
             var config = configuration.Build();
 
