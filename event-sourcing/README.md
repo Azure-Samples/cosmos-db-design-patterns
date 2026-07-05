@@ -127,12 +127,6 @@ Sample events in the event store could look like this:
 Directions installing pre-requisites to run locally and for cloning this repository using [Terminal or VS Code](../README.md?#getting-started)
 
 
-### GitHub Codespaces
-
-Open the application code in GitHub Codespaces:
-
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/azure-samples/cosmos-db-design-patterns?quickstart=1&devcontainer_path=.devcontainer%2Fevent-sourcing%2Fdevcontainer.json)
-
 
 ## Get Azure Cosmos DB connection information
 
@@ -210,6 +204,25 @@ Use the `__accountEndpoint` suffix to configure the Cosmos DB trigger/binding wi
       </None>
     </ItemGroup>
   ```
+
+### Running against the local emulator
+
+When pointing at the local **Azure Cosmos DB emulator**, set `CosmosDBConnection` to its well-known connection string:
+
+```text
+AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==
+```
+
+Unlike the console and website samples, the Functions Cosmos DB binding runs in the Functions **host** process, which uses your machine's certificate trust store — so you must trust the emulator's self-signed certificate once before `func start` can connect. With the emulator running, export the certificate and trust it for your OS:
+
+```bash
+# Export the emulator certificate
+openssl s_client -connect localhost:8081 -showcerts </dev/null 2>/dev/null | openssl x509 -outform PEM > cosmos-emulator.crt
+```
+
+- **Windows** (PowerShell, admin): `Import-Certificate -FilePath cosmos-emulator.crt -CertStoreLocation Cert:\LocalMachine\Root`
+- **macOS**: `sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain cosmos-emulator.crt`
+- **Linux**: `sudo cp cosmos-emulator.crt /usr/local/share/ca-certificates/ && sudo update-ca-certificates`
 
 ## Run the demo
 

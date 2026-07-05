@@ -21,9 +21,24 @@ namespace CosmosDistributedLock.Services
         {
             // Prefer keyless authentication via DefaultAzureCredential (managed identity / Azure CLI).
             // Fall back to key-based authentication only when CosmosKey is explicitly set (e.g. local emulator).
+            // When targeting the local emulator (localhost), use Gateway mode and accept its
+            // self-signed certificate. This only ever applies to a local emulator endpoint.
+            CosmosClientOptions? clientOptions = null;
+            if (!string.IsNullOrEmpty(CosmosUri) && new Uri(CosmosUri).Host is "localhost" or "127.0.0.1")
+            {
+                clientOptions = new CosmosClientOptions
+                {
+                    ConnectionMode = ConnectionMode.Gateway,
+                    HttpClientFactory = () => new System.Net.Http.HttpClient(new System.Net.Http.HttpClientHandler
+                    {
+                        ServerCertificateCustomValidationCallback = System.Net.Http.HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+                    })
+                };
+            }
+
             client = string.IsNullOrEmpty(CosmosKey)
-                ? new CosmosClient(accountEndpoint: CosmosUri, tokenCredential: new DefaultAzureCredential())
-                : new CosmosClient(accountEndpoint: CosmosUri, authKeyOrResourceToken: CosmosKey);
+                ? new CosmosClient(accountEndpoint: CosmosUri, tokenCredential: new DefaultAzureCredential(), clientOptions: clientOptions)
+                : new CosmosClient(accountEndpoint: CosmosUri, authKeyOrResourceToken: CosmosKey, clientOptions: clientOptions);
 
             
             db = client.CreateDatabaseIfNotExistsAsync(CosmosDatabase).Result;

@@ -13,7 +13,6 @@ Each pattern lives in its own top-level folder and follows the same shape:
   README.md          # pattern explanation + run instructions (start here)
   source/            # the sample code (one or more .csproj, sometimes a .sln)
   media|images/      # screenshots referenced by the README
-.devcontainer/<pattern-name>/devcontainer.json   # per-pattern Codespaces config
 ```
 
 Patterns: `attribute-array`, `data-binning`, `distributed-counter`, `distributed-lock`,
@@ -29,8 +28,7 @@ or `website`). The authoritative build/run recipe for each project is in
 
 ## Build, run, and validate
 
-- **Target framework is `net10.0`** (see the `.csproj` files). Note: the root `README.md` still
-  mentions .NET 8 and the devcontainer images use `dotnet:8.0` — the `.csproj` and CI setup steps
+- **Target framework is `net10.0`** (see the `.csproj` files). The `.csproj` files and CI setup steps
   (`.github/workflows/copilot-setup-steps.yml`) are the source of truth for the SDK version.
 - **Build one project:** `dotnet build <pattern>/source/<Project>.csproj`
   (e.g. `dotnet build attribute-array/source/AttributeArray.csproj`).

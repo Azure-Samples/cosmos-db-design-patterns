@@ -38,7 +38,7 @@ jobs:
           NEW_DIRS=$(git diff --name-only --diff-filter=A "origin/${BASE_REF}...HEAD" \
             | grep -oE '^[^/]+' \
             | sort -u \
-            | grep -vE '^(\.|\.github|\.devcontainer|tests|media)$') || true
+            | grep -vE '^(\.|\.github|tests|media)$') || true
 
           MISSING=""
 

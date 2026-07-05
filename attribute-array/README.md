@@ -136,12 +136,6 @@ If a user adds new sizes or even removes them. The same query will run unmodifie
 Directions installing pre-requisites to run locally and for cloning this repository using [Terminal or VS Code](../README.md?#getting-started)
 
 
-### GitHub Codespaces
-
-Open the application code in GitHub Codespaces:
-
-    [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/azure-samples/cosmos-db-design-patterns?quickstart=1&devcontainer_path=.devcontainer%2Fattribute-array%2Fdevcontainer.json)
-
 ## Set up application configuration files
 
 You need to configure the application configuration file to run this demo.

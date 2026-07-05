@@ -76,9 +76,24 @@ namespace DataBinning
 
             // Prefer keyless authentication via DefaultAzureCredential (managed identity / Azure CLI).
             // Fall back to key-based authentication only when CosmosKey is explicitly set (e.g. local emulator).
+            // When targeting the local emulator (localhost), use Gateway mode and accept its
+            // self-signed certificate. This only ever applies to a local emulator endpoint.
+            CosmosClientOptions? clientOptions = null;
+            if (!string.IsNullOrEmpty(uri) && new Uri(uri).Host is "localhost" or "127.0.0.1")
+            {
+                clientOptions = new CosmosClientOptions
+                {
+                    ConnectionMode = ConnectionMode.Gateway,
+                    HttpClientFactory = () => new System.Net.Http.HttpClient(new System.Net.Http.HttpClientHandler
+                    {
+                        ServerCertificateCustomValidationCallback = System.Net.Http.HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+                    })
+                };
+            }
+
             CosmosClient client = string.IsNullOrEmpty(key)
-                ? new CosmosClient(accountEndpoint: uri, tokenCredential: new DefaultAzureCredential())
-                : new CosmosClient(accountEndpoint: uri, authKeyOrResourceToken: key);
+                ? new CosmosClient(accountEndpoint: uri, tokenCredential: new DefaultAzureCredential(), clientOptions: clientOptions)
+                : new CosmosClient(accountEndpoint: uri, authKeyOrResourceToken: key, clientOptions: clientOptions);
 
             Database database = await client.CreateDatabaseIfNotExistsAsync(
                     id: "DataBinningDB"

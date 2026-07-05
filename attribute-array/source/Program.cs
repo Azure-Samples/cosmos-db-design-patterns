@@ -32,6 +32,18 @@ CosmosClientOptions options = new()
     MaxRetryAttemptsOnRateLimitedRequests = 10
 };
 
+// When targeting the local Azure Cosmos DB emulator (localhost), use Gateway mode and
+// accept its self-signed certificate. This only ever applies to a local emulator
+// endpoint, never to a real Azure Cosmos DB account.
+if (!string.IsNullOrEmpty(config?.CosmosUri) && new Uri(config!.CosmosUri).Host is "localhost" or "127.0.0.1")
+{
+    options.ConnectionMode = ConnectionMode.Gateway;
+    options.HttpClientFactory = () => new HttpClient(new HttpClientHandler
+    {
+        ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+    });
+}
+
 // Prefer keyless authentication via DefaultAzureCredential (managed identity / Azure CLI).
 // Fall back to key-based authentication only when CosmosKey is explicitly set (e.g. local emulator).
 CosmosClient client = string.IsNullOrEmpty(config?.CosmosKey)

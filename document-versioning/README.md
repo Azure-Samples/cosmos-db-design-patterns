@@ -67,12 +67,6 @@ The demo website includes links to update the orders to the different statuses.
 
 ## Try this implementation
 
-### GitHub Codespaces
-
-Open the application code in GitHub Codespaces:
-
-  [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/azure-samples/cosmos-db-design-patterns?quickstart=1&devcontainer_path=.devcontainer%2Fdocument-versioning%2Fdevcontainer.json)
-
 ### Or Run locally
 
 ```bash
@@ -158,9 +152,9 @@ If you are using the Azure Cosmos DB Emulator or cannot use RBAC, set `CosmosKey
 
 ## Run the demo
 
-> This sample can be run **two ways**: *all-local* (this section — your machine or Codespaces against the Cosmos DB emulator or your own account) or *all-Azure* (deployed and running in Azure — see [Deploy and run in Azure](#optional-deploy-and-run-in-azure-with-azd) below). You don't need Azure to learn the pattern.
+> This sample can be run **two ways**: *all-local* (this section — your machine against the Cosmos DB emulator or your own account) or *all-Azure* (deployed and running in Azure — see [Deploy and run in Azure](#optional-deploy-and-run-in-azure-with-azd) below). You don't need Azure to learn the pattern.
 
-1. In Codespaces or locally, navigate to the `website` folder, start the website with:
+1. Navigate to the `website` folder, start the website with:
 
 ```bash
   dotnet run

@@ -1,0 +1,23 @@
+# Azure Cosmos DB Linux (vNext) emulator for running the samples locally.
+#
+# Start it with:   docker compose up -d
+# Stop it with:    docker compose down
+#
+# Endpoints:
+#   - Gateway:       https://localhost:8081  (well-known emulator key, see the README)
+#   - Data Explorer: http://localhost:1234
+#
+# The console and website samples accept the emulator's self-signed certificate
+# automatically when the endpoint is localhost. The Functions samples
+# (event-sourcing, materialized-view) run their Cosmos binding in the Functions
+# host process, so they require trusting the emulator certificate once — see those
+# samples' README for the steps.
+services:
+  cosmos:
+    image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-latest
+    container_name: cosmos-emulator
+    ports:
+      - "8081:8081"
+      - "1234:1234"
+    environment:
+      PROTOCOL: https

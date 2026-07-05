@@ -135,12 +135,6 @@ Note: In the demo application, aggregated events are collected based on system t
 Directions installing pre-requisites to run locally and for cloning this repository using [Terminal or VS Code](../README.md?#getting-started)
 
 
-### GitHub Codespaces
-
-Open the application code in GitHub Codespaces:
-
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/azure-samples/cosmos-db-design-patterns?quickstart=1&devcontainer_path=.devcontainer%2Fdata-binning%2Fdevcontainer.json)
-
 ## Set up application configuration files
 
 You need to configure an application configuration file to run this app.
