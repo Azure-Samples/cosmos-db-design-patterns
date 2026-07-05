@@ -86,9 +86,9 @@ public class SchemaVersioningTests : IClassFixture<EmulatorFixture>, IAsyncLifet
 
     public async Task InitializeAsync()
     {
-        Database db = await _client.CreateDatabaseIfNotExistsAsync(_databaseName);
+        Database db = await EmulatorFixture.WithRetryAsync(() => _client.CreateDatabaseIfNotExistsAsync(_databaseName));
         // Partition key matches the schema-versioning appsettings (/id).
-        _cartsContainer = await db.CreateContainerIfNotExistsAsync("ShoppingCart", "/id");
+        _cartsContainer = await EmulatorFixture.WithRetryAsync(() => db.CreateContainerIfNotExistsAsync("ShoppingCart", "/id"));
     }
 
     public async Task DisposeAsync()

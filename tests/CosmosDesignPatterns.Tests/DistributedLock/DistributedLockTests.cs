@@ -73,7 +73,7 @@ public class DistributedLockTests : IClassFixture<EmulatorFixture>, IAsyncLifeti
 
     public async Task InitializeAsync()
     {
-        Database db = await _client.CreateDatabaseIfNotExistsAsync(_databaseName);
+        Database db = await EmulatorFixture.WithRetryAsync(() => _client.CreateDatabaseIfNotExistsAsync(_databaseName));
         // Partition key is /id (same as the source pattern's CosmosService).
         // TTL is enabled so lease documents auto-expire in real usage.
         ContainerProperties props = new()
@@ -82,7 +82,7 @@ public class DistributedLockTests : IClassFixture<EmulatorFixture>, IAsyncLifeti
             PartitionKeyPath = "/id",
             DefaultTimeToLive = -1  // enable TTL; individual docs control their own expiry
         };
-        _container = await db.CreateContainerIfNotExistsAsync(props);
+        _container = await EmulatorFixture.WithRetryAsync(() => db.CreateContainerIfNotExistsAsync(props));
     }
 
     public async Task DisposeAsync()

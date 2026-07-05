@@ -82,9 +82,9 @@ public class DistributedCounterTests : IClassFixture<EmulatorFixture>, IAsyncLif
 
     public async Task InitializeAsync()
     {
-        Database db = await _client.CreateDatabaseIfNotExistsAsync(_databaseName);
+        Database db = await EmulatorFixture.WithRetryAsync(() => _client.CreateDatabaseIfNotExistsAsync(_databaseName));
         // Partition key matches the distributed-counter pattern (/pk).
-        _countersContainer = await db.CreateContainerIfNotExistsAsync("Counters", "/pk");
+        _countersContainer = await EmulatorFixture.WithRetryAsync(() => db.CreateContainerIfNotExistsAsync("Counters", "/pk"));
     }
 
     public async Task DisposeAsync()

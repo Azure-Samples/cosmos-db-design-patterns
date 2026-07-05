@@ -103,119 +103,35 @@ jobs:
             echo "Running tests matching: $EXPR"
           fi
 
-      # Pull and start the Cosmos DB Linux emulator in the background.
-      # The well-known endpoint is https://localhost:8081 and the account key
-      # is the public emulator key embedded in EmulatorFixture.cs.
+      # Start the Cosmos DB Linux emulator (vNext) in the background.
+      # The vNext emulator (now GA) replaces the legacy emulator, which crashed
+      # under concurrent container-creation load on GitHub-hosted runners.  The
+      # vNext image is a lightweight Rust gateway + PostgreSQL engine that starts
+      # in seconds and stays stable.  PROTOCOL=https exposes the well-known
+      # https://localhost:8081 endpoint using the public emulator key embedded
+      # in EmulatorFixture.cs.
       - name: Start Cosmos DB Linux emulator
         run: |
-          docker pull mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
           docker run -d \
             --name cosmos-emulator \
-            --privileged \
-            --network host \
-            -e AZURE_COSMOS_EMULATOR_PARTITION_COUNT=3 \
-            mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
+            -p 8081:8081 \
+            -p 1234:1234 \
+            -e PROTOCOL=https \
+            mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-latest
 
-      # Three-stage readiness check:
-      # 1. TLS layer  (/_explorer/emulator.pem) — lightweight HTTPS server.
-      # 2. Data plane (GET /dbs returning HTTP 401) — gateway is up.
-      # 3. Write-ready — poll until a POST /dbs succeeds (201 or 409), which
-      #    proves the partition servers have started handling database requests.
-      # 4. Collection-ready — poll until a POST /dbs/{id}/colls succeeds (201
-      #    or 409), which proves partition servers are fully initialised and can
-      #    accept container creation.  Tests fail with 503/1007 if this stage
-      #    is skipped because the partition servers may still be warming up even
-      #    after stage 3.
+      # Readiness check: poll the gateway until it answers HTTP 200 on /dbs,
+      # which the vNext emulator returns once the gateway and storage engine are
+      # fully initialised and ready to accept requests.  The in-test retry
+      # helper (EmulatorFixture.WithRetryAsync) covers any residual transient
+      # 503 responses during the first few operations.
       - name: Wait for emulator to be ready
         run: |
-          echo "Waiting for Cosmos DB emulator TLS layer..."
+          echo "Waiting for Cosmos DB vNext emulator to accept requests..."
           timeout 180 bash -c \
-            'until curl -k -s https://localhost:8081/_explorer/emulator.pem > /dev/null 2>&1; \
-             do echo "  ...TLS not ready yet, retrying in 5 s"; sleep 5; done'
-
-          echo "TLS layer ready. Waiting for data plane (HTTP 401 from GET /dbs)..."
-          timeout 120 bash -c \
-            'until [ "$(curl -k -s -o /dev/null -w "%{http_code}" https://localhost:8081/dbs)" = "401" ]; \
-             do echo "  ...data plane not ready yet, retrying in 5 s"; sleep 5; done'
-
-          echo "Data plane ready. Polling until write operations succeed..."
-          python3 - <<'PYEOF'
-          import base64, hashlib, hmac, json, ssl, sys, time, urllib.error, urllib.parse, urllib.request
-
-          ENDPOINT = "https://localhost:8081"
-          KEY = "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="
-          DB_ID = "emulator-warmup"
-          COLL_ID = "emulator-warmup-coll"
-
-          def make_auth(verb, resource_type, resource_id, date_str):
-              key_bytes = base64.b64decode(KEY)
-              payload = f"{verb.lower()}\n{resource_type.lower()}\n{resource_id}\n{date_str.lower()}\n\n"
-              sig = base64.b64encode(
-                  hmac.new(key_bytes, payload.encode("utf-8"), hashlib.sha256).digest()
-              ).decode()
-              return urllib.parse.quote(f"type=master&ver=1.0&sig={sig}")
-
-          ctx = ssl.create_default_context()
-          ctx.check_hostname = False
-          ctx.verify_mode = ssl.CERT_NONE
-
-          def cosmos_request(method, path, resource_type, resource_id, body=None):
-              date_str = time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime())
-              headers = {
-                  "Authorization": make_auth(method, resource_type, resource_id, date_str),
-                  "x-ms-date": date_str,
-                  "x-ms-version": "2018-12-31",
-                  "Content-Type": "application/json",
-              }
-              data = json.dumps(body).encode() if body else None
-              req = urllib.request.Request(
-                  f"{ENDPOINT}{path}", data=data, headers=headers, method=method
-              )
-              try:
-                  with urllib.request.urlopen(req, context=ctx, timeout=10) as r:
-                      return r.status
-              except urllib.error.HTTPError as e:
-                  return e.code
-              except Exception as exc:
-                  print(f"    Request error: {exc}")
-                  return 0
-
-          # Stage 3: wait until database creation succeeds
-          print("Stage 3: polling POST /dbs until partition servers accept database creation...")
-          for attempt in range(24):  # 24 attempts × 5 s sleep ≈ 2 minutes max
-              status = cosmos_request("POST", "/dbs", "dbs", "", {"id": DB_ID})
-              print(f"  Attempt {attempt + 1}: POST /dbs => HTTP {status}")
-              if status in (201, 409):
-                  print("Database creation succeeded.")
-                  break
-              time.sleep(5)
-          else:
-              print("ERROR: emulator did not become write-ready (dbs) within 2 minutes")
-              sys.exit(1)
-
-          # Stage 4: wait until collection creation succeeds (partition servers
-          # may still return 503/1007 on POST /colls even after stage 3 passes)
-          print("Stage 4: polling POST /colls until partition servers accept container creation...")
-          for attempt in range(36):  # 36 attempts × 5 s sleep ≈ 3 minutes max
-              status = cosmos_request(
-                  "POST", f"/dbs/{DB_ID}/colls", "colls", f"dbs/{DB_ID}",
-                  {"id": COLL_ID, "partitionKey": {"paths": ["/id"], "kind": "Hash"}}
-              )
-              print(f"  Attempt {attempt + 1}: POST /colls => HTTP {status}")
-              if status in (201, 409):
-                  print("Collection creation succeeded — partition servers are fully ready!")
-                  break
-              time.sleep(5)
-          else:
-              print("ERROR: emulator did not become collection-ready within 3 minutes")
-              sys.exit(1)
-
-          # Clean up the warmup database
-          cosmos_request("DELETE", f"/dbs/{DB_ID}", "dbs", f"dbs/{DB_ID}")
-          print("Warmup database cleaned up.")
-          sys.exit(0)
-          PYEOF
-          echo "Cosmos DB emulator is fully ready."
+            'until [ "$(curl -k -s -o /dev/null -w "%{http_code}" https://localhost:8081/dbs)" = "200" ]; \
+             do echo "  ...not ready yet, retrying in 5 s"; sleep 5; done'
+          echo "Cosmos DB emulator is ready."
+          docker logs cosmos-emulator 2>&1 | tail -5 || true
 
       - name: Restore test project dependencies
         run: dotnet restore tests/CosmosDesignPatterns.Tests/CosmosDesignPatterns.Tests.csproj

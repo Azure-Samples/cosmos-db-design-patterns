@@ -79,9 +79,9 @@ public class EventSourcingTests : IClassFixture<EmulatorFixture>, IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        Database db = await _client.CreateDatabaseIfNotExistsAsync(_databaseName);
+        Database db = await EmulatorFixture.WithRetryAsync(() => _client.CreateDatabaseIfNotExistsAsync(_databaseName));
         // Partition key matches the event-sourcing pattern (/CartId).
-        _container = await db.CreateContainerIfNotExistsAsync("CartEvents", "/CartId");
+        _container = await EmulatorFixture.WithRetryAsync(() => db.CreateContainerIfNotExistsAsync("CartEvents", "/CartId"));
     }
 
     public async Task DisposeAsync()

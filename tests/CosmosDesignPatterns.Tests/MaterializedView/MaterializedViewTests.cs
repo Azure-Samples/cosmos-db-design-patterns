@@ -88,11 +88,11 @@ public class MaterializedViewTests : IClassFixture<EmulatorFixture>, IAsyncLifet
 
     public async Task InitializeAsync()
     {
-        Database db = await _client.CreateDatabaseIfNotExistsAsync(_databaseName);
+        Database db = await EmulatorFixture.WithRetryAsync(() => _client.CreateDatabaseIfNotExistsAsync(_databaseName));
         // Source container – partition by CustomerId (matches data-generator usage).
-        _salesContainer = await db.CreateContainerIfNotExistsAsync("Sales", "/CustomerId");
+        _salesContainer = await EmulatorFixture.WithRetryAsync(() => db.CreateContainerIfNotExistsAsync("Sales", "/CustomerId"));
         // Materialized view – partition by Product (matches function-app output binding).
-        _viewContainer = await db.CreateContainerIfNotExistsAsync("SalesByProduct", "/Product");
+        _viewContainer = await EmulatorFixture.WithRetryAsync(() => db.CreateContainerIfNotExistsAsync("SalesByProduct", "/Product"));
     }
 
     public async Task DisposeAsync()

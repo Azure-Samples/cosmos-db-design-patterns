@@ -104,9 +104,9 @@ public class AttributeArrayTests : IClassFixture<EmulatorFixture>, IAsyncLifetim
 
     public async Task InitializeAsync()
     {
-        Database db = await _client.CreateDatabaseIfNotExistsAsync(_databaseName);
+        Database db = await EmulatorFixture.WithRetryAsync(() => _client.CreateDatabaseIfNotExistsAsync(_databaseName));
         // Partition key matches the attribute-array pattern (/productId).
-        _productsContainer = await db.CreateContainerIfNotExistsAsync("products", "/productId");
+        _productsContainer = await EmulatorFixture.WithRetryAsync(() => db.CreateContainerIfNotExistsAsync("products", "/productId"));
     }
 
     public async Task DisposeAsync()

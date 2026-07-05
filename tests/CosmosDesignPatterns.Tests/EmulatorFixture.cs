@@ -1,3 +1,4 @@
+using System.Net;
 using Microsoft.Azure.Cosmos;
 using Xunit;
 
@@ -39,6 +40,30 @@ public class EmulatorFixture : IDisposable
         };
 
         Client = new CosmosClient(Endpoint, AccountKey, options);
+    }
+
+    /// <summary>
+    /// Runs a Cosmos DB operation, retrying transient <c>503 ServiceUnavailable</c> responses.
+    /// The Cosmos DB Linux emulator sporadically returns 503 (substatus 1007) on database and
+    /// container creation while its partition servers are still warming up, even after the
+    /// gateway reports ready.  These errors are transient, so we back off and retry — this is
+    /// the recommended way to work around emulator readiness flakiness in CI.
+    /// </summary>
+    public static async Task<T> WithRetryAsync<T>(Func<Task<T>> operation, int maxAttempts = 15)
+    {
+        for (int attempt = 1; ; attempt++)
+        {
+            try
+            {
+                return await operation();
+            }
+            catch (CosmosException ex) when (
+                ex.StatusCode == HttpStatusCode.ServiceUnavailable && attempt < maxAttempts)
+            {
+                // Exponential-ish backoff capped at 5 s between attempts.
+                await Task.Delay(TimeSpan.FromSeconds(Math.Min(attempt, 5)));
+            }
+        }
     }
 
     public void Dispose() => Client.Dispose();

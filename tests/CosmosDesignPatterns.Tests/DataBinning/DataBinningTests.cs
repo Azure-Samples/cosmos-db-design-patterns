@@ -75,9 +75,9 @@ public class DataBinningTests : IClassFixture<EmulatorFixture>, IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        Database db = await _client.CreateDatabaseIfNotExistsAsync(_databaseName);
+        Database db = await EmulatorFixture.WithRetryAsync(() => _client.CreateDatabaseIfNotExistsAsync(_databaseName));
         // Partition key matches the data-binning pattern (/DeviceId).
-        _container = await db.CreateContainerIfNotExistsAsync("SensorBins", "/DeviceId");
+        _container = await EmulatorFixture.WithRetryAsync(() => db.CreateContainerIfNotExistsAsync("SensorBins", "/DeviceId"));
     }
 
     public async Task DisposeAsync()

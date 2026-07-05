@@ -76,9 +76,9 @@ public class DocumentVersioningTests : IClassFixture<EmulatorFixture>, IAsyncLif
 
     public async Task InitializeAsync()
     {
-        Database database = await _client.CreateDatabaseIfNotExistsAsync(_databaseName);
+        Database database = await EmulatorFixture.WithRetryAsync(() => _client.CreateDatabaseIfNotExistsAsync(_databaseName));
         // Partition key matches the document-versioning pattern (/CustomerId).
-        _ordersContainer = await database.CreateContainerIfNotExistsAsync("Orders", "/CustomerId");
+        _ordersContainer = await EmulatorFixture.WithRetryAsync(() => database.CreateContainerIfNotExistsAsync("Orders", "/CustomerId"));
     }
 
     public async Task DisposeAsync()

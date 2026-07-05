@@ -92,9 +92,9 @@ public class PreallocationTests : IClassFixture<EmulatorFixture>, IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        Database db = await _client.CreateDatabaseIfNotExistsAsync(_databaseName);
+        Database db = await EmulatorFixture.WithRetryAsync(() => _client.CreateDatabaseIfNotExistsAsync(_databaseName));
         // Partition key matches the preallocation pattern (/hotelId).
-        _container = await db.CreateContainerIfNotExistsAsync("Hotel", "/hotelId");
+        _container = await EmulatorFixture.WithRetryAsync(() => db.CreateContainerIfNotExistsAsync("Hotel", "/hotelId"));
     }
 
     public async Task DisposeAsync()
