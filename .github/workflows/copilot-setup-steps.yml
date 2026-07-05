@@ -64,3 +64,29 @@ jobs:
         run: |
           dotnet build schema-versioning/source/data-generator/data-generator.csproj --no-incremental
           dotnet build schema-versioning/source/website/website.csproj --no-incremental
+
+      - name: Build test project
+        run: dotnet build tests/CosmosDesignPatterns.Tests/CosmosDesignPatterns.Tests.csproj --no-incremental
+
+      # Start the Cosmos DB Linux emulator (vNext) in the background so that
+      # Copilot can run integration tests during its session.  The vNext image
+      # (now GA) is a lightweight Rust gateway + PostgreSQL engine that starts
+      # in seconds and stays stable under load — unlike the legacy emulator,
+      # which crashed on Linux runners under concurrent container creation.
+      - name: Start Cosmos DB Linux emulator
+        run: |
+          docker run -d \
+            --name cosmos-emulator \
+            -p 8081:8081 \
+            -p 1234:1234 \
+            -e PROTOCOL=https \
+            mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-latest
+
+      # Poll until the emulator's gateway answers HTTP 200 on /dbs (up to 180 s).
+      - name: Wait for emulator to be ready
+        run: |
+          echo "Waiting for Cosmos DB vNext emulator..."
+          timeout 180 bash -c \
+            'until [ "$(curl -k -s -o /dev/null -w "%{http_code}" https://localhost:8081/dbs)" = "200" ]; \
+             do echo "  ...not ready yet, retrying in 5 s"; sleep 5; done'
+          echo "Cosmos DB emulator is ready."

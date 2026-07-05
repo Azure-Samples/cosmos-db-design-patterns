@@ -1,0 +1,70 @@
+name: Check Test Coverage
+
+# Verify that every design-pattern directory added by a PR has a corresponding
+# integration-test directory under tests/CosmosDesignPatterns.Tests/.
+# A "pattern directory" is any new top-level directory that contains a
+# source/ sub-directory (i.e. it is a runnable .NET pattern project).
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  check-test-coverage:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check that new pattern directories include integration tests
+        run: |
+          BASE_REF="${{ github.base_ref }}"
+          git fetch origin "${BASE_REF}" --depth=1 2>/dev/null || true
+
+          # Convert a kebab-case pattern directory name to PascalCase.
+          to_pascal() {
+            python3 -c "
+          parts = '$1'.split('-')
+          print(''.join(p.capitalize() for p in parts))
+          "
+          }
+
+          # Collect top-level directories that are NEW in this PR.
+          NEW_DIRS=$(git diff --name-only --diff-filter=A "origin/${BASE_REF}...HEAD" \
+            | grep -oE '^[^/]+' \
+            | sort -u \
+            | grep -vE '^(\.|\.github|\.devcontainer|tests|media)$') || true
+
+          MISSING=""
+
+          for dir in $NEW_DIRS; do
+            # Only care about pattern directories that ship runnable source code.
+            [ -d "${dir}/source" ] || continue
+
+            TEST_NS=$(to_pascal "$dir")
+            TEST_DIR="tests/CosmosDesignPatterns.Tests/${TEST_NS}"
+            if [ -d "${TEST_DIR}" ]; then
+              echo "OK: '${dir}' -> '${TEST_DIR}'"
+            else
+              echo "MISSING: new pattern '${dir}' has no tests at '${TEST_DIR}'"
+              MISSING="${MISSING} ${dir}"
+            fi
+          done
+
+          if [ -n "${MISSING}" ]; then
+            echo ""
+            echo "The following new pattern(s) were added without integration tests:"
+            for dir in ${MISSING}; do
+              echo "  ${dir}  ->  tests/CosmosDesignPatterns.Tests/$(to_pascal "$dir")/"
+            done
+            echo ""
+            echo "Please add an integration-test class for each new pattern."
+            exit 1
+          fi
+
+          echo "All new pattern directories have integration tests."

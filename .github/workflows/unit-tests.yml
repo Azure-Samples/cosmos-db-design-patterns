@@ -1,0 +1,82 @@
+name: Integration Tests
+
+# Run the full integration test suite against the Cosmos DB Linux emulator on
+# every PR targeting the main branch, and allow manual runs from the Actions
+# tab. The suite completes in under a minute, so every trigger runs all tests.
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      # Start the Cosmos DB Linux emulator (vNext) in the background.
+      # The vNext emulator (now GA) replaces the legacy emulator, which crashed
+      # under concurrent container-creation load on GitHub-hosted runners.  The
+      # vNext image is a lightweight Rust gateway + PostgreSQL engine that starts
+      # in seconds and stays stable.  PROTOCOL=https exposes the well-known
+      # https://localhost:8081 endpoint using the public emulator key embedded
+      # in EmulatorFixture.cs.
+      - name: Start Cosmos DB Linux emulator
+        run: |
+          docker run -d \
+            --name cosmos-emulator \
+            -p 8081:8081 \
+            -p 1234:1234 \
+            -e PROTOCOL=https \
+            mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-latest
+
+      # Readiness check: poll the gateway until it answers HTTP 200 on /dbs,
+      # which the vNext emulator returns once the gateway and storage engine are
+      # fully initialised and ready to accept requests.  The in-test retry
+      # helper (EmulatorFixture.WithRetryAsync) covers any residual transient
+      # 503 responses during the first few operations.
+      - name: Wait for emulator to be ready
+        run: |
+          echo "Waiting for Cosmos DB vNext emulator to accept requests..."
+          timeout 180 bash -c \
+            'until [ "$(curl -k -s -o /dev/null -w "%{http_code}" https://localhost:8081/dbs)" = "200" ]; \
+             do echo "  ...not ready yet, retrying in 5 s"; sleep 5; done'
+          echo "Cosmos DB emulator is ready."
+          docker logs cosmos-emulator 2>&1 | tail -5 || true
+
+      - name: Restore test project dependencies
+        run: dotnet restore tests/CosmosDesignPatterns.Tests/CosmosDesignPatterns.Tests.csproj
+
+      - name: Build test project
+        run: dotnet build tests/CosmosDesignPatterns.Tests/CosmosDesignPatterns.Tests.csproj --no-restore
+
+      - name: Run integration tests
+        run: |
+          dotnet test tests/CosmosDesignPatterns.Tests/CosmosDesignPatterns.Tests.csproj \
+            --no-build \
+            --verbosity normal \
+            --logger "trx;LogFileName=test-results.trx"
+        env:
+          COSMOS_ENDPOINT: "https://localhost:8081"
+          COSMOS_KEY: "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: "**/*.trx"
