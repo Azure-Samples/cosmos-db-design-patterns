@@ -16,8 +16,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Update="appsettings.*.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    <Content Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Update="appsettings.development.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
     </Content>
   </ItemGroup>
 

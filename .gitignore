@@ -358,6 +358,4 @@ MigrationBackup/
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
 
-/document-versioning/source/website/appsettings.Development.json
-/schema-versioning/source/website/appsettings.Development.json
 /document-versioning/source/source.sln
