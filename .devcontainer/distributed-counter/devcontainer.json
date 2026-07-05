@@ -1,6 +1,6 @@
 {
     "name": "Distributed counter pattern",
-    "image": "mcr.microsoft.com/devcontainers/dotnet:8.0",
+    "image": "mcr.microsoft.com/devcontainers/dotnet:10.0",
     "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
     "workspaceFolder": "/workspace/distributed-counter/source/",
     "postAttachCommand": "dotnet build DistributedCounter.sln",

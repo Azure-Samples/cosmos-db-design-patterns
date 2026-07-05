@@ -1,6 +1,6 @@
 {
     "name": "Document versioning pattern",
-    "image": "mcr.microsoft.com/devcontainers/dotnet:1-8.0-bookworm",
+    "image": "mcr.microsoft.com/devcontainers/dotnet:10.0",
     "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
     "workspaceFolder": "/workspace/document-versioning/source",
     "postAttachCommand": "dotnet build website/website.csproj",
