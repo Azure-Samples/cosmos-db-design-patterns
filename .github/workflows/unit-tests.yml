@@ -2,6 +2,8 @@ name: Integration Tests
 
 # Run integration tests against the Cosmos DB Linux emulator on every PR
 # targeting the main branch, and allow manual runs from the Actions tab.
+# For pull requests, only the tests covering patterns touched by the PR are
+# executed; if shared code (tests/ or .github/) is modified all tests run.
 on:
   workflow_dispatch:
   pull_request:
@@ -19,11 +21,74 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up .NET 10
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "10.0.x"
+
+      # Determine which pattern namespaces are covered by this PR so we can
+      # pass a targeted --filter to dotnet test.  On workflow_dispatch (manual
+      # run) we always execute every test.
+      - name: Determine test filter
+        id: test-filter
+        run: |
+          # Map from pattern directory name to test namespace suffix
+          get_test_ns() {
+            case "$1" in
+              attribute-array)       echo "AttributeArray" ;;
+              data-binning)          echo "DataBinning" ;;
+              distributed-counter)   echo "DistributedCounter" ;;
+              distributed-lock)      echo "DistributedLock" ;;
+              document-versioning)   echo "DocumentVersioning" ;;
+              event-sourcing)        echo "EventSourcing" ;;
+              materialized-view)     echo "MaterializedView" ;;
+              preallocation)         echo "Preallocation" ;;
+              schema-versioning)     echo "SchemaVersioning" ;;
+              *)                     echo "" ;;
+            esac
+          }
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "test_filter=" >> "$GITHUB_OUTPUT"
+            echo "Manual run — executing all tests."
+            exit 0
+          fi
+
+          BASE_REF="${{ github.base_ref }}"
+          git fetch origin "${BASE_REF}" --depth=1 2>/dev/null || true
+          CHANGED=$(git diff --name-only "origin/${BASE_REF}...HEAD" 2>/dev/null || echo "")
+
+          RUN_ALL=false
+          NAMESPACES=""
+
+          while IFS= read -r file; do
+            [ -z "$file" ] && continue
+            if [[ "$file" == tests/* || "$file" == .github/* ]]; then
+              RUN_ALL=true
+              break
+            fi
+            dir="${file%%/*}"
+            ns=$(get_test_ns "$dir")
+            if [ -n "$ns" ] && ! echo "$NAMESPACES" | grep -qw "$ns"; then
+              NAMESPACES="$NAMESPACES $ns"
+            fi
+          done <<< "$CHANGED"
+
+          if $RUN_ALL || [ -z "$NAMESPACES" ]; then
+            echo "test_filter=" >> "$GITHUB_OUTPUT"
+            echo "Running all tests."
+          else
+            EXPR=""
+            for ns in $NAMESPACES; do
+              [ -n "$EXPR" ] && EXPR="$EXPR|"
+              EXPR="${EXPR}FullyQualifiedName~CosmosDesignPatterns.Tests.${ns}"
+            done
+            echo "test_filter=$EXPR" >> "$GITHUB_OUTPUT"
+            echo "Running tests matching: $EXPR"
+          fi
 
       # Pull and start the Cosmos DB Linux emulator in the background.
       # The well-known endpoint is https://localhost:8081 and the account key
@@ -38,24 +103,80 @@ jobs:
             -e AZURE_COSMOS_EMULATOR_PARTITION_COUNT=3 \
             mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
 
-      # Two-stage readiness check:
-      # 1. Wait for the TLS layer (/_explorer/emulator.pem) — the HTTPS server
-      #    starts quickly but before the Cosmos DB data plane is operational.
-      # 2. Wait for the data plane by polling GET /dbs until it returns HTTP 401
-      #    (Unauthorized). A 401 means the gateway is up and responding to real
-      #    Cosmos DB requests; a 503 or connection error means it is still
-      #    initialising its partition servers.
+      # Three-stage readiness check:
+      # 1. TLS layer  (/_explorer/emulator.pem) — lightweight HTTPS server.
+      # 2. Data plane (GET /dbs returning HTTP 401) — gateway is up.
+      # 3. Write-ready — poll until a POST /dbs succeeds (201 or 409), which
+      #    proves the partition servers are fully initialised.  Without this
+      #    third stage, CreateContainerIfNotExistsAsync returns 503/1007
+      #    because the partition servers are still warming up even after the
+      #    gateway has started accepting read requests.
       - name: Wait for emulator to be ready
         run: |
           echo "Waiting for Cosmos DB emulator TLS layer..."
           timeout 180 bash -c \
             'until curl -k -s https://localhost:8081/_explorer/emulator.pem > /dev/null 2>&1; \
              do echo "  ...TLS not ready yet, retrying in 5 s"; sleep 5; done'
-          echo "TLS layer ready. Waiting for Cosmos DB data plane..."
+
+          echo "TLS layer ready. Waiting for data plane (HTTP 401 from GET /dbs)..."
           timeout 120 bash -c \
             'until [ "$(curl -k -s -o /dev/null -w "%{http_code}" https://localhost:8081/dbs)" = "401" ]; \
              do echo "  ...data plane not ready yet, retrying in 5 s"; sleep 5; done'
-          echo "Cosmos DB emulator is ready."
+
+          echo "Data plane ready. Polling until write operations succeed..."
+          python3 - <<'PYEOF'
+          import base64, hashlib, hmac, json, ssl, sys, time, urllib.error, urllib.parse, urllib.request
+
+          ENDPOINT = "https://localhost:8081"
+          KEY = "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="
+          DB_ID = "emulator-warmup"
+
+          def make_auth(verb, resource_type, resource_id, date_str):
+              key_bytes = base64.b64decode(KEY)
+              payload = f"{verb.lower()}\n{resource_type.lower()}\n{resource_id}\n{date_str.lower()}\n\n"
+              sig = base64.b64encode(
+                  hmac.new(key_bytes, payload.encode("utf-8"), hashlib.sha256).digest()
+              ).decode()
+              return urllib.parse.quote(f"type=master&ver=1.0&sig={sig}")
+
+          ctx = ssl.create_default_context()
+          ctx.check_hostname = False
+          ctx.verify_mode = ssl.CERT_NONE
+
+          def cosmos_request(method, path, resource_type, resource_id, body=None):
+              date_str = time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime())
+              headers = {
+                  "Authorization": make_auth(method, resource_type, resource_id, date_str),
+                  "x-ms-date": date_str,
+                  "x-ms-version": "2018-12-31",
+                  "Content-Type": "application/json",
+              }
+              data = json.dumps(body).encode() if body else None
+              req = urllib.request.Request(
+                  f"{ENDPOINT}{path}", data=data, headers=headers, method=method
+              )
+              try:
+                  with urllib.request.urlopen(req, context=ctx, timeout=10) as r:
+                      return r.status
+              except urllib.error.HTTPError as e:
+                  return e.code
+              except Exception as exc:
+                  print(f"    Request error: {exc}")
+                  return 0
+
+          for attempt in range(24):  # up to 2 minutes
+              status = cosmos_request("POST", "/dbs", "dbs", "", {"id": DB_ID})
+              print(f"  Attempt {attempt + 1}: POST /dbs => HTTP {status}")
+              if status in (201, 409):
+                  cosmos_request("DELETE", f"/dbs/{DB_ID}", "dbs", f"dbs/{DB_ID}")
+                  print("Emulator is write-ready!")
+                  sys.exit(0)
+              time.sleep(5)
+
+          print("ERROR: emulator did not become write-ready within 2 minutes")
+          sys.exit(1)
+          PYEOF
+          echo "Cosmos DB emulator is fully ready."
 
       - name: Restore test project dependencies
         run: dotnet restore tests/CosmosDesignPatterns.Tests/CosmosDesignPatterns.Tests.csproj
@@ -65,10 +186,19 @@ jobs:
 
       - name: Run integration tests
         run: |
-          dotnet test tests/CosmosDesignPatterns.Tests/CosmosDesignPatterns.Tests.csproj \
-            --no-build \
-            --verbosity normal \
-            --logger "trx;LogFileName=test-results.trx"
+          FILTER="${{ steps.test-filter.outputs.test_filter }}"
+          if [ -n "$FILTER" ]; then
+            dotnet test tests/CosmosDesignPatterns.Tests/CosmosDesignPatterns.Tests.csproj \
+              --no-build \
+              --verbosity normal \
+              --logger "trx;LogFileName=test-results.trx" \
+              --filter "$FILTER"
+          else
+            dotnet test tests/CosmosDesignPatterns.Tests/CosmosDesignPatterns.Tests.csproj \
+              --no-build \
+              --verbosity normal \
+              --logger "trx;LogFileName=test-results.trx"
+          fi
         env:
           COSMOS_ENDPOINT: "https://localhost:8081"
           COSMOS_KEY: "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="
