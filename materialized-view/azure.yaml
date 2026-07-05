@@ -1,0 +1,13 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: cosmos-db-design-patterns-materialized-view
+metadata:
+  template: cosmos-db-design-patterns-materialized-view
+# azd deploys the change-feed function that maintains the materialized view. The
+# data-generator is a local console app you run with `dotnet run` against the same
+# provisioned (keyless) Cosmos account.
+services:
+  materializedview:
+    project: ./source/function-app
+    language: dotnet
+    host: function

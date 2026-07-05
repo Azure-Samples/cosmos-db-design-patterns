@@ -191,7 +191,7 @@ Use the `__accountEndpoint` suffix to configure the Cosmos DB trigger/binding wi
       "IsEncrypted": false,
       "Values": {
         "AzureWebJobsStorage": "UseDevelopmentStorage=false",
-        "FUNCTIONS_WORKER_RUNTIME": "dotnet",
+        "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
         "CosmosDBConnection__accountEndpoint": "<endpoint>"
       }
     }
@@ -210,7 +210,7 @@ Use the `__accountEndpoint` suffix to configure the Cosmos DB trigger/binding wi
       "IsEncrypted": false,
       "Values": {
         "AzureWebJobsStorage": "UseDevelopmentStorage=false",
-        "FUNCTIONS_WORKER_RUNTIME": "dotnet",
+        "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
         "CosmosDBConnection" : "<primary-connection-string>"
       }
     }
@@ -233,6 +233,8 @@ Use the `__accountEndpoint` suffix to configure the Cosmos DB trigger/binding wi
   ```
 
 ## Run the demo locally
+
+> This sample can be run **two ways**: *all-local* (this section — the function and data-generator on your machine or in Codespaces, against the emulator or your own account) or *all-Azure* (the change-feed function deployed to Azure with the data-generator run locally — see [Deploy and run in Azure](#optional-deploy-and-run-in-azure-with-azd) below). You don't need Azure to learn the pattern.
 
 1. Switch to the `function-app` folder. Then start the function with:
 
@@ -295,6 +297,48 @@ Make note of the values under **Query Stats**. These are the stats for the query
 Look at the values under **Query Stats**. For this demo, pay close attention to the **Index lookup time**. In this example, the query was run over the 50 documents only in the **SalesByProduct** container. The index lookup time came back at 0.08 ms.
 
 ![Screenshot of Data Explorer with the query run over the SalesByProduct container. The SalesByProduct container in navigation and the 'Index lookup time' in Query Stats are highlighted.](/materialized-view/images/index-lookup-type-salesbyproduct.png)
+
+## (Optional) Deploy and run in Azure with `azd`
+
+The steps above run everything **all-local**. If you'd rather run the **all-Azure** way — the change-feed function deployed to Azure over a keyless Cosmos DB account — this pattern includes an [Azure Developer CLI (`azd`)](https://aka.ms/azd) template. Running locally is unchanged; the deployment files (`azure.yaml`, `infra/`) have no effect unless you run `azd up`.
+
+It provisions and deploys, intentionally minimal and cheap:
+
+- A **Flex Consumption** Function App (scales to zero) hosting the change-feed processor.
+- A **serverless** Azure Cosmos DB account with local (key) authentication **disabled**, with the `MaterializedViewsDB` database and the `Sales`, `SalesByProduct`, and `leases` containers pre-created.
+- The function reaches Cosmos DB and its storage account **keyless**, via a **system-assigned managed identity** — no keys or connection strings are stored anywhere. The deploying user is also granted data access so you can run the **data-generator** locally against the same account.
+
+The **data-generator** is a console app, so it is not hosted in Azure — you run it locally against the provisioned account, exactly as in the local walkthrough above.
+
+### Deploy
+
+From the `materialized-view` folder:
+
+```bash
+azd up
+```
+
+`azd` prompts for an environment name, subscription, and location, then provisions the resources and deploys the function. When it finishes, run the data-generator locally — keyless, using your `az login` credentials:
+
+```bash
+# bash / zsh
+export CosmosUri="$(azd env get-value AZURE_COSMOS_ENDPOINT)"
+cd source/data-generator && dotnet run
+```
+
+```powershell
+# PowerShell
+$env:CosmosUri = azd env get-value AZURE_COSMOS_ENDPOINT
+cd source/data-generator; dotnet run
+```
+
+Leave `CosmosKey` empty — with only `CosmosUri` set, the data-generator authenticates keyless via `DefaultAzureCredential`. As it writes to the `Sales` container, the deployed function's Change Feed trigger populates the `SalesByProduct` materialized view. Confirm the results in the Data Explorer for the account.
+
+### Clean up
+
+```bash
+azd down
+```
 
 ## Summary
 
