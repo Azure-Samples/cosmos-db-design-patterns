@@ -158,6 +158,8 @@ If you are using the Azure Cosmos DB Emulator or cannot use RBAC, set `CosmosKey
 
 ## Run the demo
 
+> This sample can be run **two ways**: *all-local* (this section — your machine or Codespaces against the Cosmos DB emulator or your own account) or *all-Azure* (deployed and running in Azure — see [Deploy and run in Azure](#optional-deploy-and-run-in-azure-with-azd) below). You don't need Azure to learn the pattern.
+
 1. In Codespaces or locally, navigate to the `website` folder, start the website with:
 
 ```bash
@@ -204,6 +206,32 @@ You can also query the `HistoricalOrderStatus` container for that order number a
 In this example, the previously shown document was fulfilled. Notice in the Azure Data Explorer results that the `DocumentVersion` property is now a part of the document in `CurrentOrderStatus`.
 
 ![Screenshot of Azure Data Explorer querying HistoricalOrderStatus with the OrderId and CustomerId from the previous example. The Status is now Fulfilled. The DocumentVersion property appears at the top of the document and is now at 2. There are 2 results in the results list.](images/newly-submitted-order-fulfilled-with-history.png)
+
+## (Optional) Deploy and run in Azure with `azd`
+
+The steps above are the **all-local** way to run the sample. If you'd rather run the **all-Azure** way — the sample deployed and running in Azure — this pattern includes an [Azure Developer CLI (`azd`)](https://aka.ms/azd) template. Running locally is unchanged; the deployment files (`azure.yaml`, `infra/`) have no effect unless you run `azd up`.
+
+It provisions and deploys, intentionally minimal and cheap:
+
+- An **App Service** web app (Basic **B1** with "Always On", so the in-app Change Feed processor keeps running).
+- A **serverless** Azure Cosmos DB account with local (key) authentication **disabled**.
+- The web app reaches Cosmos DB **keyless**, via a **user-assigned managed identity** — no keys or connection strings are stored anywhere.
+
+### Deploy
+
+From the `document-versioning` folder:
+
+```bash
+azd up
+```
+
+`azd` prompts for an environment name, subscription, and location, then provisions the resources and deploys the site. When it finishes it prints the site URL — open it and create/fulfill orders exactly as in the local walkthrough above.
+
+### Clean up
+
+```bash
+azd down
+```
 
 ## Summary
 

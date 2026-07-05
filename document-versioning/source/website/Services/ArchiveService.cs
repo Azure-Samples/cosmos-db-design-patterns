@@ -12,6 +12,11 @@ namespace Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            // Ensure the database/containers exist (retried) before starting the processor.
+            // Runs in the background service, so the web app can start and serve requests
+            // even while Cosmos DB access is still being established at startup.
+            await cosmosDb.InitializeAsync(stoppingToken);
+
             changeFeedProcessor = await StartChangeFeedProcessorAsync(cosmosDb.OrderContainer, cosmosDb.LeasesContainer);
         }
 

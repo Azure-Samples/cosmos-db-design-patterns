@@ -1,0 +1,10 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: cosmos-db-design-patterns-document-versioning
+metadata:
+  template: cosmos-db-design-patterns-document-versioning
+services:
+  web:
+    project: ./source/website
+    language: dotnet
+    host: appservice
