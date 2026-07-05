@@ -133,6 +133,15 @@ All of these design patterns are built to run from a single Serverless Azure Cos
 
 [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fgithub.com%2FAzureCosmosDB%2Fdesign-patterns%2Ftree%2Fmain%2Fazuredeploy.json)
 
+#### Two ways to run each sample
+
+You can run these samples **two ways**:
+
+- **All-local** — run the sample on your machine or in GitHub Codespaces against the Azure Cosmos DB emulator or your own account (such as the shared account from the button above). This is all you need to learn the patterns; no Azure deployment is required.
+- **All-Azure** — most samples include an [Azure Developer CLI (`azd`)](https://aka.ms/azd) template that provisions a dedicated, **keyless** (Microsoft Entra ID / managed identity) set of Azure resources for that one sample — and, for the web samples, deploys the app. Look for the **"(Optional) Deploy and run in Azure with `azd`"** section in the sample's `README.md`.
+
+The `azd` templates are intentionally minimal and inexpensive — this repository teaches Cosmos DB **design patterns**, not production or enterprise architecture — and each is fully removed with `azd down` when you're finished.
+
 #### Configuration and authentication
 
 Each sample reads its Azure Cosmos DB endpoint (and, optionally, an account key) from configuration. The **recommended way to supply these values for local development is environment variables** — they keep secrets out of the source tree and work well with the emulator, containers, and CI. Every sample still also reads `appsettings.development.json` (git-ignored) as a file-based fallback if you prefer it.

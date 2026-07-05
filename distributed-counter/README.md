@@ -156,6 +156,8 @@ If you are using the Azure Cosmos DB Emulator or cannot use RBAC, set `CosmosKey
 
 ## Run the demo locally
 
+> This sample can be run **two ways**: *all-local* (this section — the Visualizer and ConsumerApp on your machine or in Codespaces, against the emulator or your own account) or *all-Azure* (the Visualizer hosted in Azure with the ConsumerApp run locally — see [Deploy and run in Azure](#optional-deploy-and-run-in-azure-with-azd) below). You don't need Azure to learn the pattern.
+
 1. Open a terminal and run the web application. The web application opens in a new browser window.
 
     ```bash
@@ -207,6 +209,52 @@ If you are using the Azure Cosmos DB Emulator or cannot use RBAC, set `CosmosKey
     ![Screenshot of the dynamic graph updated with distributed counter values.](media/distributed-counter-graph.png)
 
 1. When all the counters drop to zero in the chart, return to the consumer app and press `ctrl-c` to stop the app.
+
+## (Optional) Deploy and run in Azure with `azd`
+
+The steps above run everything **all-local**. If you'd rather run the **all-Azure** way — the Visualizer dashboard hosted in Azure over a keyless Cosmos DB account — this pattern includes an [Azure Developer CLI (`azd`)](https://aka.ms/azd) template. Running locally is unchanged; the deployment files (`azure.yaml`, `infra/`) have no effect unless you run `azd up`.
+
+It provisions and deploys, intentionally minimal and cheap:
+
+- An **App Service** web app (Basic **B1**) hosting the **Visualizer** dashboard.
+- A **serverless** Azure Cosmos DB account with local (key) authentication **disabled**, with the `CounterDB` database and `Counters` container pre-created.
+- The Visualizer reaches Cosmos DB **keyless**, via a **user-assigned managed identity** — no keys or connection strings are stored anywhere. The deploying user is also granted data access so you can run the **ConsumerApp** locally against the same account.
+
+The **ConsumerApp** is a console driver, so it is not hosted in Azure — you run it locally against the provisioned account, exactly as in the local walkthrough above.
+
+### Deploy
+
+From the `distributed-counter` folder:
+
+```bash
+azd up
+```
+
+`azd` prompts for an environment name, subscription, and location, then provisions the resources and deploys the Visualizer. When it finishes it prints the site URL.
+
+1. Open the Visualizer URL and create a new counter, then copy its **Counter ID**.
+1. Run the ConsumerApp locally against the same account — keyless, using your `az login` credentials:
+
+    ```bash
+    # bash / zsh
+    export CosmosUri="$(azd env get-value AZURE_COSMOS_ENDPOINT)"
+    cd source/ConsumerApp && dotnet run
+    ```
+
+    ```powershell
+    # PowerShell
+    $env:CosmosUri = azd env get-value AZURE_COSMOS_ENDPOINT
+    cd source/ConsumerApp; dotnet run
+    ```
+
+    Leave `CosmosKey` empty — with only `CosmosUri` set, the app authenticates keyless via `DefaultAzureCredential`.
+1. Watch the counter values change in the Visualizer.
+
+### Clean up
+
+```bash
+azd down
+```
 
 ## Summary
 

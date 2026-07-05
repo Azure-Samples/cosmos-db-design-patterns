@@ -1,0 +1,12 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: cosmos-db-design-patterns-distributed-counter
+metadata:
+  template: cosmos-db-design-patterns-distributed-counter
+# azd deploys the Visualizer web dashboard to App Service. The ConsumerApp is a local
+# driver you run with `dotnet run` against the same provisioned (keyless) Cosmos account.
+services:
+  web:
+    project: ./source/Visualizer
+    language: dotnet
+    host: appservice
