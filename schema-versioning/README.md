@@ -154,6 +154,8 @@ public class Cart
 
 ## Try this implementation
 
+> This sample can be run **two ways**: *all-local* (this section — your machine or Codespaces against the Cosmos DB emulator or your own account) or *all-Azure* (deployed and running in Azure — see [Deploy and run in Azure](#optional-deploy-and-run-in-azure-with-azd) below). You don't need Azure to learn the pattern.
+
 You can run this sample locally or in GitHub Codespaces:
 
 ### GitHub Codespaces
@@ -322,6 +324,32 @@ Navigate to the URL displayed in the output. In the example below, the URL is sh
 The output will show a variety of randomly generated carts and include the schema version when populated. When a cart contains no special items, the Special Order Notes field will not appear in the cart table.
 
 ![Screenshot of the schema-versioned carts demo. The first cart shows 2 items with the fields Product Name and Quantity. The second cart shows 3 items with the fields for Schema Version, Product Name, Quantity, and Special Order Notes. The third cart shows 1 item with the fields for Schema Version, Product Name, Quantity, and Special Order Notes. The fourth cart shows 1 item with the fields for Schema Version, Product Name, and Quantity.](./images/schema-versioned-carts-website.png)
+
+## (Optional) Deploy and run in Azure with `azd`
+
+The steps above are the **all-local** way to run the sample. If you'd rather run the **all-Azure** way — the sample deployed and running in Azure — this pattern includes an [Azure Developer CLI (`azd`)](https://aka.ms/azd) template. Running locally is unchanged; the deployment files (`azure.yaml`, `infra/`) have no effect unless you run `azd up`.
+
+It provisions and deploys, intentionally minimal and cheap:
+
+- An **App Service** web app (Basic **B1**).
+- A **serverless** Azure Cosmos DB account with local (key) authentication **disabled**.
+- The web app reaches Cosmos DB **keyless**, via a **user-assigned managed identity** — no keys or connection strings are stored anywhere.
+
+### Deploy
+
+From the `schema-versioning` folder:
+
+```bash
+azd up
+```
+
+`azd` prompts for an environment name, subscription, and location, then provisions the resources and deploys the site. When it finishes it prints the site URL — open it to see the schema-versioned carts exactly as in the local walkthrough above.
+
+### Clean up
+
+```bash
+azd down
+```
 
 ## Summary
 
