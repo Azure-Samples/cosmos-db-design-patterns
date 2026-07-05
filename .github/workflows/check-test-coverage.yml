@@ -26,6 +26,14 @@ jobs:
           BASE_REF="${{ github.base_ref }}"
           git fetch origin "${BASE_REF}" --depth=1 2>/dev/null || true
 
+          # Convert a kebab-case pattern directory name to PascalCase.
+          to_pascal() {
+            python3 -c "
+          parts = '$1'.split('-')
+          print(''.join(p.capitalize() for p in parts))
+          "
+          }
+
           # Collect top-level directories that are NEW in this PR.
           NEW_DIRS=$(git diff --name-only --diff-filter=A "origin/${BASE_REF}...HEAD" \
             | grep -oE '^[^/]+' \
@@ -38,13 +46,7 @@ jobs:
             # Only care about pattern directories that ship runnable source code.
             [ -d "${dir}/source" ] || continue
 
-            # Convert kebab-case directory name to PascalCase test namespace.
-            TEST_NS=$(python3 -c "
-          import sys
-          parts = '${dir}'.split('-')
-          print(''.join(p.capitalize() for p in parts))
-          ")
-
+            TEST_NS=$(to_pascal "$dir")
             TEST_DIR="tests/CosmosDesignPatterns.Tests/${TEST_NS}"
             if [ -d "${TEST_DIR}" ]; then
               echo "OK: '${dir}' -> '${TEST_DIR}'"
@@ -58,12 +60,7 @@ jobs:
             echo ""
             echo "The following new pattern(s) were added without integration tests:"
             for dir in ${MISSING}; do
-              TEST_NS=$(python3 -c "
-          import sys
-          parts = '${dir}'.split('-')
-          print(''.join(p.capitalize() for p in parts))
-          ")
-              echo "  ${dir}  ->  tests/CosmosDesignPatterns.Tests/${TEST_NS}/"
+              echo "  ${dir}  ->  tests/CosmosDesignPatterns.Tests/$(to_pascal "$dir")/"
             done
             echo ""
             echo "Please add an integration-test class for each new pattern."
