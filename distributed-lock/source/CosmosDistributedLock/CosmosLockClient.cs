@@ -4,7 +4,7 @@
 using Microsoft.Azure.Cosmos;
 using System.Net;
 
-namespace CosmosDistributedLock
+namespace Cosmos.DistributedLock
 {
     internal interface ICosmosLockClient
     {
@@ -15,10 +15,10 @@ namespace CosmosDistributedLock
 
     internal class CosmosLockClient : ICosmosLockClient
     {
-        private readonly CloudDistributedLockProviderOptions options;
+        private readonly CosmosDistributedLockProviderOptions options;
         private readonly Container container;
 
-        public CosmosLockClient(CloudDistributedLockProviderOptions options)
+        public CosmosLockClient(CosmosDistributedLockProviderOptions options)
         {
             this.options = options;
             container = options.CosmosClient!.GetContainer(options.DatabaseName, options.ContainerName);

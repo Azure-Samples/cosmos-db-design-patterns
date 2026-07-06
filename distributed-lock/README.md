@@ -39,7 +39,7 @@ By using a distributed global lock, you can coordinate and synchronize the actio
 
 ## Sample implementation
 
-> **Credit:** the lock library in this sample (`source/DistributedLock`) is adapted — for .NET 10, and to support keyless / emulator connections — from [CloudDistributedLock](https://github.com/briandunnington/CloudDistributedLock) by Brian Dunnington, used under the MIT License.
+> **Credit:** the lock library in this sample (`source/CosmosDistributedLock`) is adapted — for .NET 10, and to support keyless / emulator connections — from [CloudDistributedLock](https://github.com/briandunnington/CloudDistributedLock) by Brian Dunnington, used under the MIT License.
 
 The lock is represented by a **single document** whose `id` is the lock name. Acquiring the lock is simply an **insert**: if the document doesn't exist it is created and the lock is held; if it already exists Cosmos DB returns a **409 Conflict** and the caller knows the lock is held by someone else. This makes mutual exclusion atomic — there is no read-then-write race.
 

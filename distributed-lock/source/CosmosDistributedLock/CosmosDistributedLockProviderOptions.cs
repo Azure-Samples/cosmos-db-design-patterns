@@ -3,9 +3,9 @@
 
 using Microsoft.Azure.Cosmos;
 
-namespace CosmosDistributedLock
+namespace Cosmos.DistributedLock
 {
-    public class CloudDistributedLockProviderOptions
+    public class CosmosDistributedLockProviderOptions
     {
         internal string? ProviderName { get; set; }
 

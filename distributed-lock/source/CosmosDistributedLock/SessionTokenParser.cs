@@ -1,7 +1,7 @@
 // Adapted for .NET 10 from CloudDistributedLock by Brian Dunnington, used under the MIT License.
 // https://github.com/briandunnington/CloudDistributedLock
 
-namespace CosmosDistributedLock
+namespace Cosmos.DistributedLock
 {
     /// <summary>
     /// Derives a monotonically increasing fencing token from the Azure Cosmos DB session

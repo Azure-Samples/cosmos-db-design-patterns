@@ -1,4 +1,4 @@
-using CosmosDistributedLock;
+using Cosmos.DistributedLock;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 // -----------------------------------------------------------------------------------------
 // Cosmos DB Distributed Lock sample.
 //
-// The lock library in ../DistributedLock is adapted from CloudDistributedLock by
+// The lock library in ../DistributedLock is adapted from CosmosDistributedLock by
 // Brian Dunnington (MIT License): https://github.com/briandunnington/CloudDistributedLock
 //
 // This demo starts several workers that all compete for the same lock. Only one can hold it
@@ -49,9 +49,9 @@ using (CosmosClient bootstrap = CosmosClientFactory.Create(endpoint, key))
 
 // Register the lock provider with dependency injection.
 var services = new ServiceCollection();
-services.AddCloudDistributedLock(endpoint, key, databaseName, ttlSeconds, o => o.ContainerName = containerName);
+services.AddCosmosDistributedLock(endpoint, key, databaseName, ttlSeconds, o => o.ContainerName = containerName);
 using ServiceProvider serviceProvider = services.BuildServiceProvider();
-var lockProviderFactory = serviceProvider.GetRequiredService<ICloudDistributedLockProviderFactory>();
+var lockProviderFactory = serviceProvider.GetRequiredService<ICosmosDistributedLockProviderFactory>();
 
 var consoleLock = new object();
 void Log(ConsoleColor color, string message)
@@ -79,13 +79,13 @@ using var runFor = new CancellationTokenSource(TimeSpan.FromSeconds(25));
 
 async Task RunWorkerAsync(string name, ConsoleColor color)
 {
-    ICloudDistributedLockProvider provider = lockProviderFactory.GetLockProvider();
+    ICosmosDistributedLockProvider provider = lockProviderFactory.GetLockProvider();
     var rng = new Random(name.GetHashCode());
 
     while (!runFor.IsCancellationRequested)
     {
         // Try to acquire the lock immediately.
-        using (CloudDistributedLock @lock = await provider.TryAcquireLockAsync(lockName))
+        using (CosmosDistributedLock @lock = await provider.TryAcquireLockAsync(lockName))
         {
             if (@lock.IsAcquired)
             {
@@ -118,15 +118,15 @@ await Task.WhenAll(workers.Select(w => RunWorkerAsync(w.Item1, w.Item2)));
 // --- Phase 2: demonstrate waiting with a timeout. ---
 Console.WriteLine();
 Console.WriteLine("Demonstrating AcquireLockAsync with a 2-second wait timeout...");
-ICloudDistributedLockProvider waitProvider = lockProviderFactory.GetLockProvider();
-using (CloudDistributedLock held = await waitProvider.TryAcquireLockAsync(lockName))
+ICosmosDistributedLockProvider waitProvider = lockProviderFactory.GetLockProvider();
+using (CosmosDistributedLock held = await waitProvider.TryAcquireLockAsync(lockName))
 {
     Log(ConsoleColor.White, held.IsAcquired
         ? $"Holder: acquired lock (fencing token {held.FencingToken}) and will hold it for 5 seconds"
         : "Holder: unexpectedly could not acquire the lock");
 
     // A second caller waits up to 2 seconds, then gives up because the lock is still held.
-    using CloudDistributedLock waiter = await waitProvider.AcquireLockAsync(lockName, TimeSpan.FromSeconds(2));
+    using CosmosDistributedLock waiter = await waitProvider.AcquireLockAsync(lockName, TimeSpan.FromSeconds(2));
     Log(ConsoleColor.White, waiter.IsAcquired
         ? "Waiter: acquired the lock (unexpected — it was held)"
         : "Waiter: gave up after 2 seconds because the lock was held (as expected)");

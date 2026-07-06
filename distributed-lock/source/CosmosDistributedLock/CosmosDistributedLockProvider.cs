@@ -1,54 +1,54 @@
 // Adapted for .NET 10 from CloudDistributedLock by Brian Dunnington, used under the MIT License.
 // https://github.com/briandunnington/CloudDistributedLock
 
-namespace CosmosDistributedLock
+namespace Cosmos.DistributedLock
 {
-    public interface ICloudDistributedLockProvider
+    public interface ICosmosDistributedLockProvider
     {
         /// <summary>Tries to acquire the lock once and returns immediately.</summary>
-        Task<CloudDistributedLock> TryAcquireLockAsync(string name);
+        Task<CosmosDistributedLock> TryAcquireLockAsync(string name);
 
         /// <summary>Waits (indefinitely, or up to <paramref name="timeout"/>) for the lock.</summary>
-        Task<CloudDistributedLock> AcquireLockAsync(string name, TimeSpan? timeout = default);
+        Task<CosmosDistributedLock> AcquireLockAsync(string name, TimeSpan? timeout = default);
     }
 
-    internal class CloudDistributedLockProvider : ICloudDistributedLockProvider
+    internal class CosmosDistributedLockProvider : ICosmosDistributedLockProvider
     {
-        private readonly CloudDistributedLockProviderOptions options;
+        private readonly CosmosDistributedLockProviderOptions options;
         private readonly ICosmosLockClient cosmosLockClient;
 
-        public CloudDistributedLockProvider(CloudDistributedLockProviderOptions options)
+        public CosmosDistributedLockProvider(CosmosDistributedLockProviderOptions options)
         {
             this.options = options;
             cosmosLockClient = new CosmosLockClient(options);
         }
 
-        internal CloudDistributedLockProvider(ICosmosLockClient cosmosLockClient, CloudDistributedLockProviderOptions options)
+        internal CosmosDistributedLockProvider(ICosmosLockClient cosmosLockClient, CosmosDistributedLockProviderOptions options)
         {
             this.options = options;
             this.cosmosLockClient = cosmosLockClient;
         }
 
-        public async Task<CloudDistributedLock> AcquireLockAsync(string name, TimeSpan? timeout = null)
+        public async Task<CosmosDistributedLock> AcquireLockAsync(string name, TimeSpan? timeout = null)
         {
             using var cancellationTokenSource = timeout.HasValue ? new CancellationTokenSource(timeout.Value) : new CancellationTokenSource();
             return await ContinuallyTryAcquireLockAsync(name, cancellationTokenSource.Token).ConfigureAwait(false);
         }
 
-        public async Task<CloudDistributedLock> TryAcquireLockAsync(string name)
+        public async Task<CosmosDistributedLock> TryAcquireLockAsync(string name)
         {
             var item = await cosmosLockClient.TryAcquireLockAsync(name).ConfigureAwait(false);
             if (item != null)
             {
-                return CloudDistributedLock.CreateAcquiredLock(cosmosLockClient, item);
+                return CosmosDistributedLock.CreateAcquiredLock(cosmosLockClient, item);
             }
             else
             {
-                return CloudDistributedLock.CreateUnacquiredLock();
+                return CosmosDistributedLock.CreateUnacquiredLock();
             }
         }
 
-        private async Task<CloudDistributedLock> ContinuallyTryAcquireLockAsync(string name, CancellationToken cancellationToken)
+        private async Task<CosmosDistributedLock> ContinuallyTryAcquireLockAsync(string name, CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
             {
@@ -66,11 +66,11 @@ namespace CosmosDistributedLock
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {
-                    return CloudDistributedLock.CreateUnacquiredLock();
+                    return CosmosDistributedLock.CreateUnacquiredLock();
                 }
             }
 
-            return CloudDistributedLock.CreateUnacquiredLock();
+            return CosmosDistributedLock.CreateUnacquiredLock();
         }
     }
 }

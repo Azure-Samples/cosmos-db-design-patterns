@@ -3,14 +3,14 @@
 
 using Microsoft.Azure.Cosmos;
 
-namespace CosmosDistributedLock
+namespace Cosmos.DistributedLock
 {
     /// <summary>
     /// Represents an attempt to acquire a distributed lock. When <see cref="IsAcquired"/> is
     /// true the lock is held, and a background keep-alive loop renews it until this object is
     /// disposed. Dispose releases the lock synchronously (deterministically).
     /// </summary>
-    public class CloudDistributedLock : IDisposable
+    public class CosmosDistributedLock : IDisposable
     {
         private readonly TimeSpan keepAliveBuffer = TimeSpan.FromSeconds(1); // 1 second is the smallest Cosmos TTL increment
         private readonly ICosmosLockClient? cosmosLockClient;
@@ -21,21 +21,21 @@ namespace CosmosDistributedLock
         private readonly Task? keepAliveTask;
         private int disposed;
 
-        internal static CloudDistributedLock CreateUnacquiredLock()
+        internal static CosmosDistributedLock CreateUnacquiredLock()
         {
-            return new CloudDistributedLock();
+            return new CosmosDistributedLock();
         }
 
-        internal static CloudDistributedLock CreateAcquiredLock(ICosmosLockClient cosmosLockClient, ItemResponse<LockRecord> item)
+        internal static CosmosDistributedLock CreateAcquiredLock(ICosmosLockClient cosmosLockClient, ItemResponse<LockRecord> item)
         {
-            return new CloudDistributedLock(cosmosLockClient, item);
+            return new CosmosDistributedLock(cosmosLockClient, item);
         }
 
-        private CloudDistributedLock()
+        private CosmosDistributedLock()
         {
         }
 
-        private CloudDistributedLock(ICosmosLockClient cosmosLockClient, ItemResponse<LockRecord> item)
+        private CosmosDistributedLock(ICosmosLockClient cosmosLockClient, ItemResponse<LockRecord> item)
         {
             this.cosmosLockClient = cosmosLockClient;
             latestItem = item;

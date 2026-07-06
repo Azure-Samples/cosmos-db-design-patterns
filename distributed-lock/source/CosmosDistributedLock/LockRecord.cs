@@ -1,7 +1,7 @@
 // Adapted for .NET 10 from CloudDistributedLock by Brian Dunnington, used under the MIT License.
 // https://github.com/briandunnington/CloudDistributedLock
 
-namespace CosmosDistributedLock
+namespace Cosmos.DistributedLock
 {
     /// <summary>
     /// A single document that represents a held lock. Its <c>id</c> is the (sanitized) lock

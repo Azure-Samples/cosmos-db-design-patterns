@@ -4,7 +4,7 @@
 using Azure.Identity;
 using Microsoft.Azure.Cosmos;
 
-namespace CosmosDistributedLock
+namespace Cosmos.DistributedLock
 {
     /// <summary>
     /// Builds a <see cref="CosmosClient"/> the same way as the rest of this repository:

@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DistributedLock\DistributedLock.csproj" />
+    <ProjectReference Include="..\CosmosDistributedLock\CosmosDistributedLock.csproj" />
   </ItemGroup>
 
   <ItemGroup>
