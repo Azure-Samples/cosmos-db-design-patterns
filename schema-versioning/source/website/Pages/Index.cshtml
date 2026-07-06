@@ -19,6 +19,15 @@
     </div>
 </div>
 
+<div class="panel toolbar-panel">
+    <span class="toolbar-label">Add carts:</span>
+    <form method="post">
+        <button type="submit" asp-page-handler="Add" name="versioned" value="false" class="btn ghost">+ Original (v1) cart</button>
+        <button type="submit" asp-page-handler="Add" name="versioned" value="true" class="btn">+ Versioned (v2) cart</button>
+        <button type="submit" asp-page-handler="Clear" class="btn ghost danger">Clear all</button>
+    </form>
+</div>
+
 @if (Model.Carts.Count == 0)
 {
     <p class="empty">No carts found. Run the <code>data-generator</code> to create some, then refresh.</p>

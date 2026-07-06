@@ -101,3 +101,14 @@ a { color: var(--accent); }
 .special-note { color: var(--amber); font-size: 13px; }
 
 .empty { color: var(--muted); font-style: italic; }
+
+/* Interactive toolbar */
+.panel { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 16px 20px; margin-bottom: 22px; }
+.toolbar-panel { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.toolbar-label { color: var(--muted); font-size: 14px; }
+.toolbar-panel form { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 0; }
+.btn { background: var(--accent); color: #06283a; border: 1px solid var(--accent); border-radius: 8px; padding: 9px 16px; cursor: pointer; font-size: 14px; font-weight: 600; }
+.btn:hover { filter: brightness(1.08); }
+.btn.ghost { background: var(--panel-2); color: var(--text); border-color: var(--border); font-weight: 500; }
+.btn.ghost:hover { border-color: var(--accent); filter: none; }
+.btn.danger:hover { border-color: #f87171; color: #fca5a5; }
