@@ -12,7 +12,7 @@ param tags object = {}
 @description('Optional. SQL databases to pre-create. Shape: [{ name: string }].')
 param databases array = []
 
-@description('Optional. Containers to pre-create. Shape: [{ databaseName: string, name: string, partitionKey: string, defaultTtl: int?, vectorEmbeddingPolicy: object?, indexingPolicy: object? }]. Pre-creating them means the app identity only needs data-plane item access, not permission to create databases/containers. Set defaultTtl (seconds, or -1 for no expiry) to enable time-to-live. Supply vectorEmbeddingPolicy and indexingPolicy together to create a vector-indexed container (they can only be set at creation time).')
+@description('Optional. Containers to pre-create. Shape: [{ databaseName: string, name: string, partitionKey: string, partitionKeyPaths: string[]?, partitionKeyKind: string?, defaultTtl: int?, vectorEmbeddingPolicy: object?, indexingPolicy: object? }]. Pre-creating them means the app identity only needs data-plane item access, not permission to create databases/containers. Provide a single "partitionKey" path, OR "partitionKeyPaths" (up to 3) plus partitionKeyKind: "MultiHash" for a hierarchical partition key. Set defaultTtl (seconds, or -1) to enable time-to-live. Supply vectorEmbeddingPolicy and indexingPolicy together for a vector-indexed container.')
 param containers array = []
 
 @description('Optional. Principal IDs (managed identities and/or users) to grant the built-in Cosmos DB Data Contributor data-plane role.')
@@ -71,10 +71,10 @@ resource containersResource 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/
         {
           id: container.name
           partitionKey: {
-            paths: [
-              container.partitionKey
+            paths: container.?partitionKeyPaths ?? [
+              container.?partitionKey ?? '/id'
             ]
-            kind: 'Hash'
+            kind: container.?partitionKeyKind ?? 'Hash'
           }
         },
         container.?defaultTtl != null ? { defaultTtl: container.defaultTtl } : {},

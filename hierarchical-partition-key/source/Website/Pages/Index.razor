@@ -1,0 +1,196 @@
+@page "/"
+@using Cosmos.HierarchicalPartitionKey
+@using System.Diagnostics
+@inject HpkAppService Sim
+
+<div class="page">
+    <header>
+        <h1>Hierarchical Partition Key</h1>
+        <p class="tagline">
+            Multi-tenant activity events, partitioned by <code>/tenantId</code> then <code>/userId</code>.
+            Leading with <strong>tenantId</strong> keeps the everyday <em>per-tenant</em> queries
+            <strong>targeted</strong>, while the <strong>userId</strong> sub-level lets a tenant grow past
+            the 20&nbsp;GB limit of a single logical partition. Run the queries below and watch which ones
+            Cosmos DB can target vs. fan out.
+        </p>
+    </header>
+
+    @if (_preparing)
+    {
+        <div class="info-banner"><span class="spinner"></span> Preparing &mdash; creating containers and seeding activity events&hellip;</div>
+    }
+    else if (_initError is not null)
+    {
+        <div class="error-banner"><strong>Couldn't start.</strong> @_initError</div>
+    }
+
+    <div class="emu-note">
+        <strong>Reading RU on the emulator:</strong> the emulator runs each container on a single physical
+        partition, so a fan-out query costs about the same as a targeted one here. The <em>targeting</em> is
+        the lesson &mdash; at production scale (many partitions, large tenants) fan-out cost and latency climb
+        with the partition count, and only the hierarchical key scales a tenant beyond 20&nbsp;GB.
+    </div>
+
+    <div class="columns">
+        <section class="panel tree">
+            <h2>How the data is partitioned</h2>
+            <p class="hint"><code>/tenantId</code> → <code>/userId</code> — each user is a sub-partition inside its tenant.</p>
+            @foreach (TenantNode t in Sim.Distribution)
+            {
+                <div class="tenant">
+                    <div class="tenant-head"><span class="mono">@t.TenantId</span> <span class="muted">@t.TotalEvents events</span></div>
+                    <div class="users">
+                        @foreach (UserNode u in t.Users)
+                        {
+                            <span class="user-chip"><span class="mono">@u.UserId</span> · @u.Events</span>
+                        }
+                    </div>
+                </div>
+            }
+        </section>
+
+        <section class="panel playground">
+            <h2>Query playground</h2>
+            <div class="controls">
+                <label>Tenant
+                    <select @bind="_tenant" @bind:after="OnTenantChanged" disabled="@(!Sim.IsReady)">
+                        @foreach (string t in Sim.TenantIds) { <option value="@t">@t</option> }
+                    </select>
+                </label>
+                <label>User
+                    <select @bind="_user" disabled="@(!Sim.IsReady)">
+                        @foreach (string u in Sim.UsersFor(_tenant)) { <option value="@u">@u</option> }
+                    </select>
+                </label>
+                <label>Action
+                    <select @bind="_action" disabled="@(!Sim.IsReady)">
+                        @foreach (string a in _actions) { <option value="@a">@a</option> }
+                    </select>
+                </label>
+            </div>
+            <div class="btn-row">
+                <button class="btn" @onclick="() => Run(Sim.PointRead(_tenant, _user))" disabled="@(!Sim.IsReady)">Point read</button>
+                <button class="btn" @onclick="() => Run(Sim.TenantPrefix(_tenant))" disabled="@(!Sim.IsReady)">Tenant prefix</button>
+                <button class="btn" @onclick="() => Run(Sim.UserDrilldown(_tenant, _user))" disabled="@(!Sim.IsReady)">User drill-down</button>
+                <button class="btn" @onclick="() => Run(Sim.CrossPartition(_action))" disabled="@(!Sim.IsReady)">Cross-partition analytics</button>
+            </div>
+
+            @if (_result is not null)
+            {
+                @ResultCard(_result)
+            }
+            else if (!_preparing)
+            {
+                <p class="hint">Pick a tenant/user and run a query to see how Cosmos DB targets partitions.</p>
+            }
+        </section>
+    </div>
+
+    <section class="panel beforeafter">
+        <h2>Before / after: the same tenant dashboard, two partition designs</h2>
+        <p class="hint">
+            The identical query &mdash; <span class="mono">SELECT * FROM c WHERE c.tenantId = '@_tenant'</span> &mdash;
+            run against a container keyed only by <code>/userId</code> (before) and the hierarchical
+            <code>/tenantId/userId</code> container (after).
+        </p>
+        <button class="btn primary" @onclick="RunBeforeAfter" disabled="@(!Sim.IsReady)">Run before / after for @_tenant</button>
+        @if (_before is not null && _after is not null)
+        {
+            <div class="ba-grid">
+                <div>@ResultCard(_before)</div>
+                <div>@ResultCard(_after)</div>
+            </div>
+            <p class="ba-note">
+                Same result, same query text &mdash; but the <strong>before</strong> fans out because
+                <code>tenantId</code> isn't the partition key, while the <strong>after</strong> is targeted
+                because <code>tenantId</code> is the first key level. On the emulator the RU looks alike; at
+                scale the fan-out is what costs you.
+            </p>
+        }
+    </section>
+
+    <section class="panel why">
+        <h2>Why it matters</h2>
+        <ul>
+            <li><strong>Beyond 20&nbsp;GB per tenant.</strong> A single <code>/tenantId</code> key caps each tenant at one 20&nbsp;GB logical partition. Adding <code>/userId</code> spreads a tenant across many sub-partitions, so it can grow without limit.</li>
+            <li><strong>No hot partition.</strong> A large or busy tenant's writes spread across its users' sub-partitions instead of hammering one physical partition.</li>
+            <li><strong>Targeted everyday queries.</strong> Because tenant is the first level, per-tenant reads (a SaaS app's bread and butter) stay targeted &mdash; they never fan out.</li>
+            <li><strong>Pick the order by access pattern.</strong> Lead the key with the field you filter on most (here, tenant), then sub-divide by the next (user). Point reads and drill-downs use the full key.</li>
+        </ul>
+    </section>
+</div>
+
+@code {
+    private string _tenant = string.Empty;
+    private string _user = string.Empty;
+    private string _action = "purchase";
+    private readonly string[] _actions = { "login", "view", "click", "purchase", "logout" };
+
+    private QueryResult? _result;
+    private QueryResult? _before;
+    private QueryResult? _after;
+    private bool _preparing = true;
+    private string? _initError;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        try
+        {
+            await Sim.EnsureStartedAsync();
+        }
+        catch (Exception ex)
+        {
+            _initError = ex.Message;
+            _preparing = false;
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        var sw = Stopwatch.StartNew();
+        while (!Sim.IsReady && sw.Elapsed < TimeSpan.FromSeconds(40))
+        {
+            await Task.Delay(300);
+        }
+
+        _tenant = Sim.TenantIds.FirstOrDefault() ?? string.Empty;
+        _user = Sim.UsersFor(_tenant).FirstOrDefault() ?? string.Empty;
+        _preparing = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void OnTenantChanged()
+    {
+        _user = Sim.UsersFor(_tenant).FirstOrDefault() ?? string.Empty;
+    }
+
+    private async Task Run(Task<QueryResult> query)
+    {
+        _result = await query;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task RunBeforeAfter()
+    {
+        _before = await Sim.SingleKeyTenant(_tenant);
+        _after = await Sim.TenantPrefix(_tenant);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private RenderFragment ResultCard(QueryResult r) => @<div class="result @(r.Targeted ? "ok" : "warn")">
+        <div class="result-head">
+            <span class="badge @(r.Targeted ? "targeted" : "fanout")">@(r.Targeted ? "TARGETED" : "FAN-OUT")</span>
+            <span class="result-title">@r.Title</span>
+        </div>
+        <div class="result-meta">
+            <span class="mono">@r.QueryText</span>
+        </div>
+        <div class="result-stats">
+            <span><strong>partition key:</strong> @r.PartitionKeyUsed</span>
+            <span><strong>@r.Count</strong> events</span>
+            <span><strong>@r.RequestCharge.ToString("0.00")</strong> RU</span>
+        </div>
+        <div class="result-note">@r.Note</div>
+    </div>;
+}

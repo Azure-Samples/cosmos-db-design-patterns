@@ -1,0 +1,13 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: cosmos-db-design-patterns-hierarchical-partition-key
+metadata:
+  template: cosmos-db-design-patterns-hierarchical-partition-key
+# azd deploys the interactive web front end to App Service. The console app under source/Console is
+# an optional local driver you can run with `dotnet run` against the same provisioned (keyless)
+# Cosmos account.
+services:
+  web:
+    project: ./source/Website
+    language: dotnet
+    host: appservice

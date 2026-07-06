@@ -70,6 +70,10 @@ Discover how to manage document versioning effectively within Azure Cosmos DB. T
 
 Uncover the power of event sourcing for building applications that maintain a history of changes as a sequence of events. Explore the `event-sourcing` folder for in-depth instructions. Read more about this design pattern in this [blog post](https://aka.ms/cosmosdbdesignpatterns/event-sourcing).
 
+### [Hierarchical Partition Key](/hierarchical-partition-key/)
+
+Learn how to use a multi-level (hierarchical) partition key — for example `/tenantId` then `/userId` — to scale a tenant beyond the 20 GB logical-partition limit and keep per-tenant queries targeted instead of fanning out. The `hierarchical-partition-key` folder includes a console app and an interactive query playground with a before/after comparison.
+
 ### [Loop-Safe Change Feed](/loop-safe-change-feed/)
 
 Learn how to enrich documents **in place** from the change feed — deriving a value and writing it back onto the same document — without creating an infinite loop, by hashing the source so the echo of your own write is skipped. See the `loop-safe-change-feed` folder for a Change Feed Processor implementation and an interactive web front end.
