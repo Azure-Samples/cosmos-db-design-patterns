@@ -6,35 +6,27 @@ using Xunit;
 namespace CosmosDesignPatterns.Tests.DistributedLock;
 
 // ---------------------------------------------------------------------------
-// Models – mirror the distributed-lock pattern source models
+// Model – mirrors the single lock record used by the distributed-lock pattern
+// (adapted from CloudDistributedLock by Brian Dunnington, MIT License).
 // ---------------------------------------------------------------------------
 
 /// <summary>
-/// The lock document.  Its <c>id</c> is the lock name and it is its own
-/// partition key so optimistic-concurrency patching works correctly.
+/// A single document that represents a held lock. Its <c>id</c> is the lock name, so an
+/// insert only succeeds when no one else currently holds the lock. The <c>_ttl</c> field
+/// lets Cosmos DB auto-delete it (releasing the lock) if the holder stops renewing.
 /// </summary>
-public class DistributedLockDoc
+public class LockRecord
 {
     [JsonProperty("id")]
-    public string LockName { get; set; } = string.Empty;
-    [JsonProperty("OwnerId")]
-    public string OwnerId { get; set; } = string.Empty;
-    [JsonProperty("FenceToken")]
-    public long FenceToken { get; set; }
-    [JsonProperty("_etag")]
-    public string? ETag { get; set; }
-}
-
-/// <summary>
-/// The lease document.  Its <c>id</c> is the owner id and the <c>ttl</c>
-/// field causes Cosmos DB to auto-expire it when the lease duration elapses.
-/// </summary>
-public class LockLease
-{
-    [JsonProperty("id")]
-    public string OwnerId { get; set; } = string.Empty;
+    public string? id { get; set; }
+    [JsonProperty("name")]
+    public string? name { get; set; }
+    [JsonProperty("lockObtainedAt")]
+    public DateTimeOffset lockObtainedAt { get; set; } = DateTimeOffset.UtcNow;
+    [JsonProperty("lockLastRenewedAt")]
+    public DateTimeOffset lockLastRenewedAt { get; set; } = DateTimeOffset.UtcNow;
     [JsonProperty("ttl")]
-    public int LeaseDuration { get; set; }
+    public int _ttl { get; set; }
 }
 
 // ---------------------------------------------------------------------------
@@ -42,23 +34,20 @@ public class LockLease
 // ---------------------------------------------------------------------------
 
 /// <summary>
-/// Integration tests for the Distributed Lock design pattern.
+/// Integration tests for the (reworked) Distributed Lock design pattern.
 ///
-/// The pattern uses two document types in a single TTL-enabled container:
-///   • <see cref="DistributedLockDoc"/> – the lock itself, identified by a
-///     logical lock name.  A monotonically increasing FenceToken lets
-///     callers detect stale lock holders.
-///   • <see cref="LockLease"/> – a short-lived document (TTL) that proves a
-///     particular owner is still alive.  Cosmos DB automatically deletes it
-///     when the lease period expires.
+/// The pattern stores a single record per lock in a TTL-enabled container:
+///   - Acquiring the lock is a <c>CreateItem</c>; a 409 Conflict means it is already held.
+///   - The holder renews the lock with <c>ReplaceItem</c> + ETag (optimistic concurrency).
+///   - Releasing the lock is a <c>DeleteItem</c> + ETag.
+///   - The Cosmos session token (global LSN) provides a monotonically increasing fencing token.
 ///
 /// These tests verify:
-///   - A new lock document can be created with fence token 1.
-///   - Acquiring the lock increments the fence token.
-///   - The fence token increments monotonically across multiple acquisitions.
-///   - A valid owner + fence token pair passes validation.
-///   - An outdated fence token fails validation.
-///   - Deleting a lease (simulating expiry) causes validation to fail.
+///   - A lock can be acquired when it is not held.
+///   - A second acquire attempt fails with 409 Conflict while the lock is held.
+///   - Renewing with the current ETag succeeds; renewing with a stale ETag fails.
+///   - Releasing (deleting) the record lets the lock be acquired again.
+///   - The session token / fencing token increases monotonically across writes.
 /// </summary>
 public class DistributedLockTests : IClassFixture<EmulatorFixture>, IAsyncLifetime
 {
@@ -74,13 +63,11 @@ public class DistributedLockTests : IClassFixture<EmulatorFixture>, IAsyncLifeti
     public async Task InitializeAsync()
     {
         Database db = await EmulatorFixture.WithRetryAsync(() => _client.CreateDatabaseIfNotExistsAsync(_databaseName));
-        // Partition key is /id (same as the source pattern's CosmosService).
-        // TTL is enabled so lease documents auto-expire in real usage.
         ContainerProperties props = new()
         {
             Id = "Locks",
             PartitionKeyPath = "/id",
-            DefaultTimeToLive = -1  // enable TTL; individual docs control their own expiry
+            DefaultTimeToLive = -1  // TTL enabled; each lock record controls its own expiry via _ttl.
         };
         _container = await EmulatorFixture.WithRetryAsync(() => db.CreateContainerIfNotExistsAsync(props));
     }
@@ -91,70 +78,56 @@ public class DistributedLockTests : IClassFixture<EmulatorFixture>, IAsyncLifeti
     }
 
     // -----------------------------------------------------------------------
-    // Helpers
+    // Helpers – mirror CosmosLockClient in the pattern source.
     // -----------------------------------------------------------------------
 
-    private async Task<DistributedLockDoc> CreateLockAsync(string lockName, string ownerId)
-    {
-        var doc = new DistributedLockDoc
-        {
-            LockName = lockName,
-            OwnerId = ownerId,
-            FenceToken = 1
-        };
-        var response = await _container.CreateItemAsync(doc, new PartitionKey(lockName));
-        return response.Resource;
-    }
-
-    private async Task<DistributedLockDoc?> ReadLockAsync(string lockName)
+    private async Task<ItemResponse<LockRecord>?> TryAcquireAsync(string lockName, int ttl = 30)
     {
         try
         {
-            var r = await _container.ReadItemAsync<DistributedLockDoc>(lockName, new PartitionKey(lockName));
-            return r.Resource;
+            var now = DateTimeOffset.UtcNow;
+            var record = new LockRecord { id = lockName, name = lockName, lockObtainedAt = now, lockLastRenewedAt = now, _ttl = ttl };
+            return await _container.CreateItemAsync(record, new PartitionKey(lockName));
         }
-        catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.Conflict)
         {
             return null;
         }
     }
 
-    /// <summary>
-    /// Transfers ownership to <paramref name="newOwnerId"/> and increments the
-    /// fence token using Patch + optimistic concurrency (mirrors CosmosService.UpdateLockAsync).
-    /// </summary>
-    private async Task<DistributedLockDoc> AcquireLockAsync(DistributedLockDoc current, string newOwnerId)
-    {
-        var operations = new List<PatchOperation>
-        {
-            PatchOperation.Set("/OwnerId", newOwnerId),
-            PatchOperation.Increment("/FenceToken", 1L)
-        };
-
-        return await _container.PatchItemAsync<DistributedLockDoc>(
-            current.LockName,
-            new PartitionKey(current.LockName),
-            operations,
-            new PatchItemRequestOptions { IfMatchEtag = current.ETag });
-    }
-
-    private async Task CreateLeaseAsync(string ownerId, int ttlSeconds = 30)
-    {
-        var lease = new LockLease { OwnerId = ownerId, LeaseDuration = ttlSeconds };
-        await _container.UpsertItemAsync(lease, new PartitionKey(ownerId));
-    }
-
-    private async Task<bool> LeaseExistsAsync(string ownerId)
+    private async Task<ItemResponse<LockRecord>?> RenewAsync(ItemResponse<LockRecord> item)
     {
         try
         {
-            await _container.ReadItemAsync<LockLease>(ownerId, new PartitionKey(ownerId));
-            return true;
+            var existing = item.Resource;
+            var record = new LockRecord
+            {
+                id = existing.id,
+                name = existing.name,
+                lockObtainedAt = existing.lockObtainedAt,
+                lockLastRenewedAt = DateTimeOffset.UtcNow,
+                _ttl = existing._ttl
+            };
+            return await _container.ReplaceItemAsync(record, record.id, new PartitionKey(record.id), new ItemRequestOptions { IfMatchEtag = item.ETag });
         }
-        catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        catch (CosmosException ex) when (ex.StatusCode is HttpStatusCode.PreconditionFailed or HttpStatusCode.NotFound)
         {
-            return false;
+            return null;
         }
+    }
+
+    private async Task ReleaseAsync(ItemResponse<LockRecord> item)
+    {
+        await _container.DeleteItemAsync<LockRecord>(item.Resource.id, new PartitionKey(item.Resource.id), new ItemRequestOptions { IfMatchEtag = item.ETag });
+    }
+
+    // Mirrors SessionTokenParser: extract the global LSN from the Cosmos session token.
+    private static long ParseSessionToken(string sessionToken)
+    {
+        var items = sessionToken.Split(':', StringSplitOptions.RemoveEmptyEntries);
+        var segments = items[1].Split('#', StringSplitOptions.RemoveEmptyEntries);
+        var globalLsnIndex = segments.Length == 1 ? 0 : 1;
+        return long.Parse(segments[globalLsnIndex]);
     }
 
     // -----------------------------------------------------------------------
@@ -162,110 +135,78 @@ public class DistributedLockTests : IClassFixture<EmulatorFixture>, IAsyncLifeti
     // -----------------------------------------------------------------------
 
     [Fact]
-    public async Task CreateLock_Stores_DocumentWithFenceTokenOne()
+    public async Task Acquire_Succeeds_WhenLockNotHeld()
     {
         string lockName = $"lock-{Guid.NewGuid():N}";
-        string ownerId = Guid.NewGuid().ToString();
 
-        var doc = await CreateLockAsync(lockName, ownerId);
+        var item = await TryAcquireAsync(lockName);
 
-        Assert.Equal(lockName, doc.LockName);
-        Assert.Equal(ownerId, doc.OwnerId);
-        Assert.Equal(1, doc.FenceToken);
+        Assert.NotNull(item);
+        Assert.Equal(lockName, item!.Resource.id);
     }
 
     [Fact]
-    public async Task AcquireLock_Increments_FenceToken()
+    public async Task Acquire_Fails_WhenLockAlreadyHeld()
     {
         string lockName = $"lock-{Guid.NewGuid():N}";
-        string owner1 = Guid.NewGuid().ToString();
-        string owner2 = Guid.NewGuid().ToString();
 
-        var original = await CreateLockAsync(lockName, owner1);
-        Assert.Equal(1, original.FenceToken);
+        var first = await TryAcquireAsync(lockName);
+        Assert.NotNull(first);
 
-        var updated = await AcquireLockAsync(original, owner2);
-
-        Assert.Equal(owner2, updated.OwnerId);
-        Assert.Equal(2, updated.FenceToken);
+        // Second attempt should fail (409 Conflict) because the lock is held.
+        var second = await TryAcquireAsync(lockName);
+        Assert.Null(second);
     }
 
     [Fact]
-    public async Task FenceToken_MonotonicallyIncrements_AcrossMultipleAcquisitions()
+    public async Task Renew_Succeeds_WithMatchingEtag_And_Fails_WithStaleEtag()
     {
         string lockName = $"lock-{Guid.NewGuid():N}";
-        string owner = Guid.NewGuid().ToString();
 
-        var current = await CreateLockAsync(lockName, owner);
+        var item = await TryAcquireAsync(lockName);
+        Assert.NotNull(item);
 
-        for (int i = 2; i <= 5; i++)
-        {
-            current = await AcquireLockAsync(current, Guid.NewGuid().ToString());
-            Assert.Equal(i, current.FenceToken);
-        }
+        // Renew with the current ETag succeeds and advances lockLastRenewedAt.
+        var renewed = await RenewAsync(item!);
+        Assert.NotNull(renewed);
+        Assert.True(renewed!.Resource.lockLastRenewedAt >= item!.Resource.lockLastRenewedAt);
+
+        // Renewing again with the ORIGINAL (now stale) ETag fails.
+        var staleRenew = await RenewAsync(item);
+        Assert.Null(staleRenew);
     }
 
     [Fact]
-    public async Task ValidOwner_And_ValidFenceToken_PassesValidation()
+    public async Task Release_Deletes_Record_And_Allows_Reacquire()
     {
         string lockName = $"lock-{Guid.NewGuid():N}";
-        string ownerId = Guid.NewGuid().ToString();
 
-        await CreateLeaseAsync(ownerId);
-        var lockDoc = await CreateLockAsync(lockName, ownerId);
+        var item = await TryAcquireAsync(lockName);
+        Assert.NotNull(item);
 
-        // Validation mirrors DistributedLockService.ValidateLeaseAsync:
-        // the fence token must match and a lease must exist for the owner.
-        var current = await ReadLockAsync(lockName);
-        Assert.NotNull(current);
-        Assert.Equal(ownerId, current.OwnerId);
-        Assert.Equal(lockDoc.FenceToken, current.FenceToken);
+        // While held, another acquire fails.
+        Assert.Null(await TryAcquireAsync(lockName));
 
-        bool leaseExists = await LeaseExistsAsync(ownerId);
-        Assert.True(leaseExists);
+        await ReleaseAsync(item!);
+
+        // After release, the lock can be acquired again.
+        var reacquired = await TryAcquireAsync(lockName);
+        Assert.NotNull(reacquired);
     }
 
     [Fact]
-    public async Task OutdatedFenceToken_FailsValidation()
+    public async Task FencingToken_MonotonicallyIncreases_AcrossWrites()
     {
         string lockName = $"lock-{Guid.NewGuid():N}";
-        string owner1 = Guid.NewGuid().ToString();
-        string owner2 = Guid.NewGuid().ToString();
 
-        var lockDoc = await CreateLockAsync(lockName, owner1);
-        long staleToken = lockDoc.FenceToken;   // = 1
+        var item = await TryAcquireAsync(lockName);
+        Assert.NotNull(item);
+        long token1 = ParseSessionToken(item!.Headers.Session);
 
-        // Owner2 acquires the lock → fence token becomes 2.
-        await AcquireLockAsync(lockDoc, owner2);
+        var renewed = await RenewAsync(item);
+        Assert.NotNull(renewed);
+        long token2 = ParseSessionToken(renewed!.Headers.Session);
 
-        var current = await ReadLockAsync(lockName);
-        Assert.NotNull(current);
-
-        // A caller holding the old fence token (1) should detect that a newer
-        // token (2) exists, meaning its lock is no longer valid.
-        Assert.True(current.FenceToken > staleToken,
-            "A newer fence token must be present after the lock was re-acquired.");
-    }
-
-    [Fact]
-    public async Task DeletingLease_Simulates_Expiry_And_Causes_ValidationFailure()
-    {
-        string lockName = $"lock-{Guid.NewGuid():N}";
-        string ownerId = Guid.NewGuid().ToString();
-
-        await CreateLeaseAsync(ownerId);
-        await CreateLockAsync(lockName, ownerId);
-
-        // Simulate TTL expiry by deleting the lease document.
-        await _container.DeleteItemAsync<LockLease>(ownerId, new PartitionKey(ownerId));
-
-        bool leaseStillExists = await LeaseExistsAsync(ownerId);
-        Assert.False(leaseStillExists, "Lease should not exist after deletion.");
-
-        // Without a valid lease the lock can be taken over by another owner.
-        var current = await ReadLockAsync(lockName);
-        Assert.NotNull(current);
-        var newOwnerLock = await AcquireLockAsync(current, Guid.NewGuid().ToString());
-        Assert.NotEqual(ownerId, newOwnerLock.OwnerId);
+        Assert.True(token2 >= token1, "The fencing token (session LSN) must not decrease across writes.");
     }
 }
