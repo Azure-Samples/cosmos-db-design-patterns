@@ -31,6 +31,9 @@ public class SimulationService
     private int _initialized;
     private int _nameCounter;
 
+    private CosmosClient? _sweepClient;
+    private readonly CancellationTokenSource _sweepCts = new();
+
     public IReadOnlyList<string> LockNames { get; } = new[] { "resource-A", "resource-B" };
 
     public event Action? Changed;
@@ -102,20 +105,84 @@ public class SimulationService
 
         try
         {
-            using CosmosClient bootstrap = CosmosClientFactory.Create(_endpoint, _key);
-            Database db = await bootstrap.CreateDatabaseIfNotExistsAsync(_databaseName);
-            await db.CreateContainerIfNotExistsAsync(new ContainerProperties
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(12));
+            using (CosmosClient bootstrap = CosmosClientFactory.Create(_endpoint, _key))
             {
-                Id = _containerName,
-                PartitionKeyPath = "/id",
-                DefaultTimeToLive = -1
-            });
+                Database db = await bootstrap.CreateDatabaseIfNotExistsAsync(_databaseName, cancellationToken: cts.Token);
+                await db.CreateContainerIfNotExistsAsync(new ContainerProperties
+                {
+                    Id = _containerName,
+                    PartitionKeyPath = "/id",
+                    DefaultTimeToLive = -1
+                }, cancellationToken: cts.Token);
+            }
+
+            // Simulate Cosmos DB TTL locally. The vNext emulator accepts a TTL but does not
+            // actively delete expired documents, so this sweeper removes locks whose lease has
+            // expired (for example a crashed holder that stopped renewing) — exactly what real
+            // Cosmos TTL does. It uses an ETag so it never removes an actively renewed lock.
+            _sweepClient = CosmosClientFactory.Create(_endpoint, _key);
+            _ = SweepExpiredLocksAsync(_sweepCts.Token);
         }
-        catch
+        catch (Exception ex)
         {
-            // Allow retry on a later call (e.g., transient emulator warmup).
+            // Allow a retry on a later call and surface a clear, actionable message.
             Interlocked.Exchange(ref _initialized, 0);
-            throw;
+            throw new InvalidOperationException(
+                $"Could not reach Azure Cosmos DB at {_endpoint}. If you're running locally, start the emulator with 'docker compose up -d' from the repo root, then click Start all. ({ex.GetType().Name}: {ex.Message})", ex);
+        }
+    }
+
+    private sealed class SweepDoc
+    {
+        [JsonProperty("id")] public string? Id { get; set; }
+        [JsonProperty("lockLastRenewedAt")] public DateTimeOffset? LockLastRenewedAt { get; set; }
+        [JsonProperty("_ttl")] public int Ttl { get; set; }
+        [JsonProperty("_etag")] public string? ETag { get; set; }
+    }
+
+    private async Task SweepExpiredLocksAsync(CancellationToken ct)
+    {
+        Container container = _sweepClient!.GetContainer(_databaseName, _containerName);
+        while (!ct.IsCancellationRequested)
+        {
+            try
+            {
+                var now = DateTimeOffset.UtcNow;
+                using FeedIterator<SweepDoc> feed = container.GetItemQueryIterator<SweepDoc>(
+                    "SELECT c.id, c.lockLastRenewedAt, c[\"_ttl\"], c[\"_etag\"] FROM c");
+                while (feed.HasMoreResults)
+                {
+                    foreach (SweepDoc doc in await feed.ReadNextAsync(ct))
+                    {
+                        if (doc.Id is null || doc.Ttl <= 0 || doc.LockLastRenewedAt is not { } renewed) continue;
+                        if (now <= renewed.AddSeconds(doc.Ttl)) continue;
+
+                        try
+                        {
+                            await container.DeleteItemAsync<SweepDoc>(doc.Id, new PartitionKey(doc.Id),
+                                new ItemRequestOptions { IfMatchEtag = doc.ETag }, ct);
+                            LogSystem($"lock [{doc.Id}] lease expired (TTL) and was auto-released — no deadlock", LogLevel.Warn);
+                            Notify();
+                        }
+                        catch (CosmosException)
+                        {
+                            // The lock was renewed or already released between the read and delete.
+                        }
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+            catch
+            {
+                // Transient; try again next tick.
+            }
+
+            try { await Task.Delay(2000, ct); }
+            catch (OperationCanceledException) { return; }
         }
     }
 
@@ -393,6 +460,15 @@ public class SimulationService
         lock (_sync)
         {
             _log.AddFirst(new LogEntry(DateTimeOffset.UtcNow, w.Name, w.Color, message, level));
+            while (_log.Count > 120) _log.RemoveLast();
+        }
+    }
+
+    private void LogSystem(string message, LogLevel level)
+    {
+        lock (_sync)
+        {
+            _log.AddFirst(new LogEntry(DateTimeOffset.UtcNow, "TTL", "#94a3b8", message, level));
             while (_log.Count > 120) _log.RemoveLast();
         }
     }

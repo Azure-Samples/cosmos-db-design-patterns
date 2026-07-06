@@ -62,6 +62,17 @@ html, body {
 }
 .error-banner code { background: rgba(255,255,255,.08); padding: 1px 6px; border-radius: 5px; }
 
+.info-banner {
+    background: #0c2a3a; border: 1px solid #0e7490; color: #a5f3fc;
+    padding: 12px 16px; border-radius: 10px; margin-bottom: 18px;
+    display: flex; align-items: center; gap: 10px;
+}
+.info-banner::before {
+    content: ""; width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid #22d3ee; border-top-color: transparent; animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
 /* ---------- workers ---------- */
 .workers { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-bottom: 26px; }
 

@@ -27,11 +27,14 @@
         </div>
     </header>
 
-    @if (_initError != null)
+    @if (_connecting)
+    {
+        <div class="info-banner">Connecting to Azure Cosmos DB…</div>
+    }
+    else if (_initError != null)
     {
         <div class="error-banner">
-            Could not reach Azure Cosmos DB: <code>@_initError</code>. If running locally, start the emulator with
-            <code>docker compose up -d</code> from the repo root, then click <strong>Start all</strong>.
+            @_initError
         </div>
     }
 
@@ -182,16 +185,15 @@
 
 @code {
     private string? _initError;
+    private bool _connecting;
     private PeriodicTimer? _timer;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
         Sim.Changed += OnChanged;
-        try { await Sim.StartAllAsync(); _initError = null; }
-        catch (Exception ex) { _initError = ex.Message; }
+        await StartAll();
         _ = RefreshLoop();
-        await InvokeAsync(StateHasChanged);
     }
 
     private async Task RefreshLoop()
@@ -211,8 +213,22 @@
 
     private async Task StartAll()
     {
-        try { await Sim.StartAllAsync(); _initError = null; }
-        catch (Exception ex) { _initError = ex.Message; }
+        _connecting = true;
+        _initError = null;
+        await InvokeAsync(StateHasChanged);
+        try
+        {
+            await Sim.StartAllAsync();
+        }
+        catch (Exception ex)
+        {
+            _initError = ex.Message;
+        }
+        finally
+        {
+            _connecting = false;
+            await InvokeAsync(StateHasChanged);
+        }
     }
 
     private async Task Reset() => await Sim.ResetAsync();
