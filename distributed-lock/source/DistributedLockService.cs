@@ -190,6 +190,16 @@ namespace CosmosDistributedLock.Services
 
         }
 
+        /// <summary>
+        /// Renews (re-writes) the lease for the given owner, resetting its TTL. Called
+        /// periodically by the lock holder to keep the lease alive while work is in progress,
+        /// so the lease does not expire (and let another worker start) mid-work.
+        /// </summary>
+        public async Task RenewLeaseAsync(string ownerId, int leaseDuration)
+        {
+            await cosmos.CreateUpdateLeaseAsync(ownerId, leaseDuration);
+        }
+
         private async Task<bool> IsValidLeaseAsync(string ownerId)
         {
             Lease lease = await cosmos.ReadLeaseAsync(ownerId);
