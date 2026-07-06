@@ -1,0 +1,253 @@
+@page "/"
+@using Cosmos.ChangeFeedEnrichment
+@implements IAsyncDisposable
+@inject EnrichmentAppService Sim
+
+<div class="page">
+    <header>
+        <h1>Loop-Safe Change Feed Enrichment</h1>
+        <p class="tagline">
+            A change feed processor derives an <strong>identicon</strong> from each document's text and
+            writes it back onto the <em>same</em> document. Writing to the container you read from would
+            normally loop forever &mdash; here it's bounded because we hash the <strong>source</strong>:
+            the echo of our own write matches the stored hash and is skipped.
+        </p>
+    </header>
+
+    @if (_connecting)
+    {
+        <div class="info-banner"><span class="spinner"></span> Connecting to Azure Cosmos DB and starting the change feed processor&hellip;</div>
+    }
+    else if (_initError is not null)
+    {
+        <div class="error-banner"><strong>Couldn't start.</strong> @_initError</div>
+    }
+
+    <section class="stats">
+        <div class="stat writes">
+            <div class="stat-num">@Sim.Writes</div>
+            <div class="stat-label">enrichment writes</div>
+        </div>
+        <div class="stat skips">
+            <div class="stat-num">@Sim.Skips</div>
+            <div class="stat-label">skipped echoes</div>
+        </div>
+        <div class="stat-note">
+            Every real edit produces <strong>one write</strong> (enrich) then <strong>one skip</strong>
+            (the echo). The counts staying in lock-step is the loop being broken &mdash; not running away.
+        </div>
+    </section>
+
+    <div class="columns">
+        <section class="docs">
+            <h2>Documents</h2>
+            <div class="add-row">
+                <input class="add-input" @bind="_newText" @bind:event="oninput"
+                       placeholder="Type some text and add a document&hellip;" @onkeydown="OnAddKeyDown" />
+                <button class="btn primary" @onclick="AddAsync" disabled="@(_connecting || string.IsNullOrWhiteSpace(_newText))">Add</button>
+            </div>
+
+            @if (_docs.Count == 0 && !_connecting)
+            {
+                <p class="empty">No documents yet. Add one above &mdash; its identicon appears a moment later once the processor enriches it.</p>
+            }
+
+            @foreach (DocView doc in _docs)
+            {
+                <div class="card">
+                    <div class="identicon">
+                        @if (!string.IsNullOrEmpty(doc.IdenticonSvg))
+                        {
+                            @((MarkupString)doc.IdenticonSvg)
+                        }
+                        else
+                        {
+                            <div class="pending"><span class="spinner"></span></div>
+                        }
+                    </div>
+                    <div class="card-body">
+                        <div class="card-id">@doc.Id</div>
+                        <div class="edit-row">
+                            <input class="edit-input" value="@EditText(doc)" @oninput="e => SetEdit(doc.Id, e.Value?.ToString())" />
+                            <button class="btn" @onclick="() => SaveAsync(doc.Id)" disabled="@(!IsDirty(doc))">Save</button>
+                        </div>
+                        <div class="card-hash">
+                            @if (!string.IsNullOrEmpty(doc.Hash))
+                            {
+                                <span class="mono">hash @Short(doc.Hash)</span>
+                            }
+                            else
+                            {
+                                <span class="mono muted">not yet enriched</span>
+                            }
+                            <button class="link-btn" @onclick="() => DeleteAsync(doc.Id)">delete</button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </section>
+
+        <section class="timeline">
+            <h2>Change feed activity</h2>
+            <p class="hint">Newest first. Each save fires the feed twice: once for your edit (<span class="badge enriched">ENRICHED</span>), once for the write-back echo (<span class="badge skipped">SKIPPED</span>).</p>
+            <div class="log">
+                @foreach (ProcessedChange c in _timeline)
+                {
+                    <div class="log-row">
+                        <span class="badge @BadgeClass(c.Kind)">@BadgeText(c.Kind)</span>
+                        <span class="log-doc mono">@c.DocumentId</span>
+                        <span class="log-detail">@Detail(c)</span>
+                        <span class="log-time">@c.Timestamp.LocalDateTime.ToString("HH:mm:ss")</span>
+                    </div>
+                }
+                @if (_timeline.Count == 0)
+                {
+                    <div class="log-empty">No activity yet.</div>
+                }
+            </div>
+        </section>
+    </div>
+</div>
+
+@code {
+    private List<DocView> _docs = new();
+    private IReadOnlyList<ProcessedChange> _timeline = Array.Empty<ProcessedChange>();
+    private readonly Dictionary<string, string> _edits = new();
+    private string _newText = string.Empty;
+    private bool _connecting = true;
+    private string? _initError;
+    private CancellationTokenSource? _cts;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        try
+        {
+            await Sim.EnsureStartedAsync();
+            _connecting = false;
+        }
+        catch (Exception ex)
+        {
+            _connecting = false;
+            _initError = ex.Message;
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        Sim.Changed += OnChanged;
+        await RefreshAsync();
+        await InvokeAsync(StateHasChanged);
+
+        _cts = new CancellationTokenSource();
+        _ = RefreshLoopAsync(_cts.Token);
+    }
+
+    private void OnChanged() => _ = InvokeAsync(async () =>
+    {
+        await RefreshAsync();
+        StateHasChanged();
+    });
+
+    private async Task RefreshLoopAsync(CancellationToken token)
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(750));
+        while (await timer.WaitForNextTickAsync(token))
+        {
+            await RefreshAsync();
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task RefreshAsync()
+    {
+        try
+        {
+            _docs = await Sim.GetDocumentsAsync();
+            _timeline = Sim.Timeline();
+            foreach (DocView d in _docs)
+            {
+                _edits.TryAdd(d.Id, d.Text);
+            }
+        }
+        catch
+        {
+            // Transient read error during refresh; try again on the next tick.
+        }
+    }
+
+    private string EditText(DocView doc) => _edits.TryGetValue(doc.Id, out string? v) ? v : doc.Text;
+    private void SetEdit(string id, string? value) => _edits[id] = value ?? string.Empty;
+    private bool IsDirty(DocView doc) => EditText(doc) != doc.Text && !_connecting;
+
+    private async Task AddAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newText))
+        {
+            return;
+        }
+
+        string text = _newText;
+        _newText = string.Empty;
+        await Sim.AddDocumentAsync(text);
+        await RefreshAsync();
+    }
+
+    private async Task OnAddKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await AddAsync();
+        }
+    }
+
+    private async Task SaveAsync(string id)
+    {
+        await Sim.SaveSourceAsync(id, EditText(_docs.First(d => d.Id == id)));
+    }
+
+    private async Task DeleteAsync(string id)
+    {
+        _edits.Remove(id);
+        await Sim.DeleteDocumentAsync(id);
+        await RefreshAsync();
+    }
+
+    private static string Short(string? hash) => string.IsNullOrEmpty(hash) ? "" : hash[..Math.Min(8, hash.Length)];
+
+    private static string BadgeClass(EnrichmentKind k) => k switch
+    {
+        EnrichmentKind.Enriched => "enriched",
+        EnrichmentKind.Skipped => "skipped",
+        _ => "superseded",
+    };
+
+    private static string BadgeText(EnrichmentKind k) => k switch
+    {
+        EnrichmentKind.Enriched => "ENRICHED",
+        EnrichmentKind.Skipped => "SKIPPED",
+        _ => "SUPERSEDED",
+    };
+
+    private static string Detail(ProcessedChange c) => c.Kind switch
+    {
+        EnrichmentKind.Enriched => $"source hash {ShortOr(c.OldHash, "none")} → {Short(c.NewHash)}",
+        EnrichmentKind.Skipped => $"hash unchanged ({Short(c.NewHash)}) — echo of our write, no re-enrichment",
+        _ => "superseded by a newer edit",
+    };
+
+    private static string ShortOr(string? hash, string fallback) => string.IsNullOrEmpty(hash) ? fallback : Short(hash);
+
+    public async ValueTask DisposeAsync()
+    {
+        Sim.Changed -= OnChanged;
+        if (_cts is not null)
+        {
+            await _cts.CancelAsync();
+            _cts.Dispose();
+        }
+    }
+}

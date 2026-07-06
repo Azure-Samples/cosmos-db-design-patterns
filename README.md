@@ -70,6 +70,10 @@ Discover how to manage document versioning effectively within Azure Cosmos DB. T
 
 Uncover the power of event sourcing for building applications that maintain a history of changes as a sequence of events. Explore the `event-sourcing` folder for in-depth instructions. Read more about this design pattern in this [blog post](https://aka.ms/cosmosdbdesignpatterns/event-sourcing).
 
+### [Loop-Safe Change Feed Enrichment](/loop-safe-change-feed/)
+
+Learn how to enrich documents **in place** from the change feed — deriving a value and writing it back onto the same document — without creating an infinite loop, by hashing the source so the echo of your own write is skipped. See the `loop-safe-change-feed` folder for a Change Feed Processor implementation and an interactive web front end.
+
 ### [Materialized View](/materialized-view/)
 
 Learn how to create and manage materialized views to efficiently retrieve precomputed data from Azure Cosmos DB. Refer to the `materialized-view` folder for implementation details. Read more about this design pattern in this [blog post](https://aka.ms/cosmosdbdesignpatterns/materialized-view).  
