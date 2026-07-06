@@ -82,6 +82,10 @@ Learn how to enrich documents **in place** from the change feed — deriving a v
 
 Learn how to create and manage materialized views to efficiently retrieve precomputed data from Azure Cosmos DB. Refer to the `materialized-view` folder for implementation details. Read more about this design pattern in this [blog post](https://aka.ms/cosmosdbdesignpatterns/materialized-view).  
 
+### [Patch API](/patch-api/)
+
+Use the Patch API (partial document update) to change a single field without reading and rewriting the whole document — fewer request units, lower latency, and no lost updates when different services update different fields. Refer to the `patch-api` folder for an interactive web front end, an RU comparison, and a concurrency race.
+
 ### [Preallocation](/preallocation/)
 
 Explore the `preallocation` pattern to understand how to preallocate resources, such as document IDs, to optimize performance and resource utilization. Read more about this design pattern in this [blog post](https://aka.ms/cosmosdbdesignpatterns/preallocation).  
