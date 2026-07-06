@@ -53,9 +53,24 @@ static class ProgramExtensions
             }
             else
             {
+                string endpoint = cosmosOptions.Value?.CosmosUri ?? string.Empty;
+                string? key = cosmosOptions.Value?.CosmosKey;
+
+                // Default to the local Azure Cosmos DB emulator when nothing is configured, so the
+                // site runs with zero setup once the emulator is started (`docker compose up` from
+                // the repo root). In Azure, azd sets CosmosUri to the provisioned account.
+                if (string.IsNullOrWhiteSpace(endpoint))
+                {
+                    endpoint = "https://localhost:8081";
+                    if (string.IsNullOrEmpty(key))
+                    {
+                        key = "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==";
+                    }
+                }
+
                 return new CosmosDb(
-                    cosmosUri: cosmosOptions.Value?.CosmosUri ?? string.Empty,
-                    cosmosKey: cosmosOptions.Value?.CosmosKey,
+                    cosmosUri: endpoint,
+                    cosmosKey: key,
                     database: cosmosOptions.Value?.Database ?? string.Empty,
                     currentOrderContainer: cosmosOptions.Value?.CurrentOrderContainer ?? string.Empty,
                     historicalOrderContainer: cosmosOptions.Value?.HistoricalOrderContainer ?? string.Empty,
