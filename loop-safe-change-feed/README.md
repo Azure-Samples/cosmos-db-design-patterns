@@ -5,12 +5,12 @@ languages:
 products:
 - azure-cosmos-db
 name: |
-  Azure Cosmos DB design pattern: Loop-Safe Change Feed Enrichment
+  Azure Cosmos DB design pattern: Loop-Safe Change Feed
 urlFragment: loop-safe-change-feed
 description: Enrich documents in place from the Azure Cosmos DB change feed without creating an infinite loop, by hashing the source so the echo of your own write is skipped.
 ---
 
-# Azure Cosmos DB design pattern: Loop-Safe Change Feed Enrichment
+# Azure Cosmos DB design pattern: Loop-Safe Change Feed
 
 A very common need is to **derive** something from a document and store the result **on the same document** — a search-normalized field, a translation, a sentiment score, an embedding vector, or (in this sample) a small **identicon** image. The Azure Cosmos DB [change feed](https://learn.microsoft.com/azure/cosmos-db/nosql/change-feed-processor) is the natural way to do this: it hands you every create and update, you compute the derived value, and you write it back.
 
