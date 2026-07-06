@@ -1,0 +1,132 @@
+:root {
+    --bg: #0f172a;
+    --panel: #1e293b;
+    --panel-2: #273449;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --accent: #38bdf8;
+    --green: #22c55e;
+    --border: #334155;
+}
+
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    margin: 0;
+}
+
+/* Top navigation */
+.app-nav {
+    background: linear-gradient(90deg, #0b3a4a, #10243a);
+    border-bottom: 1px solid var(--border);
+}
+.nav-inner {
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.nav-inner .brand { font-size: 18px; font-weight: 600; }
+.nav-inner svg { color: var(--accent); }
+
+.page { max-width: 1160px; margin: 0 auto; padding: 24px; }
+
+.page-head { margin-bottom: 20px; }
+.page-head h1 { margin: 0 0 6px; font-size: 26px; }
+.tagline { margin: 0; color: var(--muted); max-width: 860px; line-height: 1.55; }
+.tagline strong { color: var(--text); }
+
+.page-head.with-back { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+
+/* Cards / panels */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 820px) { .card-grid { grid-template-columns: 1fr; } }
+
+.panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+}
+.panel-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+.panel-hint { color: var(--muted); font-size: 13px; margin: -8px 0 14px; line-height: 1.5; }
+
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+.field input, .counter-id-chip input {
+    width: 100%;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-size: 14px;
+}
+.field input:focus { outline: none; border-color: var(--accent); }
+
+/* Buttons */
+.btn {
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 16px;
+    cursor: pointer;
+    font-size: 14px;
+    text-decoration: none;
+    display: inline-block;
+}
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: #06283a; border-color: var(--accent); font-weight: 600; }
+.btn.ghost { background: transparent; }
+
+.error { color: #fca5a5; font-size: 13px; margin-left: 10px; }
+
+/* Chart page */
+.counter-id-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 6px 10px;
+}
+.counter-id-chip span { color: var(--muted); font-size: 13px; }
+.counter-id-chip input { width: 320px; max-width: 46vw; font-family: 'Cascadia Code', 'Consolas', monospace; font-size: 12px; }
+
+.stat-tiles { display: flex; gap: 16px; margin-bottom: 18px; flex-wrap: wrap; }
+.tile {
+    flex: 1;
+    min-width: 150px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 20px;
+    text-align: center;
+}
+.tile-num { font-size: 34px; font-weight: 700; line-height: 1; }
+.tile.accent .tile-num { color: var(--accent); }
+.tile-label { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-top: 6px; }
+
+.controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-bottom: 18px;
+    color: var(--muted);
+    flex-wrap: wrap;
+}
+.controls input { width: 70px; background: var(--panel-2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 8px 10px; }
+
+/* The chart renders dark-on-light, so give it a light card for contrast. */
+.chart-card { background: #ffffff; border-radius: 14px; padding: 16px; }
+
+#blazor-error-ui { background: #7f1d1d; color: #fff; }

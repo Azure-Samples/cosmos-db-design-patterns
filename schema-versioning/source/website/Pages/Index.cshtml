@@ -1,47 +1,75 @@
 ﻿@page
 @model IndexModel
-@using Versioning
 @using Versioning.Models
 @{
-    ViewData["Title"] = "Home page";
+    ViewData["Title"] = "Schema Versioning";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Carts Demo</h1>        
-    @foreach (Cart cart in Model.Carts){
-        <section data-id="@cart.Id">
-            <p><strong>Customer </strong>@cart.CustomerId</p>
-            <table>
-                <thead>
-                    <tr>
-                        @if(cart.SchemaVersion != null){
-                            <th>Schema Version</th>
-                        }                        
-                        <th>Product Name</th>
-                        <th>Quantity</th>
-                        @if (cart.HasSpecialOrders()){
-                            <th>Special Order Notes</th>
-                        }
-                    </tr>
-                </thead>
-            @foreach (var item in cart.Items!)
-            {
-                <tr>
-                    @if(cart.SchemaVersion != null){
-                        <td>@cart.SchemaVersion</td>
-                    }
-                    <td>@item.ProductName</td>
-                    <td>@item.Quantity</td>
-                    @if (cart.HasSpecialOrders()){
-                        <td>
-                        @if (item.IsSpecialOrder){
-                            @item.SpecialOrderNotes
-                        }
-                        </td>
-                    }
-                </tr>
-            }
-            </table>
-        </section>
-    }        
+<div class="intro">
+    <h1>Schema Versioning</h1>
+    <p>
+        As an application evolves, its documents do too. Here shopping carts are stored with a
+        <strong>schema version</strong> stamped on each document, so <strong>old and new shapes
+        coexist</strong> in the same container. The app reads the version and renders each cart
+        accordingly &mdash; no big-bang migration required.
+    </p>
+    <div class="legend">
+        <span><span class="schema-badge v1">Schema v1</span> original carts (product &amp; quantity)</span>
+        <span><span class="schema-badge v2">Schema v2</span> adds special-order items with notes</span>
+    </div>
 </div>
+
+@if (Model.Carts.Count == 0)
+{
+    <p class="empty">No carts found. Run the <code>data-generator</code> to create some, then refresh.</p>
+}
+else
+{
+    <div class="cart-grid">
+        @foreach (Cart cart in Model.Carts)
+        {
+            int version = cart.SchemaVersion ?? 1;
+            bool hasSpecial = cart.Items is not null && cart.HasSpecialOrders();
+            <div class="cart-card">
+                <div class="cart-head">
+                    <div class="cart-customer">
+                        Customer @cart.CustomerId
+                        <small>@cart.Id</small>
+                    </div>
+                    <span class="schema-badge v@(version)">Schema v@(version)</span>
+                </div>
+                <table class="item-table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Qty</th>
+                            @if (hasSpecial)
+                            {
+                                <th>Special order</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in cart.Items!)
+                        {
+                            <tr class="@(item.IsSpecialOrder ? "special" : null)">
+                                <td>
+                                    @item.ProductName
+                                    @if (item.IsSpecialOrder)
+                                    {
+                                        <span class="special-tag">SPECIAL</span>
+                                    }
+                                </td>
+                                <td class="qty">@item.Quantity</td>
+                                @if (hasSpecial)
+                                {
+                                    <td class="special-note">@(item.IsSpecialOrder ? item.SpecialOrderNotes : "")</td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+}

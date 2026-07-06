@@ -13,52 +13,42 @@
 @inject DistributedCounterManagementService dc_mgmtService
 @inject NavigationManager _navigationManager
 
-<div class="container">
-    <div class="row">
-        <div class="col shadow-sm p-3 mb-5 bg-white rounded mx-4">
-            <div class="bg-dark data-bs-theme">
-                <div class="text-white p-2"> Create New Distributed Counter</div>
+<div class="page">
+    <div class="page-head">
+        <h1>Distributed Counter</h1>
+        <p class="tagline">
+            A single logical counter is spread across many <strong>physical counter</strong> documents so
+            writes don't contend on one hot item. Create a counter, then <strong>split</strong> or
+            <strong>merge</strong> the physical counters and watch the values update live.
+        </p>
+    </div>
+
+    <div class="card-grid">
+        <div class="panel">
+            <div class="panel-title">Create a new distributed counter</div>
+            <div class="panel-hint">Choose a starting value and how many physical counters to spread it across.</div>
+            <div class="field">
+                <label>Counter initial value</label>
+                <input type="text" @bind="@CounterInitialValue" @oninput="@((e) => { long.TryParse((string)e.Value,out CounterInitialValue);})" />
             </div>
-            <div class="p-2">
-                <table style="border 0px" >                   
-                    <tr>
-                        <td class="p-2"><b>Counter Initial Value</b></td>
-                        <td class="p-2"><input type="text" @bind="@CounterInitialValue" @oninput="@((e) => { long.TryParse((string)e.Value,out CounterInitialValue);})" /></td>
-                    </tr>
-                    <tr>
-                        <td class="p-2"><b>Initial Counters</b></td>
-                        <td class="p-2"><input type="text" @bind="@InitialCounters" @oninput="@((e) => { int.TryParse((string)e.Value,out InitialCounters);})" /></td>
-                    </tr>
-                </table>
+            <div class="field">
+                <label>Initial physical counters</label>
+                <input type="text" @bind="@InitialCounters" @oninput="@((e) => { int.TryParse((string)e.Value,out InitialCounters);})" />
             </div>
-            <div class="p-2">
-                <button class="btn btn-primary" @onclick="CreateCounter">Create Counter</button>
-            </div>
-            
+            <button class="btn primary" @onclick="CreateCounter">Create counter</button>
         </div>
 
-        <div class="col shadow-sm p-3 mb-5 bg-white rounded mx-4">
-            <div class="bg-dark data-bs-theme">
-                <div class="text-white p-2"> Retrieve Existing Distributed Counter</div>
+        <div class="panel">
+            <div class="panel-title">Open an existing counter</div>
+            <div class="panel-hint">Paste a counter ID from a previous run to reopen its live view.</div>
+            <div class="field">
+                <label>Counter ID</label>
+                <input type="text" @bind="@CounterID" @oninput="@((e) => { CounterID=(string)e.Value;})" />
             </div>
-            <div class="p-2">
-                <table style="border 0px">
-                    <tr>
-                        <td class="p-2"><b> Counter ID</b></td>
-                        <td class="p-2"><input type="text" @bind="@CounterID" @oninput="@((e) => { CounterID=(string)e.Value;})" /></td>
-                    </tr>
-                    <tr>
-                        <td colspan="2" class="p-2">&nbsp;</td>
-                    </tr>
-                </table>
-            </div>
-            <div class="p-2">
-                <button class="btn btn-primary" @onclick="GetCounter">Get Counter</button>
-                <span class="ps-2 text-danger"> @errorText</span>
-            </div>
-
+            <button class="btn" @onclick="GetCounter">Open counter</button>
+            <span class="error"> @errorText</span>
         </div>
-    </div>   
+    </div>
 </div>
 
 @code

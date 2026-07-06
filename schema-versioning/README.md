@@ -21,6 +21,12 @@ This sample demonstrates:
 - ✅ Using a data generator to generate data with an original schema, and data with a schema-version.
 - ✅ Running a website to show data generated in Azure Cosmos DB.
 
+## Web front end
+
+The website reads each cart's `SchemaVersion` and renders it accordingly, so original (v1) and newer (v2, with special-order items) documents **coexist in the same container**:
+
+![Schema Versioning web front end showing v1 and v2 shopping carts side by side](images/schema-versioning-web.png)
+
 ## Common scenario
 
 A major benefit of NoSQL databases is its ability to handle changes to schema. This is especially helpful in cases where an application has gone into production and it is necessary to adapt to changing data requirements. NoSQL databases like Azure Cosmos DB, not only make it possible to adapt to these changes but also to enable versioning of these changes by adding an additional property to track which version of the changes the data represents. This version can be used to handle and process the changing data at run-time.

@@ -14,54 +14,42 @@
 
 @inject DistributedCounterManagementService dc_mgmtService
 
-<div class="container">
-    <div class="row">
-        <div class="col shadow-sm p-3 mb-5 bg-white rounded mx-4">
-            <a href="#" class="btn btn-primary-outline mb-1">
-                <i class="bi bi-caret-left-fill"></i>
-                Back
-            </a>
-            <div class="bg-dark data-bs-theme">
-                <div class="text-white p-2 d-flex flex-row justify-content-between align-items-center">
-                    <div class="text-nowrap pe-3">
-                        Distributed Counter(s) for 
-                    </div>
-                    <div class="input-group">
-                        <input id="counter_id" class="form-control" readonly value="@PrimaryCounterID" />
-                        <button id="copy_counter_btn" class="btn btn-outline-light" type="button" data-clipboard-target="#counter_id" data-clipboard-action="copy">
-                            <i class="bi bi-clipboard2-fill"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <div class="p-2">
-                <table style="border 0px">
-                    <tr>
-                        <td class="p-2"><b>In Display</b></td>
-                        <td class="p-2">: @CounterCount</td>
-                    </tr>
-                     <tr>
-                        <td class="p-2"><b>Active</b></td>
-                        <td class="p-2">: @ActiveCounterCount</td>
-                    </tr>
-                    <tr>
-                        <td class="p-2"><b>Aggregated Value</b></td>
-                        <td class="p-2">: @CounterAggrThiSec</td>
-                    </tr>
-                </table>            
-            </div>
-            <br />
-            <button class="btn btn-primary" @onclick="CounterPlus">Split</button> or
-            <button class="btn btn-primary" @onclick="CounterMinus">Merge</button> &nbsp;
-            <input type="text" @bind="@countersToSplitOrMerge" @oninput="@((e) => { int.TryParse((string)e.Value,out countersToSplitOrMerge);})" width="50px" />  &nbsp; Counters.
+<div class="page">
+    <div class="page-head with-back">
+        <a href="/" class="btn ghost">← Back</a>
+        <div class="counter-id-chip">
+            <span>Counter</span>
+            <input id="counter_id" readonly value="@PrimaryCounterID" />
+            <button id="copy_counter_btn" class="btn" type="button" data-clipboard-target="#counter_id" data-clipboard-action="copy">
+                <i class="bi bi-clipboard2-fill"></i> Copy
+            </button>
         </div>
-        
     </div>
-    <div class="row">
-        <div class="col">
-            
-            <ChartJsLineChart @ref="_lineChartJs" Config="@_config" />            
+
+    <div class="stat-tiles">
+        <div class="tile">
+            <div class="tile-num">@CounterCount</div>
+            <div class="tile-label">in display</div>
         </div>
+        <div class="tile">
+            <div class="tile-num">@ActiveCounterCount</div>
+            <div class="tile-label">active</div>
+        </div>
+        <div class="tile accent">
+            <div class="tile-num">@CounterAggrThiSec</div>
+            <div class="tile-label">aggregated value</div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="btn primary" @onclick="CounterPlus">Split</button>
+        <button class="btn" @onclick="CounterMinus">Merge</button>
+        <input type="text" @bind="@countersToSplitOrMerge" @oninput="@((e) => { int.TryParse((string)e.Value,out countersToSplitOrMerge);})" />
+        <span>physical counters at a time</span>
+    </div>
+
+    <div class="chart-card">
+        <ChartJsLineChart @ref="_lineChartJs" Config="@_config" />
     </div>
 </div>
 

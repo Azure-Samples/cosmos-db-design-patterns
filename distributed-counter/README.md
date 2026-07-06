@@ -21,6 +21,12 @@ This sample demonstrates:
 - ✅ Calculation of an aggregated value from the distributed counters at any given time.
 - ✅ Modifying the distributed counters randomly using a large number of worker threads.
 
+## Web front end
+
+The included Blazor visualizer lets you create a distributed counter, then **split** and **merge** the physical counters and watch their values update live:
+
+![Distributed Counter web front end showing live counter charts](images/dc-chart.png)
+
 ## Common scenario
 
 Consider a high-traffic website that tracks the inventory of a product in real-time for customers and internal services. In this high concurrency environment, updating a single document continuously causes significant contention.
