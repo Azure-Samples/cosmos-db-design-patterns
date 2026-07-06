@@ -1,0 +1,276 @@
+@page "/"
+@implements IDisposable
+@inject SimulationService Sim
+
+<div class="app">
+    <header class="hero">
+        <div class="hero-title">
+            <span class="lock-emoji">🔒</span>
+            <div>
+                <h1>Azure Cosmos DB · Distributed Lock</h1>
+                <p>A live, interactive playground. Every <em>acquire</em>, <em>renewal</em>, and <em>release</em> below is a <strong>real</strong> operation against Azure Cosmos DB.</p>
+            </div>
+        </div>
+        <div class="toolbar">
+            <button class="btn primary" @onclick="StartAll">▶ Start all</button>
+            <button class="btn" @onclick="() => Sim.StopAll()">⏸ Stop all</button>
+            <button class="btn" @onclick="Reset">↺ Reset</button>
+            <button class="btn" @onclick="() => Sim.AddWorker()">＋ Worker</button>
+            <div class="slider-inline">
+                <label>Lock TTL <strong>@Sim.TtlSeconds s</strong></label>
+                <input type="range" min="2" max="20" value="@Sim.TtlSeconds" @onchange="OnTtl" />
+            </div>
+            <div class="slider-inline">
+                <label>Retry pace <strong>@Sim.Pace.ToString("0.0")×</strong></label>
+                <input type="range" min="0.5" max="3" step="0.25" value="@Sim.Pace" @onchange="OnPace" />
+            </div>
+        </div>
+    </header>
+
+    @if (_connecting)
+    {
+        <div class="info-banner">Connecting to Azure Cosmos DB…</div>
+    }
+    else if (_initError != null)
+    {
+        <div class="error-banner">
+            @_initError
+        </div>
+    }
+
+    <section class="workers">
+        @foreach (var w in Sim.Workers)
+        {
+            <div class="worker-card @StateClass(w)" style="--accent:@w.Color">
+                <div class="worker-head">
+                    <span class="dot" style="background:@w.Color"></span>
+                    <span class="worker-name">@w.Name</span>
+                    <span class="state-badge @StateClass(w)">@StateLabel(w)</span>
+                </div>
+
+                @if (w.State == WorkerState.Holding)
+                {
+                    <div class="hold-info">
+                        <div class="fence">
+                            fencing token <strong>@w.FencingToken</strong>
+                            @if (w.RenewalEnabled)
+                            {
+                                <span class="heartbeat" title="auto-renewing lease">💓</span>
+                            }
+                        </div>
+                        <div class="lease-bar @(w.LockExpiredWhileWorking ? "expired" : "")">
+                            <div class="lease-fill" style="width:@(((w.LockExpiredWhileWorking ? 0 : w.LeaseFraction) * 100).ToString("0"))%"></div>
+                            <span class="lease-text">
+                                @(w.LockExpiredWhileWorking ? "LEASE EXPIRED — still working!" : $"lease {w.LeaseSecondsRemaining:0.0}s · renewals {w.RenewCount}")
+                            </span>
+                        </div>
+                    </div>
+                }
+                else if (!string.IsNullOrEmpty(w.Status))
+                {
+                    <div class="worker-status">@w.Status</div>
+                }
+
+                <div class="controls">
+                    <label class="ctl">
+                        <span>Work <strong>@w.WorkDurationSeconds s</strong> @(w.WorkDurationSeconds > Sim.TtlSeconds ? "· longer than TTL" : "")</span>
+                        <input type="range" min="1" max="20" value="@w.WorkDurationSeconds" @onchange="e => Sim.SetWorkDuration(w.Id, ParseInt(e))" />
+                    </label>
+
+                    <label class="switch">
+                        <input type="checkbox" checked="@w.RenewalEnabled" @onchange="e => Sim.SetRenewal(w.Id, (bool)e.Value!)" />
+                        <span>Auto-renew (keep-alive)</span>
+                    </label>
+
+                    <div class="ctl-row">
+                        <label class="mini">
+                            Mode
+                            <select value="@ModeVal(w)" @onchange="e => Sim.SetWaitMode(w.Id, IsWait(e))">
+                                <option value="try">Try (fail fast)</option>
+                                <option value="wait">Wait (timeout)</option>
+                            </select>
+                        </label>
+                        <label class="mini">
+                            Lock
+                            <select value="@w.LockName" @onchange="e => Sim.SetLockName(w.Id, StringVal(e))">
+                                @foreach (var n in Sim.LockNames)
+                                {
+                                    <option value="@n">@n</option>
+                                }
+                            </select>
+                        </label>
+                    </div>
+
+                    @if (w.WaitMode)
+                    {
+                        <label class="ctl">
+                            <span>Wait timeout <strong>@w.WaitTimeoutSeconds s</strong></span>
+                            <input type="range" min="1" max="20" value="@w.WaitTimeoutSeconds" @onchange="e => Sim.SetWaitTimeout(w.Id, ParseInt(e))" />
+                        </label>
+                    }
+
+                    <div class="btn-row">
+                        @if (w.Running)
+                        {
+                            <button class="btn tiny" @onclick="() => Sim.StopWorker(w.Id)">Stop</button>
+                        }
+                        else
+                        {
+                            <button class="btn tiny primary" @onclick="() => Sim.StartWorker(w.Id)">Start</button>
+                        }
+                        <button class="btn tiny danger" @onclick="() => Sim.CrashWorker(w.Id)" disabled="@(w.State != WorkerState.Holding)">💥 Crash</button>
+                        <button class="btn tiny ghost" @onclick="() => Sim.RemoveWorker(w.Id)" title="remove worker">✕</button>
+                    </div>
+                </div>
+            </div>
+        }
+    </section>
+
+    <section class="lower">
+        <div class="resources">
+            <h2>Protected resources <span class="hint">only the current holder's fencing token is accepted</span></h2>
+            @foreach (var r in Sim.ActiveResources)
+            {
+                <div class="resource-card">
+                    <div class="resource-head">
+                        <span class="res-name">@r.Name</span>
+                        <span class="res-holder" style="color:@(r.LastWriterColor ?? "#94a3b8")">
+                            last write: @(r.LastWriter ?? "—") · token @r.LastToken
+                        </span>
+                    </div>
+                    <div class="res-stats">
+                        <div class="stat ok"><strong>@r.WriteCount</strong><span>accepted</span></div>
+                        <div class="stat bad @(r.RejectedCount > 0 ? "flash" : "")"><strong>@r.RejectedCount</strong><span>rejected (stale)</span></div>
+                        <div class="stat"><strong>@r.HighestTokenSeen</strong><span>highest token</span></div>
+                    </div>
+                    @if (r.RejectedCount > 0 && r.LastRejectedWriter != null)
+                    {
+                        <div class="reject-note" style="border-color:@r.LastRejectedColor">
+                            <strong style="color:@r.LastRejectedColor">@r.LastRejectedWriter</strong>'s write with stale token
+                            <strong>@r.LastRejectedToken</strong> was rejected — its lock had expired and a newer holder took over.
+                        </div>
+                    }
+                    <pre class="lock-doc">@Sim.CurrentLockDocumentJson(r.Name)</pre>
+                </div>
+            }
+        </div>
+
+        <div class="timeline">
+            <h2>Event timeline</h2>
+            <div class="log">
+                @foreach (var e in Sim.RecentLog)
+                {
+                    <div class="log-row @LevelClass(e.Level)">
+                        <span class="log-time">@e.TimeUtc.ToLocalTime().ToString("HH:mm:ss")</span>
+                        <span class="log-worker" style="color:@e.Color">@e.Worker</span>
+                        <span class="log-msg">@e.Message</span>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+
+    <section class="explain">
+        <h2>Things to try</h2>
+        <ul>
+            <li><strong>Mutual exclusion:</strong> only one worker holds a lock at a time — the others show “could not acquire”.</li>
+            <li><strong>Renewal:</strong> drag <em>Work</em> longer than the TTL. With <em>Auto-renew</em> on, the holder keeps the lock (the lease bar keeps refilling).</li>
+            <li><strong>Break it (why fencing tokens matter):</strong> turn <em>Auto-renew</em> OFF and set <em>Work</em> &gt; TTL. The lease expires mid-work, another worker acquires, and the stale holder's writes are <em>rejected</em> by the fencing token.</li>
+            <li><strong>Crash a holder:</strong> click 💥 while it holds the lock — it stops without releasing, and the lock auto-releases via TTL (no deadlock).</li>
+            <li><strong>Wait vs Try:</strong> switch a worker to “Wait (timeout)” to watch it queue and then give up.</li>
+            <li><strong>Granularity:</strong> point some workers at <code>resource-B</code> — different lock names never block each other.</li>
+        </ul>
+    </section>
+</div>
+
+@code {
+    private string? _initError;
+    private bool _connecting;
+    private PeriodicTimer? _timer;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        Sim.Changed += OnChanged;
+        await StartAll();
+        _ = RefreshLoop();
+    }
+
+    private async Task RefreshLoop()
+    {
+        _timer = new PeriodicTimer(TimeSpan.FromMilliseconds(200));
+        try
+        {
+            while (await _timer.WaitForNextTickAsync())
+            {
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch { }
+    }
+
+    private void OnChanged() => _ = InvokeAsync(StateHasChanged);
+
+    private async Task StartAll()
+    {
+        _connecting = true;
+        _initError = null;
+        await InvokeAsync(StateHasChanged);
+        try
+        {
+            await Sim.StartAllAsync();
+        }
+        catch (Exception ex)
+        {
+            _initError = ex.Message;
+        }
+        finally
+        {
+            _connecting = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task Reset() => await Sim.ResetAsync();
+
+    private void OnTtl(ChangeEventArgs e) => Sim.SetTtl(ParseInt(e));
+    private void OnPace(ChangeEventArgs e) => Sim.SetPace(ParseDouble(e));
+
+    private static int ParseInt(ChangeEventArgs e) => int.TryParse(e.Value?.ToString(), out var v) ? v : 0;
+    private static double ParseDouble(ChangeEventArgs e) => double.TryParse(e.Value?.ToString(), out var v) ? v : 1.0;
+    private static string StringVal(ChangeEventArgs e) => e.Value?.ToString() ?? "";
+    private static bool IsWait(ChangeEventArgs e) => e.Value?.ToString() == "wait";
+    private static string ModeVal(Worker w) => w.WaitMode ? "wait" : "try";
+
+    private static string StateClass(Worker w) => w.State switch
+    {
+        WorkerState.Holding => w.LockExpiredWhileWorking ? "state-danger" : "state-holding",
+        WorkerState.Trying => "state-trying",
+        WorkerState.Waiting => "state-waiting",
+        WorkerState.Crashed => "state-crashed",
+        _ => "state-idle"
+    };
+
+    private static string StateLabel(Worker w) => w.State switch
+    {
+        WorkerState.Holding => w.LockExpiredWhileWorking ? "HOLDING · lease lost!" : "HOLDING",
+        WorkerState.Trying => "trying…",
+        WorkerState.Waiting => "waiting…",
+        WorkerState.Crashed => "CRASHED",
+        _ => w.Running ? "idle" : "stopped"
+    };
+
+    private static string LevelClass(LogLevel l) => l switch
+    {
+        LogLevel.Success => "lvl-ok",
+        LogLevel.Warn => "lvl-warn",
+        LogLevel.Error => "lvl-err",
+        _ => "lvl-info"
+    };
+
+    public void Dispose()
+    {
+        Sim.Changed -= OnChanged;
+        _timer?.Dispose();
+    }
+}

@@ -3,6 +3,11 @@
 name: cosmos-db-design-patterns-distributed-lock
 metadata:
   template: cosmos-db-design-patterns-distributed-lock
-# This is a console sample: azd only provisions the (keyless, serverless) Cosmos DB
-# account and grants the deploying user data-plane access. There is no service to
-# deploy; run the console app locally with `dotnet run` after `azd provision`.
+# azd deploys the interactive web front end to App Service. The console app under
+# source/ConsoleApp is an optional local driver you can run with `dotnet run` against the
+# same provisioned (keyless) Cosmos account.
+services:
+  web:
+    project: ./source/Website
+    language: dotnet
+    host: appservice

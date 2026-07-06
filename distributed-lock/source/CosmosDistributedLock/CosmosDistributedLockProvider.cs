@@ -3,10 +3,10 @@ namespace Cosmos.DistributedLock
     public interface ICosmosDistributedLockProvider
     {
         /// <summary>Tries to acquire the lock once and returns immediately.</summary>
-        Task<CosmosDistributedLock> TryAcquireLockAsync(string name);
+        Task<CosmosDistributedLock> TryAcquireLockAsync(string name, bool autoRenew = true, int? ttlSeconds = null);
 
         /// <summary>Waits (indefinitely, or up to <paramref name="timeout"/>) for the lock.</summary>
-        Task<CosmosDistributedLock> AcquireLockAsync(string name, TimeSpan? timeout = default);
+        Task<CosmosDistributedLock> AcquireLockAsync(string name, TimeSpan? timeout = default, bool autoRenew = true, int? ttlSeconds = null);
     }
 
     internal class CosmosDistributedLockProvider : ICosmosDistributedLockProvider
@@ -26,18 +26,18 @@ namespace Cosmos.DistributedLock
             this.cosmosLockClient = cosmosLockClient;
         }
 
-        public async Task<CosmosDistributedLock> AcquireLockAsync(string name, TimeSpan? timeout = null)
+        public async Task<CosmosDistributedLock> AcquireLockAsync(string name, TimeSpan? timeout = null, bool autoRenew = true, int? ttlSeconds = null)
         {
             using var cancellationTokenSource = timeout.HasValue ? new CancellationTokenSource(timeout.Value) : new CancellationTokenSource();
-            return await ContinuallyTryAcquireLockAsync(name, cancellationTokenSource.Token).ConfigureAwait(false);
+            return await ContinuallyTryAcquireLockAsync(name, autoRenew, ttlSeconds, cancellationTokenSource.Token).ConfigureAwait(false);
         }
 
-        public async Task<CosmosDistributedLock> TryAcquireLockAsync(string name)
+        public async Task<CosmosDistributedLock> TryAcquireLockAsync(string name, bool autoRenew = true, int? ttlSeconds = null)
         {
-            var item = await cosmosLockClient.TryAcquireLockAsync(name).ConfigureAwait(false);
+            var item = await cosmosLockClient.TryAcquireLockAsync(name, ttlSeconds).ConfigureAwait(false);
             if (item != null)
             {
-                return CosmosDistributedLock.CreateAcquiredLock(cosmosLockClient, item);
+                return CosmosDistributedLock.CreateAcquiredLock(cosmosLockClient, item, autoRenew);
             }
             else
             {
@@ -45,11 +45,11 @@ namespace Cosmos.DistributedLock
             }
         }
 
-        private async Task<CosmosDistributedLock> ContinuallyTryAcquireLockAsync(string name, CancellationToken cancellationToken)
+        private async Task<CosmosDistributedLock> ContinuallyTryAcquireLockAsync(string name, bool autoRenew, int? ttlSeconds, CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                var @lock = await TryAcquireLockAsync(name).ConfigureAwait(false);
+                var @lock = await TryAcquireLockAsync(name, autoRenew, ttlSeconds).ConfigureAwait(false);
                 if (@lock.IsAcquired)
                 {
                     return @lock;

@@ -65,7 +65,10 @@ using (var @lock = await lockProvider.TryAcquireLockAsync("my-resource"))
 using var waited = await lockProvider.AcquireLockAsync("my-resource", TimeSpan.FromSeconds(2));
 ```
 
-The included console app (`source/ConsoleApp`) starts three workers that all compete for the same lock to show that only one holds it at a time, that the holder keeps the lock while its work runs longer than the TTL, and that each acquisition prints a higher fencing token.
+This sample ships two ways to explore the pattern:
+
+- An **interactive web front end** (`source/Website`) — a visual playground where several on-screen "workers" compete for **real** Cosmos DB locks. Adjust how long work takes, toggle the keep-alive renewal, crash a holder, and watch a **fencing token** reject a stale writer. This is the best way to *see* how the lock behaves and why it's useful.
+- A **console app** (`source/ConsoleApp`) that starts three workers competing for the same lock — a quick, scriptable run showing only one holder at a time, the keep-alive holding the lock past the TTL, and a monotonically increasing fencing token.
 
 ## Getting the code
 
@@ -143,48 +146,45 @@ If you are using the Azure Cosmos DB Emulator or cannot use RBAC, set `CosmosKey
 
 ## Run the demo locally
 
-1. Start the local emulator (see the [root README](../README.md#run-locally-with-the-emulator-default)) or point at your own account, then run the console app:
+Start the local emulator first (see the [root README](../README.md#run-locally-with-the-emulator-default)), or point at your own account.
 
-    ```bash
-    cd source/ConsoleApp
-    dotnet run
-    ```
+### Interactive web front end (recommended)
 
-1. The app starts three workers competing for the same lock. Notice that only one holds it at a time (the others log `could not acquire (held by another worker)`), that the holder keeps the lock even when its work runs longer than the TTL (`holding for ... ms (TTL 5s, auto-renewed)`), and that each acquisition prints a higher `fencing token`. It finishes by demonstrating an `AcquireLockAsync` call that gives up after a 2-second wait while the lock is held.
+```bash
+cd source/Website
+dotnet run
+```
+
+Open the URL it prints. Several workers immediately start competing for a lock. Try dragging a worker's **Work** slider past the **Lock TTL**, toggling **Auto-renew** off, clicking **💥 Crash** on the current holder, and switching a worker to **Wait** mode — the on-screen "Things to try" list walks through the key experiments (mutual exclusion, renewal, fencing tokens, and crash/TTL recovery).
+
+### Console app
+
+```bash
+cd source/ConsoleApp
+dotnet run
+```
+
+The console app starts three workers competing for the same lock. Only one holds it at a time (the others log `could not acquire`), the holder keeps the lock even when its work runs longer than the TTL, and each acquisition prints a higher `fencing token`.
 
 ## (Optional) Deploy and run in Azure with `azd`
 
-The steps above run the sample **all-local** (against the Azure Cosmos DB emulator or your own account). If you'd rather run it against a dedicated, **keyless** Azure Cosmos DB account in Azure, this pattern includes an [Azure Developer CLI (`azd`)](https://aka.ms/azd) template. Running locally is unchanged; the deployment files (`azure.yaml`, `infra/`) have no effect unless you run `azd provision`.
+The steps above run the sample **all-local**. If you'd rather run the **all-Azure** way — the interactive web front end hosted in Azure over a keyless Cosmos DB account — this pattern includes an [Azure Developer CLI (`azd`)](https://aka.ms/azd) template. Running locally is unchanged; the deployment files (`azure.yaml`, `infra/`) have no effect unless you run `azd up`.
 
-Because this sample is a **console app**, there is no service hosted in Azure — `azd` only provisions the data store, intentionally minimal and cheap:
+It provisions and deploys, intentionally minimal and cheap:
 
-- A **serverless** Azure Cosmos DB account with local (key) authentication **disabled**.
-- The sample's `LockDB` database and `Locks` container (TTL-enabled, so an abandoned lock is released automatically), pre-created.
-- A data-plane role assignment granting **you** (the deploying user) keyless access, so you can run the console app locally against it.
+- An **App Service** web app (Basic **B1**) hosting the interactive front end.
+- A **serverless** Azure Cosmos DB account with local (key) authentication **disabled**, with the `LockDB` database and TTL-enabled `Locks` container pre-created.
+- The web app reaches Cosmos DB **keyless**, via a **user-assigned managed identity** — no keys or connection strings are stored anywhere. The deploying user is also granted data access so you can run the console app locally against the same account.
 
-### Provision
+### Deploy
 
 From the `distributed-lock` folder:
 
 ```bash
-azd provision
+azd up
 ```
 
-When it finishes, point the app at the new account and run it locally — keyless, using your `az login` credentials:
-
-```bash
-# bash / zsh
-export CosmosUri="$(azd env get-value AZURE_COSMOS_ENDPOINT)"
-cd source/ConsoleApp && dotnet run
-```
-
-```powershell
-# PowerShell
-$env:CosmosUri = azd env get-value AZURE_COSMOS_ENDPOINT
-cd source/ConsoleApp; dotnet run
-```
-
-Leave `CosmosKey` empty — with only `CosmosUri` set, the app authenticates keyless via `DefaultAzureCredential`.
+`azd` prompts for an environment name, subscription, and location, then provisions the resources and deploys the front end. When it finishes it prints the site URL — open it and start experimenting.
 
 > **Consistency note:** This template provisions a single-region **serverless** account, which uses **Session** consistency. The lock's mutual exclusion comes from the atomic unique-id insert (a 409 Conflict when the lock is held) and ETag-checked renewal, so it holds under any consistency level; the fencing token is the session token's global LSN, which is monotonically increasing. For a multi-region *production* lock you would instead use provisioned throughput with **Strong** consistency; serverless accounts are single-region only.
 

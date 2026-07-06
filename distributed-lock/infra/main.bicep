@@ -36,3 +36,4 @@ module resources 'resources.bicep' = {
 }
 
 output AZURE_COSMOS_ENDPOINT string = resources.outputs.cosmosEndpoint
+output SERVICE_WEB_URL string = resources.outputs.webUrl
