@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: cosmos-db-design-patterns-vector-search
+metadata:
+  template: cosmos-db-design-patterns-vector-search
+# azd deploys the interactive web front end to App Service. It embeds text with a local model
+# (no API key) and searches Azure Cosmos DB by vector similarity. The console app under
+# source/Console is an optional local driver you can run with `dotnet run` against the same
+# provisioned (keyless) Cosmos account.
+services:
+  web:
+    project: ./source/Website
+    language: dotnet
+    host: appservice

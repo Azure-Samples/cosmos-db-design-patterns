@@ -1,0 +1,153 @@
+@page "/"
+@using Cosmos.VectorSearch
+@using System.Diagnostics
+@inject VectorSearchAppService Sim
+
+<div class="page">
+    <header>
+        <h1>Vector Search</h1>
+        <p class="tagline">
+            Search a movie catalog by <strong>meaning</strong>, not keywords. Each movie is stored in
+            Azure Cosmos DB with a <strong>vector embedding</strong> of its plot; your search text is
+            embedded the same way, and Cosmos ranks results with <code>VectorDistance()</code>. Try a
+            description &mdash; the matching films share none of your words.
+        </p>
+    </header>
+
+    @if (_preparing)
+    {
+        <div class="info-banner"><span class="spinner"></span> Preparing &mdash; loading the local embedding model and seeding the catalog&hellip;</div>
+    }
+    else if (_initError is not null)
+    {
+        <div class="error-banner"><strong>Couldn't start.</strong> @_initError</div>
+    }
+
+    <div class="search-bar">
+        <input class="search-input" @bind="_query" @bind:event="oninput" @onkeydown="OnKeyDown"
+               placeholder="e.g. a lonely robot exploring deep space" disabled="@(!Sim.IsReady)" />
+        <select class="genre-select" @bind="_genre" disabled="@(!Sim.IsReady)">
+            <option value="">All genres</option>
+            @foreach (string g in Sim.Genres)
+            {
+                <option value="@g">@g</option>
+            }
+        </select>
+        <button class="btn primary" @onclick="Search" disabled="@(!Sim.IsReady || string.IsNullOrWhiteSpace(_query))">Search</button>
+    </div>
+
+    <div class="examples">
+        <span class="examples-label">Try:</span>
+        @foreach (string ex in _examples)
+        {
+            <button class="chip" @onclick="() => RunExample(ex)" disabled="@(!Sim.IsReady)">@ex</button>
+        }
+    </div>
+
+    @if (_searching)
+    {
+        <div class="hint"><span class="spinner"></span> Searching&hellip;</div>
+    }
+    else if (_searched && _results.Count == 0)
+    {
+        <div class="hint">No matches@(string.IsNullOrEmpty(_genre) ? "" : $" in {_genre}").</div>
+    }
+    else if (_results.Count > 0)
+    {
+        <div class="results">
+            @foreach (SearchResult r in _results)
+            {
+                <div class="result">
+                    <div class="score" title="Cosine similarity">
+                        <div class="score-num">@r.Score.ToString("0.00")</div>
+                        <div class="score-bar"><span style="width:@(((int)(r.Score * 100)))%"></span></div>
+                    </div>
+                    <div class="result-body">
+                        <div class="result-title">@r.Title <span class="year">(@r.Year)</span> <span class="genre-badge">@r.Genre</span></div>
+                        <div class="result-plot">@r.Plot</div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private string _query = string.Empty;
+    private string _genre = string.Empty;
+    private List<SearchResult> _results = new();
+    private bool _preparing = true;
+    private bool _searching;
+    private bool _searched;
+    private string? _initError;
+
+    private readonly string[] _examples =
+    {
+        "a lonely robot exploring deep space",
+        "solving a murder mystery",
+        "an unlikely couple falling in love",
+        "a magical quest to defeat evil",
+        "a terrifying night in a haunted place",
+    };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        try
+        {
+            await Sim.EnsureStartedAsync();
+        }
+        catch (Exception ex)
+        {
+            _initError = ex.Message;
+            _preparing = false;
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        // The warm-up service may still be seeding; wait until the store is ready.
+        var sw = Stopwatch.StartNew();
+        while (!Sim.IsReady && sw.Elapsed < TimeSpan.FromSeconds(40))
+        {
+            await Task.Delay(300);
+        }
+
+        _preparing = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task Search()
+    {
+        if (!Sim.IsReady || string.IsNullOrWhiteSpace(_query))
+        {
+            return;
+        }
+
+        _searching = true;
+        await InvokeAsync(StateHasChanged);
+
+        _results = await Sim.SearchAsync(_query, string.IsNullOrEmpty(_genre) ? null : _genre, top: 8);
+
+        _searching = false;
+        _searched = true;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task RunExample(string example)
+    {
+        _query = example;
+        await Search();
+    }
+
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await Search();
+        }
+    }
+}
