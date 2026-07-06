@@ -1,0 +1,75 @@
+:root {
+    --bg: #0f172a;
+    --panel: #1e293b;
+    --panel-2: #273449;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --accent: #38bdf8;
+    --green: #22c55e;
+    --border: #334155;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+/* Top nav */
+.app-nav { background: linear-gradient(90deg, #0b3a4a, #10243a); border-bottom: 1px solid var(--border); }
+.app-nav .nav-inner { max-width: 1000px; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; gap: 12px; }
+.app-nav .brand { font-size: 18px; font-weight: 600; color: var(--text); }
+.app-nav svg { color: var(--accent); }
+
+.page { max-width: 1000px; margin: 0 auto; padding: 24px; }
+
+header h1 { margin: 0 0 6px; font-size: 26px; }
+.tagline { margin: 0 0 18px; color: var(--muted); max-width: 800px; line-height: 1.55; }
+.tagline strong { color: var(--text); }
+.tagline code { background: rgba(255,255,255,.06); padding: 1px 6px; border-radius: 5px; color: #7dd3fc; font-size: 13px; }
+
+.info-banner, .error-banner { padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+.info-banner { background: #0b3a4a; color: #bae6fd; }
+.error-banner { background: #4c1d1d; color: #fecaca; }
+
+.spinner { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.35); border-top-color: #fff; border-radius: 50%; display: inline-block; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Search bar */
+.search-bar { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.search-input { flex: 1; min-width: 260px; background: var(--panel-2); border: 1px solid var(--border); color: var(--text); border-radius: 10px; padding: 12px 14px; font-size: 15px; }
+.search-input:focus { outline: none; border-color: var(--accent); }
+.genre-select { background: var(--panel-2); border: 1px solid var(--border); color: var(--text); border-radius: 10px; padding: 0 12px; font-size: 14px; }
+.btn { background: var(--panel-2); color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 12px 20px; cursor: pointer; font-size: 15px; }
+.btn:hover:not(:disabled) { border-color: var(--accent); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn.primary { background: var(--accent); color: #06283a; border-color: var(--accent); font-weight: 600; }
+
+/* Example chips */
+.examples { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 22px; }
+.examples-label { color: var(--muted); font-size: 13px; margin-right: 2px; }
+.chip { background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 999px; padding: 6px 12px; font-size: 13px; cursor: pointer; }
+.chip:hover:not(:disabled) { border-color: var(--accent); color: var(--text); }
+.chip:disabled { opacity: .5; cursor: not-allowed; }
+
+.hint { color: var(--muted); display: flex; align-items: center; gap: 8px; padding: 8px 0; }
+
+/* Results */
+.results { display: flex; flex-direction: column; gap: 12px; }
+.result { display: flex; gap: 16px; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+.score { flex: 0 0 92px; text-align: center; }
+.score-num { font-size: 20px; font-weight: 700; color: var(--accent); }
+.score-bar { height: 6px; background: var(--panel-2); border-radius: 4px; margin-top: 6px; overflow: hidden; }
+.score-bar span { display: block; height: 100%; background: linear-gradient(90deg, #38bdf8, #22c55e); border-radius: 4px; }
+
+.result-body { flex: 1; min-width: 0; }
+.result-title { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+.result-title .year { color: var(--muted); font-weight: 400; }
+.genre-badge { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .02em; padding: 2px 8px; border-radius: 6px; background: rgba(56,189,248,.16); color: #7dd3fc; margin-left: 6px; vertical-align: middle; }
+.result-plot { color: var(--muted); font-size: 14px; line-height: 1.5; }
+
+#blazor-error-ui { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: #7f1d1d; color: #fff; padding: 10px 16px; z-index: 1000; }
+#blazor-error-ui .reload, #blazor-error-ui .dismiss { color: #fff; margin-left: 12px; cursor: pointer; }

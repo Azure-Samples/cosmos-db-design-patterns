@@ -12,7 +12,7 @@ param tags object = {}
 @description('Optional. SQL databases to pre-create. Shape: [{ name: string }].')
 param databases array = []
 
-@description('Optional. Containers to pre-create. Shape: [{ databaseName: string, name: string, partitionKey: string, defaultTtl: int? }]. Pre-creating them means the app identity only needs data-plane item access, not permission to create databases/containers. Set defaultTtl (seconds, or -1 for no expiry) to enable time-to-live on the container.')
+@description('Optional. Containers to pre-create. Shape: [{ databaseName: string, name: string, partitionKey: string, defaultTtl: int?, vectorEmbeddingPolicy: object?, indexingPolicy: object? }]. Pre-creating them means the app identity only needs data-plane item access, not permission to create databases/containers. Set defaultTtl (seconds, or -1 for no expiry) to enable time-to-live. Supply vectorEmbeddingPolicy and indexingPolicy together to create a vector-indexed container (they can only be set at creation time).')
 param containers array = []
 
 @description('Optional. Principal IDs (managed identities and/or users) to grant the built-in Cosmos DB Data Contributor data-plane role.')
@@ -77,7 +77,9 @@ resource containersResource 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/
             kind: 'Hash'
           }
         },
-        container.?defaultTtl != null ? { defaultTtl: container.defaultTtl } : {}
+        container.?defaultTtl != null ? { defaultTtl: container.defaultTtl } : {},
+        container.?vectorEmbeddingPolicy != null ? { vectorEmbeddingPolicy: container.vectorEmbeddingPolicy } : {},
+        container.?indexingPolicy != null ? { indexingPolicy: container.indexingPolicy } : {}
       )
     }
     dependsOn: [
