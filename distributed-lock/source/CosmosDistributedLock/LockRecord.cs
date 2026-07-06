@@ -1,6 +1,3 @@
-// Adapted for .NET 10 from CloudDistributedLock by Brian Dunnington, used under the MIT License.
-// https://github.com/briandunnington/CloudDistributedLock
-
 namespace Cosmos.DistributedLock
 {
     /// <summary>

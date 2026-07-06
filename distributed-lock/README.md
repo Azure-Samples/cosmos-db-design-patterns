@@ -186,7 +186,7 @@ cd source/ConsoleApp; dotnet run
 
 Leave `CosmosKey` empty — with only `CosmosUri` set, the app authenticates keyless via `DefaultAzureCredential`.
 
-> **Consistency note:** This template provisions a single-region **serverless** account, which uses **Session** consistency. The lock's mutual exclusion comes from the atomic unique-id insert (a 409 Conflict when the lock is held) and ETag-checked renewal, so it holds under any consistency level; the fencing token is the session token's global LSN, which is monotonically increasing. For a multi-region *production* lock you would instead use provisioned throughput with **Strong** (or **Bounded staleness**) consistency; serverless accounts are single-region only.
+> **Consistency note:** This template provisions a single-region **serverless** account, which uses **Session** consistency. The lock's mutual exclusion comes from the atomic unique-id insert (a 409 Conflict when the lock is held) and ETag-checked renewal, so it holds under any consistency level; the fencing token is the session token's global LSN, which is monotonically increasing. For a multi-region *production* lock you would instead use provisioned throughput with **Strong** consistency; serverless accounts are single-region only.
 
 ### Clean up
 

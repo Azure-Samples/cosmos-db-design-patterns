@@ -6,9 +6,6 @@ using Microsoft.Extensions.DependencyInjection;
 // -----------------------------------------------------------------------------------------
 // Cosmos DB Distributed Lock sample.
 //
-// The lock library in ../DistributedLock is adapted from CosmosDistributedLock by
-// Brian Dunnington (MIT License): https://github.com/briandunnington/CloudDistributedLock
-//
 // This demo starts several workers that all compete for the same lock. Only one can hold it
 // at a time. The holder keeps the lock alive automatically (a background keep-alive renews it)
 // even when its work runs longer than the lock's TTL, so no other worker can start until it
@@ -30,7 +27,6 @@ const string lockName = "my-resource";
 const int ttlSeconds = 5;
 
 Console.WriteLine("Azure Cosmos DB distributed lock sample");
-Console.WriteLine("(lock library adapted from CloudDistributedLock by Brian Dunnington, MIT License)");
 Console.WriteLine();
 
 // Ensure the database and (TTL-enabled) container exist. In Azure these are pre-created by

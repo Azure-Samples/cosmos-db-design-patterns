@@ -1,6 +1,3 @@
-// Adapted for .NET 10 from CloudDistributedLock by Brian Dunnington, used under the MIT License.
-// https://github.com/briandunnington/CloudDistributedLock
-//
 // This version adds an endpoint/key overload that builds the CosmosClient the same way as the
 // rest of this repository (see CosmosClientFactory): keyless when no key is supplied, and
 // accepting the local emulator's self-signed certificate when the endpoint is localhost.
