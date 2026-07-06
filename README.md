@@ -90,6 +90,10 @@ Explore the `preallocation` pattern to understand how to preallocate resources, 
 
 Dive into the `schema-versioning` folder to learn how to manage changes to your data model over time with the schema versioning pattern. Read more about this design pattern in this [blog post](https://aka.ms/cosmosdbdesignpatterns/schemaversioning).  
 
+### [Transactional Outbox](/transactional-outbox/)
+
+Reliably publish events when you change state: write the state change and the event in one atomic `TransactionalBatch`, then relay the event with the change feed — avoiding the dual-write anomaly where a crash loses the event. The `transactional-outbox` folder includes a console app and an interactive naive-vs-outbox crash playground.
+
 ### [Vector Search](/vector-search/)
 
 Search your data by **meaning** rather than keywords using Azure Cosmos DB's built-in **vector indexing** and the `VectorDistance()` function — the storage-and-retrieval foundation of semantic search and retrieval-augmented generation (RAG). The `vector-search` folder includes a console app and an interactive web front end that embeds text with a small local model (no API key).

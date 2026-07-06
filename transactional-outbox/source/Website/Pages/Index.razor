@@ -1,0 +1,224 @@
+@page "/"
+@using Cosmos.TransactionalOutbox
+@using System.Diagnostics
+@implements IAsyncDisposable
+@inject OrderOutboxService Svc
+
+<div class="page">
+    <header>
+        <h1>Transactional Outbox</h1>
+        <p class="tagline">
+            Placing an order must both <strong>save the order</strong> and <strong>publish an event</strong>
+            other systems consume. Do them as two separate writes and a crash in between <em>loses</em> the
+            event. The <strong>outbox</strong> writes the order and the event in one atomic
+            <code>TransactionalBatch</code>, then the <strong>change feed</strong> relays it downstream — so
+            it's never lost. Try it with the crash toggle.
+        </p>
+    </header>
+
+    @if (_preparing)
+    {
+        <div class="info-banner"><span class="spinner"></span> Preparing &mdash; creating the container and starting the change feed relay&hellip;</div>
+    }
+    else if (_initError is not null)
+    {
+        <div class="error-banner"><strong>Couldn't start.</strong> @_initError</div>
+    }
+
+    <section class="panel controls">
+        <div class="mode-toggle">
+            <button class="mode @(_mode == OrderMode.NaiveDualWrite ? "active" : "")" @onclick="() => _mode = OrderMode.NaiveDualWrite" disabled="@(!Svc.IsReady)">Naive dual-write</button>
+            <button class="mode @(_mode == OrderMode.TransactionalOutbox ? "active" : "")" @onclick="() => _mode = OrderMode.TransactionalOutbox" disabled="@(!Svc.IsReady)">Transactional outbox</button>
+        </div>
+        <label class="crash">
+            <input type="checkbox" @bind="_crash" disabled="@(!Svc.IsReady)" />
+            💥 Simulate a crash right after the order is saved
+        </label>
+        <div class="btn-row">
+            <button class="btn primary" @onclick="() => PlaceAsync(1)" disabled="@(!Svc.IsReady)">Place order</button>
+            <button class="btn" @onclick="() => PlaceAsync(5)" disabled="@(!Svc.IsReady)">Place 5</button>
+            <button class="btn ghost" @onclick="ResetAsync" disabled="@(!Svc.IsReady)">Reset</button>
+        </div>
+        <p class="mode-help">
+            @if (_mode == OrderMode.NaiveDualWrite)
+            {
+                <span><strong>Naive:</strong> saves the order, then publishes the event as a <em>separate</em> write. A crash in between loses the event.</span>
+            }
+            else
+            {
+                <span><strong>Outbox:</strong> saves the order and the event together in one transaction. The change feed publishes the event — even if the app crashes right after.</span>
+            }
+        </p>
+    </section>
+
+    <section class="stats">
+        <div class="stat"><div class="stat-num">@Svc.OrdersPlaced</div><div class="stat-label">orders placed</div></div>
+        <div class="stat"><div class="stat-num delivered">@Svc.EventsDelivered</div><div class="stat-label">events delivered</div></div>
+        <div class="stat"><div class="stat-num @(Svc.EventsLost > 0 ? "lost" : "")">@Svc.EventsLost</div><div class="stat-label">events lost</div></div>
+    </section>
+
+    <div class="columns">
+        <section class="panel col">
+            <h2>Orders <span class="muted">(business state)</span></h2>
+            @if (_orders.Count == 0) { <p class="empty">No orders yet.</p> }
+            @foreach (Order o in _orders)
+            {
+                <div class="card">
+                    <div class="mono">@o.OrderId</div>
+                    <div class="line">@o.Customer &middot; @o.Product <span class="amt">$@o.Amount</span></div>
+                </div>
+            }
+        </section>
+
+        <section class="panel col">
+            <h2>Outbox <span class="muted">(events, written atomically)</span></h2>
+            @if (_outbox.Count == 0) { <p class="empty">The outbox is empty. Naive dual-write doesn't use it.</p> }
+            @foreach (OutboxEvent e in _outbox)
+            {
+                <div class="card">
+                    <div class="line"><span class="evt">@e.EventType</span> <span class="mono muted">@e.OrderId</span></div>
+                    <div class="line">
+                        @if (Svc.IsDelivered(e.Id))
+                        {
+                            <span class="pill delivered">relayed</span>
+                        }
+                        else
+                        {
+                            <span class="pill pending">pending relay</span>
+                        }
+                    </div>
+                </div>
+            }
+        </section>
+
+        <section class="panel col">
+            <h2>Downstream <span class="muted">(consumer)</span></h2>
+            @if (_downstream.Count == 0) { <p class="empty">No events received yet.</p> }
+            @foreach (DeliveredEvent d in _downstream)
+            {
+                <div class="card ok">
+                    <div class="line">📦 <strong>@d.EventType</strong> <span class="mono muted">@d.OrderId</span></div>
+                    <div class="line muted">@d.Customer &middot; @d.Product — shipping &amp; email notified</div>
+                </div>
+            }
+        </section>
+    </div>
+
+    <section class="panel timeline">
+        <h2>Activity timeline</h2>
+        <div class="log">
+            @foreach (LogEntry l in _timeline)
+            {
+                <div class="log-row @l.Level.ToString().ToLower()">
+                    <span class="log-time">@l.Timestamp.LocalDateTime.ToString("HH:mm:ss")</span>
+                    <span class="log-msg">@l.Message</span>
+                </div>
+            }
+            @if (_timeline.Count == 0) { <div class="empty">No activity yet.</div> }
+        </div>
+    </section>
+
+    <section class="panel why">
+        <h2>Why it matters</h2>
+        <ul>
+            <li><strong>No dual-write anomaly.</strong> The order and its event are written in a single atomic transaction — both or neither. You can never end up with an order but no event (or an event but no order).</li>
+            <li><strong>Reliable, at-least-once delivery.</strong> The change feed relays outbox events independently of the request. Even if the app crashes right after the commit, the event is durably stored and will be delivered.</li>
+            <li><strong>Idempotent consumers.</strong> Change feed delivery is at-least-once, so the downstream dedupes by event id — a redelivery is harmless.</li>
+            <li><strong>One system.</strong> No separate message broker to keep in sync with your database; the outbox lives in the same container as your data.</li>
+        </ul>
+    </section>
+</div>
+
+@code {
+    private OrderMode _mode = OrderMode.NaiveDualWrite;
+    private bool _crash;
+
+    private List<Order> _orders = new();
+    private List<OutboxEvent> _outbox = new();
+    private List<DeliveredEvent> _downstream = new();
+    private IReadOnlyList<LogEntry> _timeline = Array.Empty<LogEntry>();
+
+    private bool _preparing = true;
+    private string? _initError;
+    private CancellationTokenSource? _cts;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        try
+        {
+            await Svc.EnsureStartedAsync();
+        }
+        catch (Exception ex)
+        {
+            _initError = ex.Message;
+            _preparing = false;
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        var sw = Stopwatch.StartNew();
+        while (!Svc.IsReady && sw.Elapsed < TimeSpan.FromSeconds(30))
+        {
+            await Task.Delay(300);
+        }
+
+        Svc.Changed += OnChanged;
+        _preparing = false;
+        await RefreshAsync();
+        await InvokeAsync(StateHasChanged);
+
+        _cts = new CancellationTokenSource();
+        _ = RefreshLoopAsync(_cts.Token);
+    }
+
+    private void OnChanged() => _ = InvokeAsync(async () => { await RefreshAsync(); StateHasChanged(); });
+
+    private async Task RefreshLoopAsync(CancellationToken token)
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(750));
+        while (await timer.WaitForNextTickAsync(token))
+        {
+            await RefreshAsync();
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task RefreshAsync()
+    {
+        try
+        {
+            _orders = await Svc.GetOrdersAsync();
+            _outbox = await Svc.GetOutboxAsync();
+            _downstream = Svc.Downstream().ToList();
+            _timeline = Svc.Timeline();
+        }
+        catch { /* transient; retry next tick */ }
+    }
+
+    private async Task PlaceAsync(int count)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            await Svc.PlaceOrderAsync(_mode, _crash);
+        }
+        await RefreshAsync();
+    }
+
+    private async Task ResetAsync()
+    {
+        await Svc.ResetAsync();
+        await RefreshAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        Svc.Changed -= OnChanged;
+        if (_cts is not null)
+        {
+            await _cts.CancelAsync();
+            _cts.Dispose();
+        }
+    }
+}
