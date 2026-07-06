@@ -31,6 +31,12 @@ This sample demonstrates:
 
 > **Credit:** the mechanism in this sample is a generalized, dependency-free adaptation of the [Azure Cosmos DB Embeddings Generator](https://github.com/AzureCosmosDB/cosmos-embeddings-generator), which uses the same source-hash technique to avoid loops while generating Azure OpenAI embeddings in place.
 
+## Web front end
+
+Add documents and edit their text, and watch each **identicon** appear a moment later as the change feed enriches the document in place. The **enrichment writes** and **skipped echoes** counters climb together — one of each per edit — and the activity timeline shows exactly one `ENRICHED` followed by one `SKIPPED` per change. That lock-step is the loop being bounded instead of running away.
+
+![Loop-Safe Change Feed web front end: documents with generated identicons, a writes-vs-skips counter in lock-step, and an ENRICHED/SKIPPED change feed timeline](images/loop-safe-change-feed-web.png)
+
 ## Common scenario
 
 Any time you want a document to carry a value *derived from its own contents*, and you want that value kept up to date automatically as the contents change:

@@ -43,7 +43,7 @@
             <h2>Documents</h2>
             <div class="add-row">
                 <input class="add-input" @bind="_newText" @bind:event="oninput"
-                       placeholder="Type some text and add a document&hellip;" @onkeydown="OnAddKeyDown" />
+                       placeholder="Type some text and add a document…" @onkeydown="OnAddKeyDown" />
                 <button class="btn primary" @onclick="AddAsync" disabled="@(_connecting || string.IsNullOrWhiteSpace(_newText))">Add</button>
             </div>
 

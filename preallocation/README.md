@@ -198,113 +198,46 @@ WHERE
 
 By not choosing the pre-allocation pattern, the alternative way to find available rooms for a set of dates will be more complex.  For example, without pre-allocation, you would need to query all reservations for a room then build a collection of available dates by subtracting the reservation dates.  You can see a subset of this logic available in the `FindAvailableRooms` method of the `Hotel` class.
 
-## Try this implementation
-
-To run this demo, you will need to have:
-
-- [.NET 10.0 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
-
-## Confirm required tools are installed
-
-Confirm you have the required versions of the tools installed for this demo.
-
-First, check the .NET runtime with this command:
-
-```bash
-dotnet --list-runtimes
-```
-
-As you may have multiple versions of the runtime installed, make sure that .NET components with versions that start with 10.0 appear as part of the output.
-
 ## Getting the code
 
 ### Using Terminal or VS Code
 
-Directions installing pre-requisites to run locally and for cloning this repository using [Terminal or VS Code](../README.md?#getting-started)
+Directions for installing pre-requisites and cloning this repository are in the [root README](../README.md#getting-started).
 
+## Set up application configuration
 
-## Set up application configuration files
+The app reads `CosmosUri` and `CosmosKey` from configuration — see [Configuration and authentication](../README.md#configuration-and-authentication) in the root README. To run against the local emulator, set them to the well-known emulator endpoint and key (see [Run locally with the emulator](../README.md#run-locally-with-the-emulator-default)); the app accepts the emulator's self-signed certificate automatically when the endpoint is `localhost`.
 
-You need to configure the application configuration file to run these demos.
+The simplest way is an `appsettings.development.json` file in the `source` folder (it's git-ignored, so nothing is committed):
 
-1. Go to your resource group and select the Serverless Azure Cosmos DB for NoSQL account that you created for this repository.
-
-1. From the navigation, under **Settings**, select **Keys** and copy the **URI** value.
-
-### Option 1: Keyless authentication via RBAC (Recommended)
-
-Keyless authentication using `DefaultAzureCredential` is the recommended approach. It works automatically with managed identity (Azure-hosted) and with the Azure CLI locally.
-
-1. Assign the **Cosmos DB Built-in Data Contributor** role to your identity:
-
-    ```bash
-    az cosmosdb sql role assignment create \
-      --account-name <cosmos-account-name> \
-      --resource-group <resource-group-name> \
-      --role-definition-name "Cosmos DB Built-in Data Contributor" \
-      --principal-id $(az ad signed-in-user show --query id -o tsv) \
-      --scope "/"
-    ```
-
-1. Sign in with the Azure CLI (for local development):
-
-    ```bash
-    az login
-    ```
-
-1. Open the project and set these values as environment variables (recommended — see [Configuration and authentication](../README.md#configuration-and-authentication)), or add an **appsettings.development.json** file with the following contents:
-
-  ```json
-  {
-    "CosmosUri": "<endpoint>",
-    "DatabaseName": "PreallocationDB",
-    "WithPreallocation": "WithPreallocation",
-    "WithoutPreallocation": "WithoutPreallocation"
-  }
-  ```
-
-1. Replace `<endpoint>` with the **URI** value copied from the Keys blade.
-
-### Option 2: Key-based authentication (local emulator fallback)
-
-If you are using the Azure Cosmos DB Emulator or cannot use RBAC, set `CosmosKey` as well:
-
-1. From the Keys blade, copy both the **URI** and **PRIMARY KEY** values.
-
-1. Open the project and set these values as environment variables (recommended — see [Configuration and authentication](../README.md#configuration-and-authentication)), or add an **appsettings.development.json** file with the following contents:
-
-  ```json
-  {
-    "CosmosUri": "<endpoint>",
-    "CosmosKey": "<primary-key>",
-    "DatabaseName": "PreallocationDB",
-    "WithPreallocation": "WithPreallocation",
-    "WithoutPreallocation": "WithoutPreallocation"
-  }
-  ```
-
-> **Note:** Never commit `appsettings.development.json` with real key values. The `.gitignore` already excludes `appsettings.development.json`.
-
-1. Save the file.
-
-## Run the demo
-
-1. Open the application code.
-
-1. From a terminal or Visual Studio Code, start the app by running the following:
-
-```bash
-  dotnet build
-  dotnet run
+```json
+{
+  "CosmosUri": "https://localhost:8081",
+  "CosmosKey": "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="
+}
 ```
 
-or from Visual Studio, press **F5** to start the application.
+To use your own Azure Cosmos DB account with keyless (RBAC) authentication instead, set only `CosmosUri` to your account endpoint and leave `CosmosKey` empty — the app then uses `DefaultAzureCredential`. Grant your identity the **Cosmos DB Built-in Data Contributor** role first.
+
+## Run the demo locally
+
+Start the local emulator first (see the [root README](../README.md#run-locally-with-the-emulator-default)):
+
+```bash
+docker compose up -d
+```
+
+Then run the app:
+
+```bash
+cd source
+dotnet run
+```
 
 1. The application will automatically create a database called `PreallocationDB` with two containers, `WithPreallocation` and `WithoutPreallocation`.
 
 1. Select option `1` in the console application to load the hotel and room data. 
-  1. In Azure Portal, browse to the Azure Cosmos DB account for this respository.
-  1. Select **Data Explorer** in the left menu.
+  1. Open **Data Explorer** — at `http://localhost:1234` for the emulator, or in the Azure Portal for your own account.
   1. Locate and open the `PreallocationDB`
   1. Review the data in both containers. Notice different structure for both containers. The 'Reservation' entity type documents are not used in the `WithPreallocation` container. Instead the reservation dates for a room are pre-allocated in an array in each room document.
 
