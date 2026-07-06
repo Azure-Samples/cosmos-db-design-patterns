@@ -41,6 +41,11 @@ public enum RaceMode
     /// document. Without optimistic concurrency the second writer overwrites the first — a lost update.</summary>
     ReadModifyWrite,
 
+    /// <summary>Each service reads the whole document and replaces it with an <c>IfMatchEtag</c>
+    /// precondition. The second writer gets a 412 conflict — even though it changed a different
+    /// field — and must re-read and retry. Correct, but with a needless conflict and extra RUs.</summary>
+    ReadModifyWriteWithETag,
+
     /// <summary>Each service patches only its own field. No read, nothing to clobber — both survive.</summary>
     Patch,
 }
@@ -51,13 +56,16 @@ public sealed record RuComparison(double PatchRu, double ReadRu, double ReplaceR
     public double ReadModifyWriteRu => ReadRu + ReplaceRu;
 }
 
-/// <summary>The outcome of the concurrency race: the final field values and whether an update was lost.</summary>
+/// <summary>The outcome of the concurrency race: the final field values, whether an update was lost,
+/// how many optimistic-concurrency conflicts (412s) occurred, and the total RU the update cost.</summary>
 public sealed record RaceResult(
     RaceMode Mode,
     string PaymentStatus,
     string ShippingStatus,
     bool PaymentLost,
-    bool ShippingLost)
+    bool ShippingLost,
+    int ConflictCount,
+    double TotalRu)
 {
     public bool AnyLost => PaymentLost || ShippingLost;
 }

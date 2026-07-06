@@ -1,3 +1,4 @@
+using System.Net;
 using Microsoft.Azure.Cosmos;
 
 namespace Cosmos.PatchApi;
@@ -177,58 +178,114 @@ public sealed class PatchOrderService : IAsyncDisposable
 
     /// <summary>
     /// Runs two services concurrently — payment sets <c>paymentStatus = "Paid"</c>, shipping sets
-    /// <c>shippingStatus = "Shipped"</c>. With <see cref="RaceMode.ReadModifyWrite"/> both read the
-    /// same document and the second full replace overwrites the first field (a lost update). With
-    /// <see cref="RaceMode.Patch"/> each patches only its own field, so both survive.
+    /// <c>shippingStatus = "Shipped"</c>. They change DIFFERENT fields, yet the read-modify-write
+    /// approaches still collide:
+    /// <list type="bullet">
+    ///   <item><see cref="RaceMode.ReadModifyWrite"/> — both read the same version and the second
+    ///   full replace overwrites the first field (a silent lost update).</item>
+    ///   <item><see cref="RaceMode.ReadModifyWriteWithETag"/> — the second replace hits a 412
+    ///   conflict (because the ETag guards the whole document, not just the field it changed) and
+    ///   must re-read and retry. Correct, but with a needless conflict and extra RUs.</item>
+    ///   <item><see cref="RaceMode.Patch"/> — each patches only its own field, so there is no read,
+    ///   no conflict, and no lost update.</item>
+    /// </list>
+    /// The returned <see cref="RaceResult"/> carries the measured RU cost and conflict count.
     /// </summary>
     public async Task<RaceResult> RunRaceAsync(RaceMode mode)
     {
+        var pk = new PartitionKey(DemoOrderId);
+
         // Start each race from the same clean state.
-        await _container!.ReplaceItemAsync(FreshDemoOrder(), DemoOrderId, new PartitionKey(DemoOrderId));
-        Log($"--- Concurrency race ({mode}) — payment and shipping update the order at the same time. ---", LogLevel.Info);
+        await _container!.ReplaceItemAsync(FreshDemoOrder(), DemoOrderId, pk);
+        Log($"--- Concurrency race ({Describe(mode)}) — payment and shipping update the order at the same time. ---", LogLevel.Info);
 
-        if (mode == RaceMode.ReadModifyWrite)
-        {
-            // Both services read the SAME version of the document (the classic race window)...
-            Order paymentView = (await _container.ReadItemAsync<Order>(DemoOrderId, new PartitionKey(DemoOrderId))).Resource;
-            Order shippingView = (await _container.ReadItemAsync<Order>(DemoOrderId, new PartitionKey(DemoOrderId))).Resource;
+        double ru = 0;
+        int conflicts = 0;
 
-            // ...each changes only its own field on its own copy...
-            paymentView.PaymentStatus = "Paid";
-            paymentView.LastWriteBy = "payment";
-            shippingView.ShippingStatus = "Shipped";
-            shippingView.LastWriteBy = "shipping";
-
-            // ...and each writes the WHOLE document back. The second replace wins and clobbers the
-            // first writer's field, even though they never touched the same field.
-            await _container.ReplaceItemAsync(paymentView, DemoOrderId, new PartitionKey(DemoOrderId));
-            Log("Payment replaced the whole document (paymentStatus=Paid, but shippingStatus still NotShipped from its stale read).", LogLevel.Warn);
-            await _container.ReplaceItemAsync(shippingView, DemoOrderId, new PartitionKey(DemoOrderId));
-            Log("Shipping replaced the whole document (shippingStatus=Shipped, but paymentStatus reset to Pending from ITS stale read). Payment's update is LOST.", LogLevel.Error);
-        }
-        else
+        if (mode == RaceMode.Patch)
         {
             // Each service patches ONLY its own field — no read, nothing to overwrite.
-            await Task.WhenAll(
-                _container.PatchItemAsync<Order>(DemoOrderId, new PartitionKey(DemoOrderId),
-                    new[] { PatchOperation.Set("/paymentStatus", "Paid"), PatchOperation.Set("/lastWriteBy", "payment") }),
-                _container.PatchItemAsync<Order>(DemoOrderId, new PartitionKey(DemoOrderId),
-                    new[] { PatchOperation.Set("/shippingStatus", "Shipped"), PatchOperation.Set("/trackingNumber", "1Z-RACE-42") }));
-            Log("Payment patched /paymentStatus and shipping patched /shippingStatus. Neither read the document; both updates survive.", LogLevel.Success);
+            ItemResponse<Order> p = await _container.PatchItemAsync<Order>(DemoOrderId, pk,
+                new[] { PatchOperation.Set("/paymentStatus", "Paid"), PatchOperation.Set("/lastWriteBy", "payment") });
+            ItemResponse<Order> s = await _container.PatchItemAsync<Order>(DemoOrderId, pk,
+                new[] { PatchOperation.Set("/shippingStatus", "Shipped"), PatchOperation.Set("/trackingNumber", "1Z-RACE-42") });
+            ru += p.RequestCharge + s.RequestCharge;
+            Log($"Payment patched /paymentStatus and shipping patched /shippingStatus — no read, no conflict. ({ru:0.##} RU).", LogLevel.Success);
+        }
+        else if (mode == RaceMode.ReadModifyWrite)
+        {
+            // Both services read the SAME version of the document...
+            ItemResponse<Order> paymentRead = await _container.ReadItemAsync<Order>(DemoOrderId, pk);
+            ItemResponse<Order> shippingRead = await _container.ReadItemAsync<Order>(DemoOrderId, pk);
+            ru += paymentRead.RequestCharge + shippingRead.RequestCharge;
+
+            Order paymentView = paymentRead.Resource; paymentView.PaymentStatus = "Paid"; paymentView.LastWriteBy = "payment";
+            Order shippingView = shippingRead.Resource; shippingView.ShippingStatus = "Shipped"; shippingView.LastWriteBy = "shipping";
+
+            // ...and each writes the WHOLE document back with no precondition. The second replace wins.
+            ru += (await _container.ReplaceItemAsync(paymentView, DemoOrderId, pk)).RequestCharge;
+            Log("Payment replaced the whole document (no ETag): paymentStatus=Paid.", LogLevel.Warn);
+            ru += (await _container.ReplaceItemAsync(shippingView, DemoOrderId, pk)).RequestCharge;
+            Log($"Shipping replaced the whole document from its stale read: shippingStatus=Shipped, paymentStatus reset to Pending. Payment's update is LOST. ({ru:0.##} RU).", LogLevel.Error);
+        }
+        else // ReadModifyWriteWithETag
+        {
+            // Both services read the SAME version — capturing the same ETag.
+            ItemResponse<Order> paymentRead = await _container.ReadItemAsync<Order>(DemoOrderId, pk);
+            ItemResponse<Order> shippingRead = await _container.ReadItemAsync<Order>(DemoOrderId, pk);
+            ru += paymentRead.RequestCharge + shippingRead.RequestCharge;
+
+            // Payment writes first with its ETag — the document still matches, so it succeeds.
+            Order paymentView = paymentRead.Resource; paymentView.PaymentStatus = "Paid"; paymentView.LastWriteBy = "payment";
+            ru += (await _container.ReplaceItemAsync(paymentView, DemoOrderId, pk,
+                new ItemRequestOptions { IfMatchEtag = paymentRead.ETag })).RequestCharge;
+            Log("Payment replaced with IfMatchEtag — ETag still matched, so it succeeded.", LogLevel.Info);
+
+            // Shipping tries with its now-stale ETag. It only changed shippingStatus, but the ETag
+            // guards the WHOLE document, so payment's write invalidated it: 412 Precondition Failed.
+            Order shippingView = shippingRead.Resource; shippingView.ShippingStatus = "Shipped"; shippingView.LastWriteBy = "shipping";
+            try
+            {
+                ru += (await _container.ReplaceItemAsync(shippingView, DemoOrderId, pk,
+                    new ItemRequestOptions { IfMatchEtag = shippingRead.ETag })).RequestCharge;
+            }
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.PreconditionFailed)
+            {
+                conflicts++;
+                ru += ex.RequestCharge;
+                Log($"Shipping's IfMatchEtag replace hit a 412 CONFLICT — even though it only changed shippingStatus, the ETag guards the whole document. That RU is wasted. ({ex.RequestCharge:0.##} RU).", LogLevel.Warn);
+
+                // Retry: re-read to get the current ETag, re-apply the change, replace again.
+                ItemResponse<Order> retryRead = await _container.ReadItemAsync<Order>(DemoOrderId, pk);
+                ru += retryRead.RequestCharge;
+                Order retryView = retryRead.Resource; retryView.ShippingStatus = "Shipped"; retryView.LastWriteBy = "shipping";
+                ru += (await _container.ReplaceItemAsync(retryView, DemoOrderId, pk,
+                    new ItemRequestOptions { IfMatchEtag = retryRead.ETag })).RequestCharge;
+                Log($"Shipping re-read and retried — succeeded. Result is correct, but it cost an extra read + replace + the failed 412. ({ru:0.##} RU total).", LogLevel.Success);
+            }
         }
 
-        Order final = (await _container.ReadItemAsync<Order>(DemoOrderId, new PartitionKey(DemoOrderId))).Resource;
+        // Final read is instrumentation only (to display state); its RU is not counted in the update cost.
+        Order final = (await _container.ReadItemAsync<Order>(DemoOrderId, pk)).Resource;
         bool paymentLost = final.PaymentStatus != "Paid";
         bool shippingLost = final.ShippingStatus != "Shipped";
-        var result = new RaceResult(mode, final.PaymentStatus, final.ShippingStatus, paymentLost, shippingLost);
+        var result = new RaceResult(mode, final.PaymentStatus, final.ShippingStatus, paymentLost, shippingLost, conflicts, ru);
 
         Log(result.AnyLost
-                ? $"Result: paymentStatus=\"{final.PaymentStatus}\", shippingStatus=\"{final.ShippingStatus}\" — an update was LOST."
-                : $"Result: paymentStatus=\"{final.PaymentStatus}\", shippingStatus=\"{final.ShippingStatus}\" — both updates preserved.",
+                ? $"Result: paymentStatus=\"{final.PaymentStatus}\", shippingStatus=\"{final.ShippingStatus}\" — an update was LOST. Cost {ru:0.##} RU."
+                : $"Result: paymentStatus=\"{final.PaymentStatus}\", shippingStatus=\"{final.ShippingStatus}\" — both preserved. {conflicts} conflict(s), {ru:0.##} RU.",
             result.AnyLost ? LogLevel.Error : LogLevel.Success);
         Changed?.Invoke();
         return result;
     }
+
+    private static string Describe(RaceMode mode) => mode switch
+    {
+        RaceMode.ReadModifyWrite => "read-modify-write, no ETag",
+        RaceMode.ReadModifyWriteWithETag => "read-modify-write + ETag",
+        RaceMode.Patch => "Patch",
+        _ => mode.ToString(),
+    };
 
     /// <summary>Resets the demo order to its initial state and clears the timeline.</summary>
     public async Task ResetAsync()

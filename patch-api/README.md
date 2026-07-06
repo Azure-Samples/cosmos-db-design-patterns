@@ -35,12 +35,12 @@ This sample demonstrates:
 
 - ✅ Patch operations: **Set**, **Increment**, array **Add**, and **Remove**
 - ✅ A measured **RU comparison** — Patch vs read-modify-write for the same change
-- ✅ A **concurrency race** where read-modify-write *loses* an update but Patch preserves both
+- ✅ A **concurrency race** run three ways — read-modify-write (loses an update), read-modify-write **+ ETag** (correct, but a needless 412 conflict + retry), and **Patch** (correct, no conflict)
 - ✅ Multiple operations applied **atomically** in a single patch
 
 ## Web front end
 
-One order document is updated by several services that each own a different field. Apply patch operations and watch the live document; run the **RU comparison**; then run the **concurrency race** two ways and see read-modify-write lose the payment update while Patch keeps both.
+One order document is updated by several services that each own a different field. Apply patch operations and watch the live document; run the **RU comparison**; then run the **concurrency race** three ways and see read-modify-write lose the payment update, read-modify-write **+ ETag** hit a needless 412 conflict, and Patch keep both cheaply.
 
 ![Patch API web front end: live order document, patch operations, RU comparison, and the concurrency race](images/patch-api-web.png)
 
@@ -68,13 +68,23 @@ await container.PatchItemAsync<Order>(id, new PartitionKey(orderId),
 
 **RU cost.** The sample applies the same change (mark the order paid) with a Patch and with a read-modify-write, reading `RequestCharge` from each response. Patch skips the read, so it costs less. On the **emulator** every point operation is a flat ~1 RU *regardless of document size*, so the visible win is exactly the skipped read (Patch **~1 RU** vs read + replace **~2 RU**). In a **real account**, Patch *also* avoids rewriting the whole document, so patching a small field of a large document is far cheaper than replacing it — a benefit the emulator's flat RU charging doesn't show. The web app calls this out honestly.
 
-**No lost updates.** The concurrency race has two services update *different* fields at the same time:
+**No needless conflicts on different fields.** The concurrency race has two services update *different* fields at the same time, run three ways. The RU figures below are the sample's own measurements against the local emulator (each point operation is a flat ~1 RU there):
+
+| Approach | Result | Conflicts | RU |
+| --- | --- | --- | --- |
+| Read-modify-write, no ETag | ❌ payment's update **lost** | 0 | 4 |
+| Read-modify-write **+ ETag** (`IfMatchEtag`) | ✅ correct, after a re-read + retry | **1** | 6 |
+| **Patch** | ✅ correct | 0 | **2** |
+
+The naive read-modify-write silently loses an update. Adding an ETag makes it *correct* — but the ETag guards the **whole document**, so the second service hits a **412 Precondition Failed** even though it only changed a different field, and must re-read and retry. That extra work is the higher RU cost. Patch touches only its own field server-side, so it never conflicts:
 
 ```csharp
-// Read-modify-write: both read the same version, then each replaces the WHOLE document.
-// The second replace overwrites the first service's field -> a lost update.
+// Read-modify-write + ETag: shipping changed only /shippingStatus, but its ETag is stale
+// because payment wrote /paymentStatus first -> 412 Precondition Failed -> re-read and retry.
+await container.ReplaceItemAsync(shippingView, id, pk,
+    new ItemRequestOptions { IfMatchEtag = staleEtag }); // throws 412
 
-// Patch: each service patches only its own field -> both survive, no ETag/retry needed.
+// Patch: each service patches only its own field -> both survive, no ETag, no retry.
 await Task.WhenAll(
     container.PatchItemAsync<Order>(id, pk, new[] { PatchOperation.Set("/paymentStatus", "Paid") }),
     container.PatchItemAsync<Order>(id, pk, new[] { PatchOperation.Set("/shippingStatus", "Shipped") }));
@@ -83,9 +93,9 @@ await Task.WhenAll(
 This sample ships two ways to explore the pattern:
 
 - An **interactive web front end** (`source/Website`) — the patch-operations playground, RU comparison, and concurrency race described above.
-- A **console app** (`source/Console`) that runs the patch operations, prints the RU comparison, and runs the concurrency race both ways.
+- A **console app** (`source/Console`) that runs the patch operations, prints the RU comparison, and runs the concurrency race all three ways.
 
-> **Patch vs. lost updates on the *same* field.** Patch prevents lost updates when callers touch *different* fields. If two callers patch the *same* field (for example, both `Set` the same status), the last one still wins. For that case use `Increment` where the change is additive, or optimistic concurrency with an ETag (`IfMatchEtag`).
+> **Patch vs. lost updates on the *same* field.** Patch avoids conflicts when callers touch *different* fields. If two callers patch the *same* field (for example, both `Set` the same status), the last one still wins. For that case use `Increment` where the change is additive, or optimistic concurrency with an ETag (`IfMatchEtag`) — accepting the conflict/retry cost shown above.
 
 ## Getting the code
 

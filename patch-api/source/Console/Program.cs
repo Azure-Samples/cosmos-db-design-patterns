@@ -63,11 +63,18 @@ Console.WriteLine();
 // 3) Concurrency race — two services update DIFFERENT fields at the same time.
 Console.WriteLine("--- Concurrency: payment and shipping update different fields at the same time ---");
 RaceResult rmw = await service.RunRaceAsync(RaceMode.ReadModifyWrite);
-Console.WriteLine($"    Read-modify-write: payment={rmw.PaymentStatus}, shipping={rmw.ShippingStatus} " +
-                  $"-> {(rmw.AnyLost ? "AN UPDATE WAS LOST" : "both preserved")}");
+Console.WriteLine($"    Read-modify-write (no ETag): payment={rmw.PaymentStatus}, shipping={rmw.ShippingStatus} " +
+                  $"-> {(rmw.AnyLost ? "AN UPDATE WAS LOST" : "both preserved")}  [{rmw.ConflictCount} conflicts, {rmw.TotalRu:0.##} RU]");
+RaceResult etag = await service.RunRaceAsync(RaceMode.ReadModifyWriteWithETag);
+Console.WriteLine($"    Read-modify-write + ETag:    payment={etag.PaymentStatus}, shipping={etag.ShippingStatus} " +
+                  $"-> {(etag.AnyLost ? "AN UPDATE WAS LOST" : "both preserved")}  [{etag.ConflictCount} conflicts, {etag.TotalRu:0.##} RU]");
 RaceResult patch = await service.RunRaceAsync(RaceMode.Patch);
-Console.WriteLine($"    Patch:             payment={patch.PaymentStatus}, shipping={patch.ShippingStatus} " +
-                  $"-> {(patch.AnyLost ? "AN UPDATE WAS LOST" : "both preserved")}");
+Console.WriteLine($"    Patch:                       payment={patch.PaymentStatus}, shipping={patch.ShippingStatus} " +
+                  $"-> {(patch.AnyLost ? "AN UPDATE WAS LOST" : "both preserved")}  [{patch.ConflictCount} conflicts, {patch.TotalRu:0.##} RU]");
+Console.WriteLine();
+Console.WriteLine("    ETag makes read-modify-write correct, but the second service hits a needless 412");
+Console.WriteLine("    conflict — it changed a different field, yet the ETag guards the whole document —");
+Console.WriteLine("    so it must re-read and retry, costing more RUs. Patch never conflicts.");
 Console.WriteLine();
 
 Console.WriteLine("================ SUMMARY ================");

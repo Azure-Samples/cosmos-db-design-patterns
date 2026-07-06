@@ -1,3 +1,4 @@
+using System.Net;
 using Microsoft.Azure.Cosmos;
 using Newtonsoft.Json;
 using Xunit;
@@ -150,5 +151,51 @@ public class PatchApiTests : IClassFixture<EmulatorFixture>, IAsyncLifetime
         // Shipping wrote last from a stale read, so payment's update was LOST.
         Assert.Equal("Shipped", updated.ShippingStatus);
         Assert.Equal("Pending", updated.PaymentStatus); // "Paid" was overwritten
+    }
+
+    [Fact]
+    public async Task ReadModifyWriteWithETag_ConcurrentDifferentFields_Conflicts_EvenThoughFieldsDiffer()
+    {
+        Order order = await SeedAsync();
+        var pk = new PartitionKey(order.OrderId);
+
+        // Both services read the SAME version — capturing the same ETag.
+        ItemResponse<Order> paymentRead = await ReadAsync(order.OrderId);
+        ItemResponse<Order> shippingRead = await ReadAsync(order.OrderId);
+
+        // Payment writes first with its ETag — still matches, so it succeeds.
+        Order paymentView = paymentRead.Resource;
+        paymentView.PaymentStatus = "Paid";
+        await _container.ReplaceItemAsync(paymentView, order.Id, pk,
+            new ItemRequestOptions { IfMatchEtag = paymentRead.ETag });
+
+        // Shipping changed a DIFFERENT field, but its ETag is now stale (the ETag guards the whole
+        // document), so its IfMatchEtag replace must fail with 412 Precondition Failed.
+        Order shippingView = shippingRead.Resource;
+        shippingView.ShippingStatus = "Shipped";
+        bool conflicted = false;
+        try
+        {
+            await _container.ReplaceItemAsync(shippingView, order.Id, pk,
+                new ItemRequestOptions { IfMatchEtag = shippingRead.ETag });
+        }
+        catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.PreconditionFailed)
+        {
+            conflicted = true;
+            // Retry: re-read to get the current ETag, re-apply, and replace again.
+            ItemResponse<Order> retry = await ReadAsync(order.OrderId);
+            Order retryView = retry.Resource;
+            retryView.ShippingStatus = "Shipped";
+            await _container.ReplaceItemAsync(retryView, order.Id, pk,
+                new ItemRequestOptions { IfMatchEtag = retry.ETag });
+        }
+
+        // The needless conflict is the point: different fields still collide under whole-document ETags.
+        Assert.True(conflicted, "Expected a 412 conflict even though the two writers changed different fields.");
+
+        // After the retry the result is correct — both updates survive — but it cost the extra work.
+        Order final = (await ReadAsync(order.OrderId)).Resource;
+        Assert.Equal("Paid", final.PaymentStatus);
+        Assert.Equal("Shipped", final.ShippingStatus);
     }
 }

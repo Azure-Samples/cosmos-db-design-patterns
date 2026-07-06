@@ -101,39 +101,24 @@
         <h2>Concurrency: two services, different fields, at the same time</h2>
         <p class="op-help">
             Payment sets <code>paymentStatus = "Paid"</code> while shipping sets <code>shippingStatus = "Shipped"</code>.
-            They never touch the same field — but read-modify-write still loses one update.
+            They never touch the same field — yet both read-modify-write approaches still collide. Run all three
+            and compare the result, the conflicts, and the RU cost.
         </p>
         <div class="race-controls">
-            <button class="btn" @onclick="() => RunRaceAsync(RaceMode.ReadModifyWrite)" disabled="@Busy">Run with read-modify-write</button>
-            <button class="btn primary" @onclick="() => RunRaceAsync(RaceMode.Patch)" disabled="@Busy">Run with Patch</button>
+            <button class="btn" @onclick="() => RunRaceAsync(RaceMode.ReadModifyWrite)" disabled="@Busy">Read-modify-write (no ETag)</button>
+            <button class="btn" @onclick="() => RunRaceAsync(RaceMode.ReadModifyWriteWithETag)" disabled="@Busy">Read-modify-write + ETag</button>
+            <button class="btn primary" @onclick="() => RunRaceAsync(RaceMode.Patch)" disabled="@Busy">Patch</button>
         </div>
-        <div class="race-results">
-            <div class="race-card @(_rmw is null ? "" : _rmw.AnyLost ? "bad" : "good")">
-                <h3>Read-modify-write</h3>
-                @if (_rmw is null)
-                {
-                    <p class="empty">Not run yet.</p>
-                }
-                else
-                {
-                    <div class="race-field @(_rmw.PaymentLost ? "lost" : "kept")">paymentStatus = <strong>@_rmw.PaymentStatus</strong> @(_rmw.PaymentLost ? "✗ lost" : "✓")</div>
-                    <div class="race-field @(_rmw.ShippingLost ? "lost" : "kept")">shippingStatus = <strong>@_rmw.ShippingStatus</strong> @(_rmw.ShippingLost ? "✗ lost" : "✓")</div>
-                    <div class="race-verdict @(_rmw.AnyLost ? "bad" : "good")">@(_rmw.AnyLost ? "An update was LOST — the second full replace overwrote the first." : "Both preserved.")</div>
-                }
-            </div>
-            <div class="race-card @(_patch is null ? "" : _patch.AnyLost ? "bad" : "good")">
-                <h3>Patch API</h3>
-                @if (_patch is null)
-                {
-                    <p class="empty">Not run yet.</p>
-                }
-                else
-                {
-                    <div class="race-field @(_patch.PaymentLost ? "lost" : "kept")">paymentStatus = <strong>@_patch.PaymentStatus</strong> @(_patch.PaymentLost ? "✗ lost" : "✓")</div>
-                    <div class="race-field @(_patch.ShippingLost ? "lost" : "kept")">shippingStatus = <strong>@_patch.ShippingStatus</strong> @(_patch.ShippingLost ? "✗ lost" : "✓")</div>
-                    <div class="race-verdict @(_patch.AnyLost ? "bad" : "good")">@(_patch.AnyLost ? "An update was lost." : "Both preserved — each patch touched only its own field.")</div>
-                }
-            </div>
+        <div class="race-results race-3">
+            @RaceCard(_rmw, "Read-modify-write", "no ETag")
+            @RaceCard(_etag, "Read-modify-write + ETag", "IfMatchEtag")
+            @RaceCard(_patch, "Patch API", "field-level")
+        </div>
+        <div class="callout">
+            <strong>ETag makes it correct — but not free.</strong> Shipping only changed <code>shippingStatus</code>, yet
+            its <code>IfMatchEtag</code> replace still hit a <strong>412 conflict</strong>, because the ETag guards the
+            <em>whole document</em> — payment's write to a different field invalidated it. Shipping then had to re-read and
+            retry. Patch touches only its own field server-side, so it never conflicts and needs no retry loop.
         </div>
     </section>
 
@@ -155,7 +140,7 @@
         <h2>Why it matters</h2>
         <ul>
             <li><strong>No read-modify-write.</strong> Patch sends only the operation, so you skip the read round trip — fewer RUs and lower latency.</li>
-            <li><strong>No lost updates on different fields.</strong> Two services that own different fields can patch the same document concurrently without overwriting each other — no optimistic-concurrency retry loop needed.</li>
+            <li><strong>No conflicts on different fields.</strong> Two services that own different fields patch concurrently without overwriting each other. An ETag would make read-modify-write correct too — but it guards the whole document, so those services still hit needless 412 conflicts and pay to re-read and retry. Patch never conflicts.</li>
             <li><strong>Cheaper on large documents.</strong> In production, patching one field costs far less than replacing the whole document (the emulator flattens this to ~1 RU).</li>
             <li><strong>Rich operations, atomically.</strong> <code>Set</code>, <code>Increment</code>, <code>Add</code> (array append), <code>Remove</code> — and multiple operations in one patch apply all-or-nothing.</li>
         </ul>
@@ -168,6 +153,7 @@
     private string? _lastOp;
     private RuComparison? _cmp;
     private RaceResult? _rmw;
+    private RaceResult? _etag;
     private RaceResult? _patch;
     private IReadOnlyList<LogEntry> _timeline = Array.Empty<LogEntry>();
 
@@ -184,6 +170,32 @@
     private string NextTag() => TagChoices[_tagIndex++ % TagChoices.Length];
 
     private static string BarWidth(double ru) => $"{Math.Min(100, ru / 2.0 * 100):0}%";
+
+    private RenderFragment RaceCard(RaceResult? r, string title, string subtitle) => @<div class="race-card @(r is null ? "" : r.AnyLost ? "bad" : r.ConflictCount > 0 ? "warn" : "good")">
+        <h3>@title <span class="muted">@subtitle</span></h3>
+        @if (r is null)
+        {
+            <p class="empty">Not run yet.</p>
+        }
+        else
+        {
+            <div class="race-field @(r.PaymentLost ? "lost" : "kept")">paymentStatus = <strong>@r.PaymentStatus</strong> @(r.PaymentLost ? "✗ lost" : "✓")</div>
+            <div class="race-field @(r.ShippingLost ? "lost" : "kept")">shippingStatus = <strong>@r.ShippingStatus</strong> @(r.ShippingLost ? "✗ lost" : "✓")</div>
+            <div class="race-metrics">
+                <span class="metric @(r.ConflictCount > 0 ? "bad" : "")">@r.ConflictCount conflict@(r.ConflictCount == 1 ? "" : "s")</span>
+                <span class="metric">@r.TotalRu.ToString("0.##") RU</span>
+            </div>
+            <div class="race-verdict @(r.AnyLost ? "bad" : r.ConflictCount > 0 ? "warn" : "good")">@RaceVerdict(r)</div>
+        }
+    </div>;
+
+    private static string RaceVerdict(RaceResult r) => r.Mode switch
+    {
+        RaceMode.ReadModifyWrite when r.AnyLost => "An update was LOST — the second full replace overwrote the first.",
+        RaceMode.ReadModifyWriteWithETag when r.ConflictCount > 0 => "Correct — but a needless 412 conflict forced a re-read + retry (extra RUs).",
+        RaceMode.Patch => "Both preserved — each patch touched only its own field. No conflict, no retry.",
+        _ => r.AnyLost ? "An update was lost." : "Both preserved.",
+    };
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -274,7 +286,12 @@
         try
         {
             RaceResult result = await Svc.RunRaceAsync(mode);
-            if (mode == RaceMode.ReadModifyWrite) _rmw = result; else _patch = result;
+            switch (mode)
+            {
+                case RaceMode.ReadModifyWrite: _rmw = result; break;
+                case RaceMode.ReadModifyWriteWithETag: _etag = result; break;
+                default: _patch = result; break;
+            }
             await RefreshAsync();
         }
         finally { _busy = false; }
@@ -286,7 +303,7 @@
         try
         {
             await Svc.ResetAsync();
-            _cmp = null; _rmw = null; _patch = null; _lastOp = null; _lastRu = null; _tagIndex = 0;
+            _cmp = null; _rmw = null; _etag = null; _patch = null; _lastOp = null; _lastRu = null; _tagIndex = 0;
             await RefreshAsync();
         }
         finally { _busy = false; }

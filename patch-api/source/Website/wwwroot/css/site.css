@@ -88,16 +88,23 @@ code, .mono { font-family: 'Cascadia Code', 'Consolas', monospace; }
 /* Concurrency race */
 .race-controls { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
 .race-results { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-@media (max-width: 700px) { .race-results { grid-template-columns: 1fr; } }
+.race-results.race-3 { grid-template-columns: 1fr 1fr 1fr; }
+@media (max-width: 700px) { .race-results, .race-results.race-3 { grid-template-columns: 1fr; } }
 .race-card { background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
 .race-card.good { border-color: rgba(34,197,94,.5); }
+.race-card.warn { border-color: rgba(245,158,11,.5); }
 .race-card.bad { border-color: rgba(248,113,113,.5); }
 .race-card h3 { margin: 0 0 10px; font-size: 15px; }
+.race-card h3 .muted { font-size: 11px; font-weight: 400; }
 .race-field { font-size: 14px; padding: 5px 0; }
 .race-field.kept strong { color: #86efac; }
 .race-field.lost strong { color: #fca5a5; }
+.race-metrics { display: flex; gap: 8px; margin: 8px 0 4px; }
+.metric { font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 5px; background: rgba(148,163,184,.18); color: #cbd5e1; }
+.metric.bad { background: rgba(245,158,11,.2); color: #fcd34d; }
 .race-verdict { margin-top: 10px; font-size: 13px; font-weight: 600; padding: 8px 10px; border-radius: 8px; }
 .race-verdict.good { background: rgba(34,197,94,.15); color: #86efac; }
+.race-verdict.warn { background: rgba(245,158,11,.15); color: #fcd34d; }
 .race-verdict.bad { background: rgba(248,113,113,.15); color: #fca5a5; }
 
 /* Timeline */
