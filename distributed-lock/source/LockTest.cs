@@ -47,7 +47,7 @@ namespace Cosmos_Patterns_GlobalLock
 
             while (this.isActive)
             {                
-                using(var mutex = await LockManager.CreateLockAsync(dls, lockName, threadName))
+                using(var mutex = await LockManager.CreateLockAsync(dls, lockName, threadName, msg => postMessage(new ConsoleMessage(msg, this.color))))
                 {
                     var reqStatus = await mutex.AcquireLeaseAsync(lockDuration, prevFenceToken);
                     var latestFenceToken = reqStatus.fenceToken;
@@ -69,11 +69,16 @@ namespace Cosmos_Patterns_GlobalLock
                         await DoWork(mutex.Name, lockName);
 
 
-                        // checking if lease valid when work is completed
+                        // With automatic lease renewal the lease is still valid even though
+                        // the work took longer than the lease duration.
                         if (!await mutex.HasLeaseAsync(latestFenceToken))
                         {
                             //lock released because of TTL before task completed
                             postMessage(new ConsoleMessage($"{mutex.Name}: Lock [{lockName}] was lost because of TTL of {this.lockDuration} seconds ==> ERROR", this.color));
+                        }
+                        else
+                        {
+                            postMessage(new ConsoleMessage($"{mutex.Name}: Completed work while still holding lock [{lockName}] ==> OK", this.color));
                         }
                         // uncomment if  you want to explicitly want to release the lock. The lock will get released when code exists using block 
                         /*
@@ -99,10 +104,11 @@ namespace Cosmos_Patterns_GlobalLock
 
         private async Task DoWork(string threadName, string lockName)
         {
-            //wait some random time
+            // Intentionally do work that can take LONGER than the lease duration to show that
+            // automatic lease renewal keeps the lock held for the entire time (issue #32).
             Random r = new Random();
-            int delay = r.Next(500, 5000);
-            postMessage(new ConsoleMessage($"{threadName}: Will hold lock [{lockName}] for {delay} milliseconds", this.color));
+            int delay = r.Next(lockDuration * 1000, lockDuration * 2000);
+            postMessage(new ConsoleMessage($"{threadName}: Will hold lock [{lockName}] for {delay} milliseconds (lease {lockDuration}s, auto-renewed)", this.color));
             await Task.Delay(delay);
         }
     }

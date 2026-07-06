@@ -37,10 +37,10 @@ By using a distributed global lock, you can coordinate and synchronize the actio
 
 ## Sample implementation
 
-The application creates a Lock based on the Name and Time to Live( TTL) provided by the user. The Lock is created in Azure Cosmos DB and  then can be tracked by multiple geographically distributed worker threads. In this sample  the application creates 3  threads  that continuously try to get  the lock.  The worker thread holds the locks for a random number of milliseconds and then releases it. If the lock is not released with the TTL value, the lock gets released automatically.
+The application creates a Lock based on the Name and Time to Live (TTL) provided by the user. The Lock is created in Azure Cosmos DB and then can be tracked by multiple geographically distributed worker threads. In this sample the application creates 3 threads that continuously try to get the lock. Each worker thread that acquires the lock holds it for a random amount of time — which can be **longer than the lease TTL** — and then releases it. While a worker holds the lock and is still doing work, it automatically **renews the lease** (re-writing it before the TTL elapses) on a background timer, so no other worker can acquire the lock mid-work. If a worker stops or crashes it stops renewing, the lease expires via TTL, and the lock is released automatically — so a stalled worker can never deadlock the lock.
 ![Screenshot showing the Distributed Lock Application running](media/dlock.png)
 
-The TTL feature is used to automatically get rid of a lease object rather than having clients do the work of checking a leasedUntil date.  This takes away one step, but you are still required to check to see if two clients tried to get a lease on the same object at the same time.  This is easily done in Azure Cosmos DB via the 'etag' property on the object.
+The TTL feature is used to automatically get rid of a lease object rather than having clients do the work of checking a leasedUntil date. This takes away one step, but you are still required to check to see if two clients tried to get a lease on the same object at the same time. This is easily done in Azure Cosmos DB via the 'etag' property on the object. The lock document itself is stored with a TTL of `-1` so it never expires (preserving its monotonically increasing fence token); only the lease object carries a TTL, and the lock holder keeps that lease alive by renewing it for as long as it holds the lock.
 
 ## Getting the code
 
@@ -131,6 +131,8 @@ If you are using the Azure Cosmos DB Emulator or cannot use RBAC, set `CosmosKey
     ```
 
 1. When prompted, enter the values for the lock name and the default TTL
+
+   As the three threads compete, notice that only one holds the lock at a time. The holder keeps working even when its work runs longer than the lease TTL — you'll see `Renewed lease ... while work continues` messages and a final `Completed work while still holding lock ... ==> OK`, while the other threads report `FAILED` until the lock is released. The lease is only allowed to expire (freeing the lock) when a holder stops renewing.
 
 ## (Optional) Deploy and run in Azure with `azd`
 
