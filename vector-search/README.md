@@ -147,6 +147,25 @@ azd up
 azd down
 ```
 
+## Testing and CI/CD (a useful side effect of local embeddings)
+
+Because the embedding model runs **locally** and needs **no API key and no deployed model endpoint**, the AI part of this sample can be built and tested in **continuous integration with no secrets**. That's a real simplification: the usual approach — pre-provisioning a hosted model and storing its keys as CI secrets — is replaced by a package restore.
+
+This repository's integration tests demonstrate it. Under `tests/CosmosDesignPatterns.Tests/VectorSearch` you'll find:
+
+- `VectorSearchTests` — uses small, deterministic vectors to assert the Cosmos DB vector mechanics (index creation, `VectorDistance()` ordering, filtered vector search).
+- `LocalEmbeddingTests` — runs the **real** local model end to end (embed → store in a vector-indexed container → search by meaning → assert the right result ranks first), plus a pure-model check that "kitten" embeds closer to "cat" than to "financial report".
+
+Both run in GitHub Actions against the Cosmos DB emulator with **no keys configured**. Because embeddings are deterministic, the semantic assertions are stable.
+
+> **Honest caveat:** keyless does not mean network-free. The `SmartComponents.LocalEmbeddings` package fetches the ~16 MB model from Hugging Face at **build time** (then caches it), so CI needs egress to `huggingface.co`. For a fully hermetic/air-gapped build you would vendor the `.onnx` file into your own storage. No secrets or model endpoints are required either way.
+
+## Completing the picture: local generation (a possible future step)
+
+This sample covers the **retrieval** half of retrieval-augmented generation (RAG) — finding the most relevant context by meaning. A natural next step is the **generation** half: feed the retrieved movies to a language model to answer a question in natural language (for example, *"recommend a movie for a cozy night in and say why"*).
+
+We may explore adding an **optional, local** generation step in the future so the whole RAG loop stays keyless. It's feasible today with small local models (for example **Phi-4-mini** or **Llama 3.2 1B/3B**) via [ONNX Runtime GenAI](https://github.com/microsoft/onnxruntime-genai) or [LLamaSharp](https://github.com/SciSharp/LLamaSharp), behind [`Microsoft.Extensions.AI`](https://learn.microsoft.com/dotnet/ai/). Note the trade-offs versus the tiny embedding model, though: generative models are much larger (roughly **0.3–2 GB** quantized) and slower (**seconds** per answer on CPU, not milliseconds), and their output is non-deterministic, which makes them heavier for CI. For that reason any generation step would be **optional** (or delegated to Azure OpenAI in production), keeping the core sample fast and light.
+
 ## Summary
 
 Vector search lets Azure Cosmos DB find data by **meaning** instead of keywords, using a native vector index and the `VectorDistance()` function — with similarity, metadata filters, and your operational data all in one place. It's the retrieval foundation for semantic search and RAG. Generate embeddings however you like (a local model here, Azure OpenAI in production); the Cosmos DB indexing and query stay the same.
