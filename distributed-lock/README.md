@@ -18,8 +18,10 @@ Distributed locks are superior to regular locks in distributed systems because t
 
 This sample demonstrates:
 
-- ✅Optimistic concurrency control (ETag updates)
-- ✅TTL (ability to set an expiration date on a document)
+- ✅ A single-document lock acquired **atomically** (an insert succeeds only if the lock is free)
+- ✅ Optimistic concurrency control (ETag) for safe renewal and release
+- ✅ TTL so an abandoned lock is released automatically (no deadlocks)
+- ✅ A monotonically increasing **fencing token** derived from the Cosmos DB session token
 
 ## Common scenario
 
@@ -37,10 +39,33 @@ By using a distributed global lock, you can coordinate and synchronize the actio
 
 ## Sample implementation
 
-The application creates a Lock based on the Name and Time to Live (TTL) provided by the user. The Lock is created in Azure Cosmos DB and then can be tracked by multiple geographically distributed worker threads. In this sample the application creates 3 threads that continuously try to get the lock. Each worker thread that acquires the lock holds it for a random amount of time — which can be **longer than the lease TTL** — and then releases it. While a worker holds the lock and is still doing work, it automatically **renews the lease** (re-writing it before the TTL elapses) on a background timer, so no other worker can acquire the lock mid-work. If a worker stops or crashes it stops renewing, the lease expires via TTL, and the lock is released automatically — so a stalled worker can never deadlock the lock.
-![Screenshot showing the Distributed Lock Application running](media/dlock.png)
+> **Credit:** the lock library in this sample (`source/DistributedLock`) is adapted — for .NET 10, and to support keyless / emulator connections — from [CloudDistributedLock](https://github.com/briandunnington/CloudDistributedLock) by Brian Dunnington, used under the MIT License.
 
-The TTL feature is used to automatically get rid of a lease object rather than having clients do the work of checking a leasedUntil date. This takes away one step, but you are still required to check to see if two clients tried to get a lease on the same object at the same time. This is easily done in Azure Cosmos DB via the 'etag' property on the object. The lock document itself is stored with a TTL of `-1` so it never expires (preserving its monotonically increasing fence token); only the lease object carries a TTL, and the lock holder keeps that lease alive by renewing it for as long as it holds the lock.
+The lock is represented by a **single document** whose `id` is the lock name. Acquiring the lock is simply an **insert**: if the document doesn't exist it is created and the lock is held; if it already exists Cosmos DB returns a **409 Conflict** and the caller knows the lock is held by someone else. This makes mutual exclusion atomic — there is no read-then-write race.
+
+While a caller holds the lock, a background **keep-alive** loop renews the document (via `ReplaceItem` with an ETag check) shortly before its TTL elapses, so the lock stays held for as long as the work runs — even when that is longer than the TTL. When the holder finishes it deletes the document (releasing the lock); if it crashes or otherwise stops renewing, Cosmos DB's **TTL** deletes the document automatically, so the lock can never get stuck (no deadlock).
+
+Each acquisition exposes a **fencing token** — a monotonically increasing value taken from the Azure Cosmos DB session token (its global LSN). A downstream system can use it to reject a stale lock holder.
+
+The library exposes a small, dependency-injection-friendly API:
+
+```csharp
+var lockProvider = lockProviderFactory.GetLockProvider();
+
+// Try once and return immediately:
+using (var @lock = await lockProvider.TryAcquireLockAsync("my-resource"))
+{
+    if (@lock.IsAcquired)
+    {
+        // do critical work here; @lock.FencingToken is available
+    }
+}
+
+// Or wait (optionally with a timeout) for the lock to become available:
+using var waited = await lockProvider.AcquireLockAsync("my-resource", TimeSpan.FromSeconds(2));
+```
+
+The included console app (`source/ConsoleApp`) starts three workers that all compete for the same lock to show that only one holds it at a time, that the holder keeps the lock while its work runs longer than the TTL, and that each acquisition prints a higher fencing token.
 
 ## Getting the code
 
@@ -82,10 +107,7 @@ Keyless authentication using `DefaultAzureCredential` is the recommended approac
 
 ```json
 {
-  "CosmosUri": "<endpoint>",
-  "CosmosDatabase": "LockDB",
-  "CosmosContainer": "Locks",
-  "retryInterval": 1
+  "CosmosUri": "<endpoint>"
 }
 ```
 
@@ -102,10 +124,7 @@ If you are using the Azure Cosmos DB Emulator or cannot use RBAC, set `CosmosKey
 ```json
 {
   "CosmosUri": "<endpoint>",
-  "CosmosKey": "<primary-key>",
-  "CosmosDatabase": "LockDB",
-  "CosmosContainer": "Locks",
-  "retryInterval": 1
+  "CosmosKey": "<primary-key>"
 }
 ```
 
@@ -124,15 +143,14 @@ If you are using the Azure Cosmos DB Emulator or cannot use RBAC, set `CosmosKey
 
 ## Run the demo locally
 
-1. At a command prompt or VS Code Terminal, switch to the `source` folder and run the app with:
+1. Start the local emulator (see the [root README](../README.md#run-locally-with-the-emulator-default)) or point at your own account, then run the console app:
 
-    ```dotnetcli
+    ```bash
+    cd source/ConsoleApp
     dotnet run
     ```
 
-1. When prompted, enter the values for the lock name and the default TTL
-
-   As the three threads compete, notice that only one holds the lock at a time. The holder keeps working even when its work runs longer than the lease TTL — you'll see `Renewed lease ... while work continues` messages and a final `Completed work while still holding lock ... ==> OK`, while the other threads report `FAILED` until the lock is released. The lease is only allowed to expire (freeing the lock) when a holder stops renewing.
+1. The app starts three workers competing for the same lock. Notice that only one holds it at a time (the others log `could not acquire (held by another worker)`), that the holder keeps the lock even when its work runs longer than the TTL (`holding for ... ms (TTL 5s, auto-renewed)`), and that each acquisition prints a higher `fencing token`. It finishes by demonstrating an `AcquireLockAsync` call that gives up after a 2-second wait while the lock is held.
 
 ## (Optional) Deploy and run in Azure with `azd`
 
@@ -141,7 +159,7 @@ The steps above run the sample **all-local** (against the Azure Cosmos DB emulat
 Because this sample is a **console app**, there is no service hosted in Azure — `azd` only provisions the data store, intentionally minimal and cheap:
 
 - A **serverless** Azure Cosmos DB account with local (key) authentication **disabled**.
-- The sample's `LockDB` database and `Locks` container (created with a 60-second TTL so leases auto-expire, matching the app), pre-created.
+- The sample's `LockDB` database and `Locks` container (TTL-enabled, so an abandoned lock is released automatically), pre-created.
 - A data-plane role assignment granting **you** (the deploying user) keyless access, so you can run the console app locally against it.
 
 ### Provision
@@ -157,18 +175,18 @@ When it finishes, point the app at the new account and run it locally — keyles
 ```bash
 # bash / zsh
 export CosmosUri="$(azd env get-value AZURE_COSMOS_ENDPOINT)"
-cd source && dotnet run
+cd source/ConsoleApp && dotnet run
 ```
 
 ```powershell
 # PowerShell
 $env:CosmosUri = azd env get-value AZURE_COSMOS_ENDPOINT
-cd source; dotnet run
+cd source/ConsoleApp; dotnet run
 ```
 
 Leave `CosmosKey` empty — with only `CosmosUri` set, the app authenticates keyless via `DefaultAzureCredential`.
 
-> **Consistency note:** This template provisions a single-region **serverless** account, which uses **Session** consistency. The lock's correctness — mutual exclusion and monotonically increasing fence tokens — comes from optimistic concurrency (a unique-id insert plus `ETag`-checked patches), so it holds under any consistency level, not just Strong. For a multi-region *production* lock you would instead use provisioned throughput with **Strong** (or **Bounded staleness**) consistency; serverless accounts are single-region only.
+> **Consistency note:** This template provisions a single-region **serverless** account, which uses **Session** consistency. The lock's mutual exclusion comes from the atomic unique-id insert (a 409 Conflict when the lock is held) and ETag-checked renewal, so it holds under any consistency level; the fencing token is the session token's global LSN, which is monotonically increasing. For a multi-region *production* lock you would instead use provisioned throughput with **Strong** (or **Bounded staleness**) consistency; serverless accounts are single-region only.
 
 ### Clean up
 
