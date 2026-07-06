@@ -153,10 +153,6 @@ When you're done, stop the emulator with `docker compose down`.
 
 Each sample includes an [Azure Developer CLI (`azd`)](https://aka.ms/azd) template that provisions a dedicated, **keyless** (Microsoft Entra ID / managed identity) set of Azure resources for that one sample — and, for the web and Functions samples, deploys the app. Look for the **"(Optional) Deploy and run in Azure with `azd`"** section in each sample's `README.md`.
 
-Alternatively, to create a single shared Serverless Azure Cosmos DB account to point the samples at, use the Deploy to Azure button:
-
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fgithub.com%2FAzureCosmosDB%2Fdesign-patterns%2Ftree%2Fmain%2Fazuredeploy.json)
-
 The `azd` templates are intentionally minimal and inexpensive — this repository teaches Cosmos DB **design patterns**, not production or enterprise architecture — and each is fully removed with `azd down` when you're finished.
 
 #### Configuration and authentication
