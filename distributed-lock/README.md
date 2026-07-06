@@ -23,6 +23,12 @@ This sample demonstrates:
 - ✅ TTL so an abandoned lock is released automatically (no deadlocks)
 - ✅ A monotonically increasing **fencing token** derived from the Cosmos DB session token
 
+## Web front end
+
+The included interactive playground runs **real** Cosmos DB locks: on-screen workers compete for a lock, the holder renews it live, and a fencing token rejects a stale writer. Try crashing the holder or turning off auto-renew to see the lease expire and another worker take over:
+
+![Distributed Lock interactive web front end showing workers competing for a lock](media/distributed-lock-web.png)
+
 ## Common scenario
 
 A common scenario for using a distributed global lock in the NoSQL design pattern is when you need to enforce mutual exclusion or coordination across multiple nodes or processes in a distributed system. Here are a few examples:

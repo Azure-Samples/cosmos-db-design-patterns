@@ -22,6 +22,12 @@ body {
 
 .page { max-width: 1200px; margin: 0 auto; padding: 24px; }
 
+/* Top nav */
+.app-nav { background: linear-gradient(90deg, #0b3a4a, #10243a); border-bottom: 1px solid var(--border); }
+.app-nav .nav-inner { max-width: 1200px; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; gap: 12px; }
+.app-nav .brand { font-size: 18px; font-weight: 600; color: var(--text); }
+.app-nav svg { color: var(--accent); }
+
 header h1 { margin: 0 0 6px; font-size: 26px; }
 .tagline { margin: 0 0 16px; color: var(--muted); max-width: 900px; line-height: 1.5; }
 .tagline strong { color: var(--text); }

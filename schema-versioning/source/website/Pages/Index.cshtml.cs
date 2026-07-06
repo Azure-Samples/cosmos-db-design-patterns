@@ -18,8 +18,25 @@ public class IndexModel : PageModel
         Carts = new List<Cart>();
     }
 
-    public void OnGet()
+    public async Task OnGet()
     {
-        Carts = _cartService.RetrieveAllCartsAsync().Result.ToList();        
+        await LoadAsync();
+    }
+
+    public async Task<IActionResult> OnPostAddAsync(bool versioned)
+    {
+        await _cartService.AddCartAsync(versioned);
+        return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostClearAsync()
+    {
+        await _cartService.ClearAllAsync();
+        return RedirectToPage();
+    }
+
+    private async Task LoadAsync()
+    {
+        Carts = (await _cartService.RetrieveAllCartsAsync()).ToList();
     }
 }

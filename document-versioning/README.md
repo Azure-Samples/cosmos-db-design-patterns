@@ -20,6 +20,12 @@ This sample demonstrates:
 - ✅  The example illustrates the separation of current document versions stored in a `CurrentOrderStatus` collection and historical document versions stored in a `HistoricalOrderStatus` collection.
 - ✅ It highlights the integration of Azure Cosmos DB change feed processor running as a .NET [BackGroundService] (https://learn.microsoft.com/dotnet/architecture/microservices/multi-container-microservice-net-applications/background-tasks-with-ihostedservice) capture and copy the versioned documents to the historical collection, enabling efficient tracking and management of document versions.
 
+## Web front end
+
+Create orders and move them through their lifecycle (Fulfill, Deliver, Cancel) and watch each order's **document version** climb as every change is written as a new version:
+
+![Document Versioning web front end showing orders grouped by status with version numbers](images/document-versioning-web.png)
+
 ## Common scenario
 
 Some industries have regulations for data retention that require historical versions to be retained and tracked. Auditing and document control are other reasons for tracking versions. With document versioning, the current versions of documents are stored in a collection named to store the current documents. A second collection is named to store historical documents. This improves performance by allowing queries on current versions to be polled quickly without having to filter the historical results. The document versioning itself is handled at the application layer - outside of Azure Cosmos DB.

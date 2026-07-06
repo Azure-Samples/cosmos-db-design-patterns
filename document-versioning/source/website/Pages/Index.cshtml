@@ -1,122 +1,92 @@
 ﻿@page
 @model IndexModel
+@using Models
 @{
-    ViewData["Title"] = "Home page";
+    ViewData["Title"] = "Document Versioning";
+
+    bool HasActions(string kind) => kind is "submitted" or "fulfilled";
 }
 
-<div>
-    <h1 class="display-4">Document Versioning Demo</h1>
-    <p>This demo showcases how to implement the document versioning pattern in Azure Cosmos DB.  The demo has 2 components:</p>
-    <ul>
-        <li>This website - used to create and manage Order documents</li>
-        <li>.NET Background Service - implements Cosmos DB Change Feed to copy document updates to a historical container</li>
-    </ul>
-    <section>
-        <form method="post" class="form-horizontal">
-            @Html.AntiForgeryToken()
-            <fieldset>
-                <legend>Create New Orders</legend>
-            <label for="DocCount">Number to create:</label>
-            <input name="DocCount" type="number">
-            <input type="submit" />
-            </fieldset>
-        </form>
-    </section>
-    <h2>Submitted Orders</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Order Number</th>
-                <th>Customer Id</th>
-                <th>Order Status</th>
-                <th>Document Version</th>
-                <th>Links</th>
-            </tr>
-        </thead>
-        <tbody>
-        @foreach (var order in Model.SubmittedOrders)
-            {
-                <tr>
-                    <td>@order.OrderId</td>
-                    <td>@order.CustomerId</td>
-                    <td>@order.Status</td>
-                    <td>@order.DocumentVersion</td>
-                    <td>                        
-                        <a asp-controller="Status" asp-action="Fulfill" asp-route-orderid="@order.OrderId" asp-route-customerid="@order.CustomerId">Fulfill</a>&nbsp;&nbsp;
-                        <a asp-controller="Status" asp-action="Cancel" asp-route-orderid="@order.OrderId" asp-route-customerid="@order.CustomerId">Cancel</a>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-    <h2>Fulfilled Orders</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Order Number</th>
-                <th>Customer Id</th>
-                <th>Order Status</th>
-                <th>Document Version</th>
-                <th>Links</th>
-            </tr>
-        </thead>
-        <tbody>
-        @foreach (var order in Model.FulfilledOrders)
-            {
-                <tr>
-                    <td>@order.OrderId</td>
-                    <td>@order.CustomerId</td>
-                    <td>@order.Status</td>
-                    <td>@order.DocumentVersion</td>
-                    <td>
-                        <a asp-controller="Status" asp-action="Deliver" asp-route-orderid="@order.OrderId" asp-route-customerid="@order.CustomerId">Deliver</a>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-    <h2>Delivered Orders</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Order Number</th>
-                <th>Customer Id</th>
-                <th>Order Status</th>
-                <th>Document Version</th>                
-            </tr>
-        </thead>
-        <tbody>
-        @foreach (var order in Model.DeliveredOrders)
-            {
-                <tr>
-                    <td>@order.OrderId</td>
-                    <td>@order.CustomerId</td>
-                    <td>@order.Status</td>
-                    <td>@order.DocumentVersion</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-    <h2>Cancelled Orders</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Order Number</th>
-                <th>Customer Id</th>
-                <th>Order Status</th>
-                <th>Document Version</th>                
-            </tr>
-        </thead>
-        <tbody>
-        @foreach (var order in Model.CancelledOrders)
-            {
-                <tr>
-                    <td>@order.OrderId</td>
-                    <td>@order.CustomerId</td>
-                    <td>@order.Status</td>
-                    <td>@order.DocumentVersion</td>
-                </tr>
-            }
-        </tbody>
-    </table>
+<div class="intro">
+    <h1>Document Versioning</h1>
+    <p>
+        Every change to an order is written as a <strong>new version</strong> of the document, and a
+        .NET background service uses the Azure Cosmos DB <strong>change feed</strong> to copy each
+        update into a historical container &mdash; so you keep a full, queryable history of how each
+        order evolved.
+    </p>
+    <p>Create some orders below, then move them through their lifecycle and watch the document version climb.</p>
 </div>
+
+<div class="panel">
+    <h2>Create new orders</h2>
+    <form method="post" class="create-form">
+        @Html.AntiForgeryToken()
+        <div class="field">
+            <label for="DocCount">Number to create</label>
+            <input id="DocCount" name="DocCount" type="number" value="5" min="1" />
+        </div>
+        <button type="submit" class="btn">Create orders</button>
+    </form>
+</div>
+
+@{
+    void RenderGroup(string title, string kind, List<VersionedOrder> orders)
+    {
+        <div class="group-head">
+            <h2>@title</h2>
+            <span class="count-pill">@orders.Count</span>
+        </div>
+
+        if (orders.Count == 0)
+        {
+            <div class="empty">No @title.ToLower() orders yet.</div>
+            return;
+        }
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Order #</th>
+                    <th>Customer</th>
+                    <th>Status</th>
+                    <th>Version</th>
+                    @if (HasActions(kind))
+                    {
+                        <th>Actions</th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var order in orders)
+                {
+                    <tr>
+                        <td class="mono">@order.OrderId</td>
+                        <td class="mono">@order.CustomerId</td>
+                        <td><span class="badge @kind">@order.Status</span></td>
+                        <td><span class="vchip">v@(order.DocumentVersion)</span></td>
+                        @if (HasActions(kind))
+                        {
+                            <td>
+                                @if (kind == "submitted")
+                                {
+                                    <a class="btn small" href="/Fulfill/@order.OrderId/@order.CustomerId">Fulfill</a>
+                                    <a class="btn small ghost" href="/Cancel/@order.OrderId/@order.CustomerId">Cancel</a>
+                                }
+                                else if (kind == "fulfilled")
+                                {
+                                    <a class="btn small" href="/Deliver/@order.OrderId/@order.CustomerId">Deliver</a>
+                                }
+                            </td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+
+@{ RenderGroup("Submitted", "submitted", Model.SubmittedOrders); }
+@{ RenderGroup("Fulfilled", "fulfilled", Model.FulfilledOrders); }
+@{ RenderGroup("Delivered", "delivered", Model.DeliveredOrders); }
+@{ RenderGroup("Cancelled", "cancelled", Model.CancelledOrders); }
