@@ -132,85 +132,40 @@ Note: In the demo application, aggregated events are collected based on system t
 
 ### Using Terminal or VS Code
 
-Directions installing pre-requisites to run locally and for cloning this repository using [Terminal or VS Code](../README.md?#getting-started)
+Directions for installing pre-requisites and cloning this repository are in the [root README](../README.md#getting-started).
 
 
-## Set up application configuration files
+## Set up application configuration
 
-You need to configure an application configuration file to run this app.
+The app reads `CosmosUri` and `CosmosKey` from configuration — see [Configuration and authentication](../README.md#configuration-and-authentication) in the root README. To run against the local emulator, set them to the well-known emulator endpoint and key (see [Run locally with the emulator](../README.md#run-locally-with-the-emulator-default)); the app accepts the emulator's self-signed certificate automatically when the endpoint is `localhost`.
 
-1. Go to your resource group and select the Serverless Azure Cosmos DB for NoSQL account that you created for this repository.
+The simplest way is an `appsettings.development.json` file in the `source` folder (it's git-ignored, so nothing is committed):
 
-1. From the navigation, under **Settings**, select **Keys** and copy the **URI** value.
+```json
+{
+  "CosmosUri": "https://localhost:8081",
+  "CosmosKey": "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="
+}
+```
 
-### Option 1: Keyless authentication via RBAC (Recommended)
+To use your own Azure Cosmos DB account with keyless (RBAC) authentication instead, set only `CosmosUri` to your account endpoint and leave `CosmosKey` empty — the app then uses `DefaultAzureCredential`. Grant your identity the **Cosmos DB Built-in Data Contributor** role first.
 
-Keyless authentication using `DefaultAzureCredential` is the recommended approach. It works automatically with managed identity (Azure-hosted) and with the Azure CLI locally.
+## Run the demo locally
 
-1. Assign the **Cosmos DB Built-in Data Contributor** role to your identity:
-
-    ```bash
-    az cosmosdb sql role assignment create \
-      --account-name <cosmos-account-name> \
-      --resource-group <resource-group-name> \
-      --role-definition-name "Cosmos DB Built-in Data Contributor" \
-      --principal-id $(az ad signed-in-user show --query id -o tsv) \
-      --scope "/"
-    ```
-
-1. Sign in with the Azure CLI (for local development):
-
-    ```bash
-    az login
-    ```
-
-1. Open the data-binning project and set these values as environment variables (recommended — see [Configuration and authentication](../README.md#configuration-and-authentication)), or add an **appsettings.development.json** file with the following contents:
-
-    ```json
-    {
-      "CosmosUri": "<endpoint>"
-    }
-    ```
-
-1. Replace `<endpoint>` with the **URI** value copied from the Keys blade.
-
-### Option 2: Key-based authentication (local emulator fallback)
-
-If you are using the Azure Cosmos DB Emulator or cannot use RBAC, set `CosmosKey` as well:
-
-1. From the Keys blade, copy both the **URI** and **PRIMARY KEY** values.
-
-1. Open the data-binning project and set these values as environment variables (recommended — see [Configuration and authentication](../README.md#configuration-and-authentication)), or add an **appsettings.development.json** file with the following contents:
-
-    ```json
-    {
-      "CosmosUri": "<endpoint>",
-      "CosmosKey": "<primary-key>"
-    }
-    ```
-
-> **Note:** Never commit `appsettings.development.json` with real key values. The `.gitignore` already excludes `appsettings.development.json`.
-
-1. Modify the **Copy to Output Directory** to **Copy Always** (For VS Code add the XML below to the csproj file)
-1. Save the file.
-
-  ```xml
-    <ItemGroup>
-      <Content Update="appsettings.development.json">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </Content>
-    </ItemGroup>
-  ```
-
-## Run the demo
-
-Open a new terminal and run the included Console App (Program.cs) which generates events, saves them bucketed by device and minute:
+Start the local emulator first (see the [root README](../README.md#run-locally-with-the-emulator-default)):
 
 ```bash
+docker compose up -d
+```
+
+Then run the app:
+
+```bash
+cd source
 dotnet run
 ```
 
-While the Console App is running you may return to the terminal window where the function was started to see that it is writing batches to Cosmos DB.
+The console generates sensor events and saves them bucketed by device and minute (data binning). When it finishes, query the binned data as shown below.
 
 ## Querying the binned sensor data
 

@@ -74,85 +74,23 @@ This sample is implemented as a C#/.NET application with three projects. The thr
 
 ### Using Terminal or VS Code
 
-Directions installing pre-requisites to run locally and for cloning this repository using [Terminal or VS Code](../README.md?#getting-started)
+Directions for installing pre-requisites and cloning this repository are in the [root README](../README.md#getting-started).
 
 
-## Set up application configuration files
+## Set up application configuration
 
-You need to configure **two** application configuration files to run this app.
+Both the **Visualizer** (web dashboard) and the **ConsumerApp** (console) read `CosmosUri`/`CosmosKey` — plus `CosmosDatabase` and `CosmosContainer` — from configuration. See [Configuration and authentication](../README.md#configuration-and-authentication) in the root README. To run against the local emulator, add an `appsettings.development.json` file (git-ignored) to **each** project's folder with the emulator endpoint and key:
 
-1. Go to your resource group and select the Serverless Azure Cosmos DB for NoSQL account that you created for this repository.
+```json
+{
+  "CosmosUri": "https://localhost:8081",
+  "CosmosKey": "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==",
+  "CosmosDatabase": "CounterDB",
+  "CosmosContainer": "Counters"
+}
+```
 
-1. From the navigation, under **Settings**, select **Keys** and copy the **URI** value.
-
-### Option 1: Keyless authentication via RBAC (Recommended)
-
-Keyless authentication using `DefaultAzureCredential` is the recommended approach. It works automatically with managed identity (Azure-hosted) and with the Azure CLI locally.
-
-1. Assign the **Cosmos DB Built-in Data Contributor** role to your identity:
-
-    ```bash
-    az cosmosdb sql role assignment create \
-      --account-name <cosmos-account-name> \
-      --resource-group <resource-group-name> \
-      --role-definition-name "Cosmos DB Built-in Data Contributor" \
-      --principal-id $(az ad signed-in-user show --query id -o tsv) \
-      --scope "/"
-    ```
-
-1. Sign in with the Azure CLI (for local development):
-
-    ```bash
-    az login
-    ```
-
-1. Open the **Visualizer** project and set these values as environment variables (recommended — see [Configuration and authentication](../README.md#configuration-and-authentication)), or add an **appsettings.development.json** file with the following contents:
-
-    ```json
-    {
-      "CosmosUri": "<endpoint>",
-      "CosmosDatabase": "CounterDB",
-      "CosmosContainer": "Counters"
-    }
-    ```
-
-1. Replace `<endpoint>` with the **URI** value copied from the Keys blade.
-
-Next move to the other project.
-
-1. Open the **ConsumerApp** project and set the same values as environment variables, or add an **appsettings.development.json** file with the same contents.
-
-### Option 2: Key-based authentication (local emulator fallback)
-
-If you are using the Azure Cosmos DB Emulator or cannot use RBAC, set `CosmosKey` as well:
-
-1. From the Keys blade, copy both the **URI** and **PRIMARY KEY** values.
-
-1. Open the **Visualizer** project and set these values as environment variables (recommended — see [Configuration and authentication](../README.md#configuration-and-authentication)), or add an **appsettings.development.json** file with the following contents:
-
-    ```json
-    {
-      "CosmosUri": "<endpoint>",
-      "CosmosKey": "<primary-key>",
-      "CosmosDatabase": "CounterDB",
-      "CosmosContainer": "Counters"
-    }
-    ```
-
-1. Open the **ConsumerApp** project and set the same values as environment variables, or add an **appsettings.development.json** file with the same contents.
-
-> **Note:** Never commit `appsettings.development.json` with real key values. The `.gitignore` already excludes `appsettings.development.json`.
-
-1. Modify the **Copy to Output Directory** to **Copy Always** (For VS Code add the XML below to the csproj file)
-1. Save the file.
-
-  ```xml
-    <ItemGroup>
-      <Content Update="appsettings.development.json">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </Content>
-    </ItemGroup>
-  ```
+To use your own Azure Cosmos DB account with keyless (RBAC) authentication instead, set `CosmosUri` to your account endpoint and leave `CosmosKey` empty — the apps then use `DefaultAzureCredential`. Grant your identity the **Cosmos DB Built-in Data Contributor** role first.
 
 ## Run the demo locally
 

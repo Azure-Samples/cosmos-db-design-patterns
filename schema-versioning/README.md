@@ -158,134 +158,45 @@ public class Cart
 ```
 
 
-## Try this implementation
+## Getting the code
 
-> This sample can be run **two ways**: *all-local* (this section — your machine against the Cosmos DB emulator or your own account) or *all-Azure* (deployed and running in Azure — see [Deploy and run in Azure](#optional-deploy-and-run-in-azure-with-azd) below). You don't need Azure to learn the pattern.
+### Using Terminal or VS Code
 
-You can run this sample locally:
+Directions for installing pre-requisites and cloning this repository are in the [root README](../README.md#getting-started).
 
+## Set up application configuration
 
-### Run locally
+This sample has two apps: a **data-generator** (console) and a **website**. Both read their Azure Cosmos DB settings from configuration — see [Configuration and authentication](../README.md#configuration-and-authentication) in the root README.
 
-```bash
-  git clone https://github.com/Azure-Samples/cosmos-db-design-patterns/
+The **website defaults to the local emulator** (`https://localhost:8081`) when nothing is configured, so it runs with zero setup. For the **data-generator**, add an `appsettings.development.json` file (git-ignored) to its folder with the emulator endpoint and key:
+
+```json
+{
+  "CosmosUri": "https://localhost:8081",
+  "CosmosKey": "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==",
+  "DatabaseName": "SchemaVersionDB",
+  "ContainerName": "ShoppingCart",
+  "PartitionKeyPath": "/id"
+}
 ```
 
-### Prerequisites
+To use your own Azure Cosmos DB account with keyless (RBAC) authentication instead, set `CosmosUri` to your account endpoint and leave `CosmosKey` empty — the apps then use `DefaultAzureCredential`. Grant your identity the **Cosmos DB Built-in Data Contributor** role first. (In the website, these settings bind under a `CosmosDb` section — see the root configuration table.)
 
-If running locally you will need to install .NET 10.
 
-- [.NET 10.0 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
+## Run the demo locally
 
-To confirm you have the required versions of the tools installed.
-
-First, check the .NET runtime with this command. Make sure that .NET components with versions that start with 10.0 appear as part of the output:
+Start the local emulator first (see the [root README](../README.md#run-locally-with-the-emulator-default)):
 
 ```bash
-dotnet --list-runtimes
+docker compose up -d
 ```
 
-
-## Set up application configuration files
-
-You need to configure **two** application configuration files to run these demos.
-
-1. Go to your resource group and select the Serverless Azure Cosmos DB for NoSQL account that you created for this repository.
-
-1. From the navigation, under **Settings**, select **Keys** and copy the **URI** value.
-
-### Option 1: Keyless authentication via RBAC (Recommended)
-
-Keyless authentication using `DefaultAzureCredential` is the recommended approach. It works automatically with managed identity (Azure-hosted) and with the Azure CLI locally.
-
-1. Assign the **Cosmos DB Built-in Data Contributor** role to your identity:
-
-    ```bash
-    az cosmosdb sql role assignment create \
-      --account-name <cosmos-account-name> \
-      --resource-group <resource-group-name> \
-      --role-definition-name "Cosmos DB Built-in Data Contributor" \
-      --principal-id $(az ad signed-in-user show --query id -o tsv) \
-      --scope "/"
-    ```
-
-1. Sign in with the Azure CLI (for local development):
-
-    ```bash
-    az login
-    ```
-
-1. In Codespace or locally, open the data-generator folder and set these values as environment variables (recommended — see [Configuration and authentication](../README.md#configuration-and-authentication)), or add an **appsettings.development.json** file with the following contents:
-
-  ```json
-  {
-    "CosmosUri": "<endpoint>",
-    "DatabaseName": "SchemaVersionDB",
-    "ContainerName": "ShoppingCart",
-    "PartitionKeyPath": "/id"
-  }
-  ```
-
-1. Replace `<endpoint>` with the **URI** value copied from the Keys blade.
-
-1. Open the website folder and set these values as environment variables (recommended — see [Configuration and authentication](../README.md#configuration-and-authentication)), or add an **appsettings.development.json** file with the following contents:
-
-  ```json
-  {
-    "CosmosDb": {
-      "CosmosUri": "<endpoint>",
-      "DatabaseName": "SchemaVersionDB",
-      "ContainerName": "ShoppingCart",
-      "PartitionKeyPath": "/id"
-    }
-  }
-  ```
-
-1. Save both files.
-
-### Option 2: Key-based authentication (local emulator fallback)
-
-If you are using the Azure Cosmos DB Emulator or cannot use RBAC, set `CosmosKey` as well:
-
-1. From the Keys blade, copy both the **URI** and **PRIMARY KEY** values.
-
-1. In the data-generator **appsettings.development.json** file:
-
-  ```json
-  {
-    "CosmosUri": "<endpoint>",
-    "CosmosKey": "<primary-key>",
-    "DatabaseName": "SchemaVersionDB",
-    "ContainerName": "ShoppingCart",
-    "PartitionKeyPath": "/id"
-  }
-  ```
-
-1. In the website **appsettings.development.json** file:
-
-  ```json
-  {
-    "CosmosDb": {
-      "CosmosUri": "<endpoint>",
-      "CosmosKey": "<primary-key>",
-      "DatabaseName": "SchemaVersionDB",
-      "ContainerName": "ShoppingCart",
-      "PartitionKeyPath": "/id"
-    }
-  }
-  ```
-
-> **Note:** Never commit `appsettings.development.json` with real key values. The `.gitignore` already excludes `appsettings.development.json`.
-
-1. Save both files.
-
-
-## Generate data
+### Generate data
 
 Navigate to the data-generator folder. Run the data generator to generate original carts and schema-versioned carts.
 
 ```bash
-cd ./data-generator
+cd source/data-generator
 dotnet run
 ```
 
@@ -308,20 +219,16 @@ Check Carts for new carts
 Press Enter to exit.
 ```
 
-## Run the website to show generated data
+### Run the website to show generated data
 
 Run the website to display the carts.
 
 ```bash
-cd ./website
+cd source/website
 dotnet run
 ```
 
-Navigate to the URL displayed in the output. In the example below, the URL is shown as part of the `info` output, following the "Now listening on: " text.
-
-![Screenshot of the 'dotnet run' output. The URL to navigate to is highlighted. In the screenshot, the URL is 'http://localhost:5279'.](./images/local-site-url.png)
-
-The output will show a variety of randomly generated carts and include the schema version when populated. When a cart contains no special items, the Special Order Notes field will not appear in the cart table.
+Open the URL it prints. The output will show a variety of randomly generated carts and include the schema version when populated. When a cart contains no special items, the Special Order Notes field will not appear in the cart table.
 
 ![Screenshot of the schema-versioned carts demo. The first cart shows 2 items with the fields Product Name and Quantity. The second cart shows 3 items with the fields for Schema Version, Product Name, Quantity, and Special Order Notes. The third cart shows 1 item with the fields for Schema Version, Product Name, Quantity, and Special Order Notes. The fourth cart shows 1 item with the fields for Schema Version, Product Name, and Quantity.](./images/schema-versioned-carts-website.png)
 

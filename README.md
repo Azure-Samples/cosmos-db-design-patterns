@@ -15,8 +15,6 @@ description: A collection that showcases a variety of design patterns that can b
 
 # Azure Cosmos DB Design Pattern Samples
 
-![Azure Cosmos DB](/media/azure-cosmos-db-logo.jpg)
-
 Welcome to the Azure Cosmos DB Design Pattern Samples repository! This collection showcases a variety of design patterns that can be employed to build robust and efficient applications using Azure Cosmos DB's NoSQL capabilities. Each pattern addresses specific scenarios and challenges, offering guidance and best practices for implementation.
 
 <p style="font-size: 20px;"><strong>📝 Note:</strong> For this and other great samples, visit the <a href="https://azurecosmosdb.github.io/gallery/" target="_blank">Azure Cosmos DB Samples Gallery</a>.</p>

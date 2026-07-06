@@ -72,169 +72,62 @@ In the demo, you will not notice the performance implications with smaller sets 
 
 **Note**: If you are running into aggregation analysis at scale, the materialized views would not be advised. For large-scale analysis, consider using [Azure Cosmos DB Mirroring for Azure Fabric](https://learn.microsoft.com/fabric/database/mirrored-database/azure-cosmos-db) or [Azure Synapse Link for Azure Cosmos DB](https://learn.microsoft.com/azure/cosmos-db/synapse-link).
 
-## Try this implementation
-
-To run this demo, you will need to have:
-
-- [.NET 10.0 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
-- [Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local#install-the-azure-functions-core-tools)
-
-## Confirm required tools are installed
-
-Confirm you have the required versions of the tools installed for this demo.
-
-First, check the .NET runtime with this command:
-
-```bash
-dotnet --list-runtimes
-```
-
-As you may have multiple versions of the runtime installed, make sure that .NET components with versions that start with 6.0 appear as part of the output.
-
-Next, check the version of Azure Functions Core Tools with this command:
-
-```bash
-func --version
-```
-
-You should have a version 4.*x* installed. If you do not have this version installed, you will need to uninstall the older version and follow [these instructions for installing Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local#install-the-azure-functions-core-tools).
-
 ## Getting the code
 
 ### Using Terminal or VS Code
 
-Directions installing pre-requisites to run locally and for cloning this repository using [Terminal or VS Code](../README.md?#getting-started)
+Directions for installing pre-requisites and cloning this repository are in the [root README](../README.md#getting-started). This sample also uses [Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local#install-the-azure-functions-core-tools) (v4) to run the function locally.
 
+## Set up application configuration
 
+This sample has two apps: a **data-generator** (console) that writes sales into the source container, and a **function-app** (Azure Functions) whose change-feed trigger builds the materialized views. See [Configuration and authentication](../README.md#configuration-and-authentication) in the root README.
 
-## Set up application configuration files
+### Data generator
 
-You need to configure the application configuration file to run these demos.
+Add an `appsettings.development.json` file (git-ignored) to the `data-generator` folder with the emulator endpoint and key:
 
-1. Go to your resource group and select the Serverless Azure Cosmos DB for NoSQL account that you created for this repository.
-
-1. From the navigation, under **Settings**, select **Keys** and copy the **URI** value.
-
-### Option 1: Keyless authentication via RBAC (Recommended)
-
-Keyless authentication using `DefaultAzureCredential` is the recommended approach. It works automatically with managed identity (Azure-hosted) and with the Azure CLI locally.
-
-1. Assign the **Cosmos DB Built-in Data Contributor** role to your identity:
-
-    ```bash
-    az cosmosdb sql role assignment create \
-      --account-name <cosmos-account-name> \
-      --resource-group <resource-group-name> \
-      --role-definition-name "Cosmos DB Built-in Data Contributor" \
-      --principal-id $(az ad signed-in-user show --query id -o tsv) \
-      --scope "/"
-    ```
-
-1. Sign in with the Azure CLI (for local development):
-
-    ```bash
-    az login
-    ```
-
-## Prepare the data generator configuration
-
-1. Navigate to the data-generator folder, open the project and set these values as environment variables (recommended — see [Configuration and authentication](../README.md#configuration-and-authentication)), or add an **appsettings.development.json** file with the following contents:
-
-  ```json
-  {
-    "CosmosUri": "<endpoint>"
-  }
-  ```
-
-1. Replace `<endpoint>` with the **URI** value copied from the Keys blade.
-
-  For key-based fallback (local emulator), include `CosmosKey` as well:
-
-  ```json
-  {
-    "CosmosUri": "<endpoint>",
-    "CosmosKey": "<primary-key>"
-  }
-  ```
-
-  > **Note:** Never commit `appsettings.development.json` with real key values. The `.gitignore` already excludes `appsettings.development.json`.
-
-1. Modify the **Copy to Output Directory** to **Copy Always** (For VS Code add the XML below to the csproj file)
-1. Save the file.
-
-  ```xml
-    <ItemGroup>
-      <Content Update="appsettings.development.json">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </Content>
-    </ItemGroup>
-  ```
-
-## Prepare the function app configuration
-
-The function app supports both managed identity and connection-string authentication.
-
-### Option 1: Managed identity (Recommended)
-
-Use the `__accountEndpoint` suffix to configure the Cosmos DB trigger/binding with managed identity — no connection string needed:
-
-1. Open the function-app folder and add a new **local.settings.json** file with the following contents:
-
-    ```json
-    {
-      "IsEncrypted": false,
-      "Values": {
-        "AzureWebJobsStorage": "UseDevelopmentStorage=false",
-        "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
-        "CosmosDBConnection__accountEndpoint": "<endpoint>"
-      }
-    }
-    ```
-
-1. Replace `<endpoint>` with the **URI** value. The Azure Functions runtime automatically uses `DefaultAzureCredential` when the `__accountEndpoint` suffix is set.
-
-### Option 2: Connection string (local emulator fallback)
-
-1. From the Keys blade, copy the **PRIMARY CONNECTION STRING** value.
-
-1. Open the function-app folder and add a new **local.settings.json** file with the following contents:
-
-    ```json
-    {
-      "IsEncrypted": false,
-      "Values": {
-        "AzureWebJobsStorage": "UseDevelopmentStorage=false",
-        "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
-        "CosmosDBConnection" : "<primary-connection-string>"
-      }
-    }
-    ```
-
-1. Replace `<primary-connection-string>` with the `PRIMARY CONNECTION STRING` value noted earlier.
-
-  > **Note:** Never commit `local.settings.json` with real connection strings. `local.settings.json` is excluded from source control by the `.gitignore`.
-
-1. Modify the **Copy to Output Directory** to **Copy Always** (For VS Code add the XML below to the csproj file)
-1. Save the file.
-
-  ```xml
-    <ItemGroup>
-      <None Update="local.settings.json">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        <CopyToPublishDirectory>Never</CopyToPublishDirectory>
-      </None>
-    </ItemGroup>
-  ```
-
-### Running against the local emulator
-
-When pointing at the local **Azure Cosmos DB emulator**, set `CosmosDBConnection` to its well-known connection string:
-
-```text
-AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==
+```json
+{
+  "CosmosUri": "https://localhost:8081",
+  "CosmosKey": "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="
+}
 ```
 
-Unlike the console and website samples, the Functions Cosmos DB binding runs in the Functions **host** process, which uses your machine's certificate trust store — so you must trust the emulator's self-signed certificate once before `func start` can connect. With the emulator running, export the certificate and trust it for your OS:
+To use your own account with keyless (RBAC) authentication instead, set only `CosmosUri` and grant your identity the **Cosmos DB Built-in Data Contributor** role.
+
+### Function app
+
+The function's Cosmos DB trigger reads the `CosmosDBConnection` setting from `local.settings.json`. Create one in the `function-app` folder. To run against the **local emulator**, use its well-known connection string:
+
+```json
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=false",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "CosmosDBConnection": "AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="
+  }
+}
+```
+
+To use your own account with **keyless** authentication instead, use the `__accountEndpoint` suffix (the Functions runtime then uses `DefaultAzureCredential`):
+
+```json
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=false",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "CosmosDBConnection__accountEndpoint": "https://<your-account>.documents.azure.com:443/"
+  }
+}
+```
+
+> `local.settings.json` and `appsettings.development.json` are git-ignored, so your settings are never committed. The Functions host and data generator create the `MaterializedViewDB` database and its containers automatically on first run.
+
+### Trusting the emulator certificate (Functions only)
+
+The Functions Cosmos DB binding runs in the Functions **host** process, which uses your machine's certificate trust store — so you must trust the emulator's self-signed certificate once before `func start` can connect. With the emulator running, export the certificate and trust it for your OS:
 
 ```bash
 # Export the emulator certificate
@@ -248,6 +141,12 @@ openssl s_client -connect localhost:8081 -showcerts </dev/null 2>/dev/null | ope
 ## Run the demo locally
 
 > This sample can be run **two ways**: *all-local* (this section — the function and data-generator on your machine, against the emulator or your own account) or *all-Azure* (the change-feed function deployed to Azure with the data-generator run locally — see [Deploy and run in Azure](#optional-deploy-and-run-in-azure-with-azd) below). You don't need Azure to learn the pattern.
+
+Start the local emulator first (see the [root README](../README.md#run-locally-with-the-emulator-default)):
+
+```bash
+docker compose up -d
+```
 
 1. Switch to the `function-app` folder. Then start the function with:
 
@@ -263,7 +162,7 @@ openssl s_client -connect localhost:8081 -showcerts </dev/null 2>/dev/null | ope
 
 As the data generator runs, switch to the function app's command window and show the logging to demonstrate what's happening using the change feed.
 
-You can confirm the entries by looking at the Sales and SalesByProduct containers in the MaterializedViewDB in Data Explorer in the Azure portal for this Azure Cosmos DB for NoSQL account.
+You can confirm the entries by looking at the Sales and SalesByProduct containers in the MaterializedViewDB in **Data Explorer** — at `http://localhost:1234` for the emulator, or in the Azure Portal for your own account.
 
 ## Run an in-partition query
 

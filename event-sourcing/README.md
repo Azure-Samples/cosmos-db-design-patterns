@@ -57,13 +57,13 @@ This pattern provides:
 
 - A full log of events, useful for auditing or point in time calculations.
 - Change feed capability to enable multiple consumers to process new events.
-- [Materialized Views pattern](../materialized_views/README.md) using change feed builds off the event store created with this pattern to support multiple views off the same source data.
+- [Materialized Views pattern](../materialized-view/README.md) using change feed builds off the event store created with this pattern to support multiple views off the same source data.
 
 ## Sample implementation of event sourcing
 
 In this section we will walk through a case study on how to design and implement event sourcing, provide code examples and review cost considerations that will impact the design.
 
-Consider a shopping cart application for an eCommerce company. All changes to the cart should be tracked as events but will be queried for multiple uses by different consuming services. Event sourcing pattern is chosen to ensure all history is retained and point in time state can be calculated. Each time a change is made to the cart there will be multiple calculations downstream. Rather than have the application update multiple containers, the single event store collection `shopping_cart_event` will be appended with the change. The partition key will be `/CartId` to support the most common queries by the shopping cart service. Other services will consume data from the change feed and use solutions like [materialized views](../materialized_views/README.md) to support different query patterns.
+Consider a shopping cart application for an eCommerce company. All changes to the cart should be tracked as events but will be queried for multiple uses by different consuming services. Event sourcing pattern is chosen to ensure all history is retained and point in time state can be calculated. Each time a change is made to the cart there will be multiple calculations downstream. Rather than have the application update multiple containers, the single event store collection `shopping_cart_event` will be appended with the change. The partition key will be `/CartId` to support the most common queries by the shopping cart service. Other services will consume data from the change feed and use solutions like [materialized views](../materialized-view/README.md) to support different query patterns.
 
 In this example the state of all products in the cart is maintained as `productsInCart`. However, this could also be derived by each query or consumer if the application that writes the data does not know the full state.
 
@@ -124,94 +124,43 @@ Sample events in the event store could look like this:
 
 ### Using Terminal or VS Code
 
-Directions installing pre-requisites to run locally and for cloning this repository using [Terminal or VS Code](../README.md?#getting-started)
+Directions for installing pre-requisites and cloning this repository are in the [root README](../README.md#getting-started).
 
 
 
-## Get Azure Cosmos DB connection information
+## Set up application configuration
 
-You will need the endpoint URI for the Azure Cosmos DB account for this repository.
+This is an Azure Functions app; its Cosmos DB output binding reads the `CosmosDBConnection` setting from `local.settings.json`. See [Configuration and authentication](../README.md#configuration-and-authentication) in the root README for the general approach.
 
-1. Go to resource group
+Create a `local.settings.json` file in the `source` folder. To run against the **local emulator**, use its well-known connection string:
 
-1. Select the new Azure Cosmos DB for NoSQL account.
-
-1. From the navigation, under **Settings**, select **Keys** and copy the **URI** value.
-
-## Prepare the function app configuration
-
-The function app supports both managed identity and connection-string authentication.
-
-### Option 1: Managed identity (Recommended)
-
-Use the `__accountEndpoint` suffix to configure the Cosmos DB trigger/binding with managed identity — no connection string needed:
-
-1. Assign the **Cosmos DB Built-in Data Contributor** role to your identity or the function app's managed identity:
-
-    ```bash
-    az cosmosdb sql role assignment create \
-      --account-name <cosmos-account-name> \
-      --resource-group <resource-group-name> \
-      --role-definition-name "Cosmos DB Built-in Data Contributor" \
-      --principal-id $(az ad signed-in-user show --query id -o tsv) \
-      --scope "/"
-    ```
-
-1. Add a file to the `source` folder called **local.settings.json** with the following contents:
-
-    ```json
-    {
-        "IsEncrypted": false,
-        "Values": {
-            "AzureWebJobsStorage": "UseDevelopmentStorage=true",
-            "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
-            "CosmosDBConnection__accountEndpoint": "<endpoint>"
-        }
+```json
+{
+    "IsEncrypted": false,
+    "Values": {
+        "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+        "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+        "CosmosDBConnection": "AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="
     }
-    ```
-
-1. Replace `<endpoint>` with the **URI** value. The Azure Functions runtime automatically uses `DefaultAzureCredential` when the `__accountEndpoint` suffix is set.
-
-### Option 2: Connection string (local emulator fallback)
-
-1. From the Keys blade, copy the **PRIMARY CONNECTION STRING** value.
-
-1. Add a file to the `source` folder called **local.settings.json** with the following contents:
-
-    ```json
-    {
-        "IsEncrypted": false,
-        "Values": {
-            "AzureWebJobsStorage": "UseDevelopmentStorage=true",
-            "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
-            "CosmosDBConnection" : "<primary-connection-string>"
-        }
-    }
-    ```
-
-1. Replace `<primary-connection-string>` with the `PRIMARY CONNECTION STRING` value noted earlier.
-
-  > **Note:** Never commit `local.settings.json` with real connection strings. `local.settings.json` is excluded from source control by the `.gitignore`.
-
-1. Modify the **Copy to Output Directory** to **Copy Always** (For VS Code add the XML below to the csproj file)
-1. Save the file.
-
-  ```xml
-    <ItemGroup>
-      <None Update="local.settings.json">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        <CopyToPublishDirectory>Never</CopyToPublishDirectory>
-      </None>
-    </ItemGroup>
-  ```
-
-### Running against the local emulator
-
-When pointing at the local **Azure Cosmos DB emulator**, set `CosmosDBConnection` to its well-known connection string:
-
-```text
-AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==
+}
 ```
+
+To use your own Azure Cosmos DB account with **keyless** authentication instead, use the `__accountEndpoint` suffix (the Functions runtime then uses `DefaultAzureCredential`) and assign yourself the **Cosmos DB Built-in Data Contributor** role:
+
+```json
+{
+    "IsEncrypted": false,
+    "Values": {
+        "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+        "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+        "CosmosDBConnection__accountEndpoint": "https://<your-account>.documents.azure.com:443/"
+    }
+}
+```
+
+> `local.settings.json` is git-ignored, so your settings are never committed. The Functions host creates the `EventSourcingDB` database and `CartEvents` container automatically on the first write.
+
+### Trusting the emulator certificate (Functions only)
 
 Unlike the console and website samples, the Functions Cosmos DB binding runs in the Functions **host** process, which uses your machine's certificate trust store — so you must trust the emulator's self-signed certificate once before `func start` can connect. With the emulator running, export the certificate and trust it for your OS:
 
@@ -224,21 +173,29 @@ openssl s_client -connect localhost:8081 -showcerts </dev/null 2>/dev/null | ope
 - **macOS**: `sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain cosmos-emulator.crt`
 - **Linux**: `sudo cp cosmos-emulator.crt /usr/local/share/ca-certificates/ && sudo update-ca-certificates`
 
-## Run the demo
+## Run the demo locally
 
-1. Start the function app to wait for HTTP calls. Each call should have a payload of a single CartEvent, then the function will save it to Azure Cosmos DB.
-
-```bash
-func start
-```
-
-To trigger the function to generate events and send to the function, you can make HTTP calls with each CartEvent sent as JSON. Review and run Program.cs to see this in action.
-
-Open a new terminal and run the included Console App (Program.cs) which generates simple shopping cart events:
+Start the local emulator first (see the [root README](../README.md#run-locally-with-the-emulator-default)):
 
 ```bash
-dotnet run
+docker compose up -d
 ```
+
+Then run the sample with **two terminals** from the `source` folder:
+
+1. **Terminal 1 — start the function** (listens on `http://localhost:7071` and waits for cart events):
+
+    ```bash
+    func start
+    ```
+
+2. **Terminal 2 — generate events.** The included console generator posts shopping-cart events to the function, which appends each one to the `CartEvents` container. Enter how many sets of events to create when prompted:
+
+    ```bash
+    dotnet run
+    ```
+
+Each generated event is written to Azure Cosmos DB as an immutable, append-only record — the event store. The console prints the `CartId` values it creates; use one of them in the queries below.
 
 ## (Optional) Deploy to Azure with `azd`
 
@@ -285,7 +242,7 @@ azd down
 
 ## Querying the event source data
 
-Once you have run [the demo](./code/setup.md) which generates data, you can run queries directly against the event source container by using **Data Explorer** in the Azure Portal.
+Once you have run [the demo](#run-the-demo-locally) which generates data, you can run queries directly against the event source container by using **Data Explorer** in the Azure Portal.
 
 1. In Azure Portal, browse to you Azure Cosmos DB resource.
 2. Select **Data Explorer** in the left menu.
