@@ -18,28 +18,38 @@ namespace Cosmos.DistributedLock
         private readonly Task? keepAliveTask;
         private int disposed;
 
+        /// <summary>Raised each time the lock's lease is successfully renewed.</summary>
+        public event Action? Renewed;
+
         internal static CosmosDistributedLock CreateUnacquiredLock()
         {
             return new CosmosDistributedLock();
         }
 
-        internal static CosmosDistributedLock CreateAcquiredLock(ICosmosLockClient cosmosLockClient, ItemResponse<LockRecord> item)
+        internal static CosmosDistributedLock CreateAcquiredLock(ICosmosLockClient cosmosLockClient, ItemResponse<LockRecord> item, bool autoRenew = true)
         {
-            return new CosmosDistributedLock(cosmosLockClient, item);
+            return new CosmosDistributedLock(cosmosLockClient, item, autoRenew);
         }
 
         private CosmosDistributedLock()
         {
         }
 
-        private CosmosDistributedLock(ICosmosLockClient cosmosLockClient, ItemResponse<LockRecord> item)
+        private CosmosDistributedLock(ICosmosLockClient cosmosLockClient, ItemResponse<LockRecord> item, bool autoRenew)
         {
             this.cosmosLockClient = cosmosLockClient;
             latestItem = item;
             fencingToken = SessionTokenParser.Parse(item.Headers.Session);
             lockId = $"{item.Resource.providerName}:{item.Resource.id}:{fencingToken}:{item.Resource.lockObtainedAt.Ticks}";
             cts = new CancellationTokenSource();
-            keepAliveTask = KeepAliveLoop(item, cts.Token);
+
+            // Production callers use automatic keep-alive. The distributed-lock web front end
+            // disables it so it can drive/observe renewal itself (and demonstrate the failure
+            // mode when a lock is NOT renewed).
+            if (autoRenew)
+            {
+                keepAliveTask = KeepAliveLoop(item, cts.Token);
+            }
         }
 
         /// <summary>True when this attempt acquired the lock.</summary>
@@ -52,6 +62,34 @@ namespace Cosmos.DistributedLock
         public long FencingToken => fencingToken;
 
         public string? ETag => latestItem?.ETag;
+
+        /// <summary>When the lock's lease was last renewed (useful for a TTL countdown).</summary>
+        public DateTimeOffset? LockLastRenewedAt => latestItem?.Resource.lockLastRenewedAt;
+
+        /// <summary>The lock's time-to-live, in seconds.</summary>
+        public int Ttl => latestItem?.Resource._ttl ?? 0;
+
+        /// <summary>
+        /// Manually renews the lock's lease (resetting its TTL). Returns <c>false</c> if the lock
+        /// was lost — for example it already expired via TTL or was taken over by someone else.
+        /// Useful when the lock was acquired with automatic keep-alive disabled.
+        /// </summary>
+        public async Task<bool> TryRenewAsync()
+        {
+            var current = latestItem;
+            if (cosmosLockClient == null || current == null) return false;
+
+            var updated = await cosmosLockClient.RenewLockAsync(current).ConfigureAwait(false);
+            if (updated == null)
+            {
+                latestItem = null; // lock lost
+                return false;
+            }
+
+            latestItem = updated;
+            Renewed?.Invoke();
+            return true;
+        }
 
         private async Task KeepAliveLoop(ItemResponse<LockRecord> item, CancellationToken cancellationToken)
         {
@@ -74,6 +112,7 @@ namespace Cosmos.DistributedLock
 
                     current = updatedItem;
                     latestItem = updatedItem;
+                    Renewed?.Invoke();
                 }
                 catch (OperationCanceledException)
                 {

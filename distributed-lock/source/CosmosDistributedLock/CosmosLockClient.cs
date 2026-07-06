@@ -5,7 +5,7 @@ namespace Cosmos.DistributedLock
 {
     internal interface ICosmosLockClient
     {
-        Task<ItemResponse<LockRecord>?> TryAcquireLockAsync(string name);
+        Task<ItemResponse<LockRecord>?> TryAcquireLockAsync(string name, int? ttlSeconds = null);
         Task<ItemResponse<LockRecord>?> RenewLockAsync(ItemResponse<LockRecord> item);
         Task ReleaseLockAsync(ItemResponse<LockRecord> item);
     }
@@ -21,7 +21,7 @@ namespace Cosmos.DistributedLock
             container = options.CosmosClient!.GetContainer(options.DatabaseName, options.ContainerName);
         }
 
-        public async Task<ItemResponse<LockRecord>?> TryAcquireLockAsync(string name)
+        public async Task<ItemResponse<LockRecord>?> TryAcquireLockAsync(string name, int? ttlSeconds = null)
         {
             try
             {
@@ -37,7 +37,7 @@ namespace Cosmos.DistributedLock
                     providerName = options.ProviderName,
                     lockObtainedAt = now,
                     lockLastRenewedAt = now,
-                    _ttl = options.TTL
+                    _ttl = ttlSeconds ?? options.TTL
                 };
                 return await container.CreateItemAsync(lockRecord, new PartitionKey(lockRecord.id)).ConfigureAwait(false);
             }
