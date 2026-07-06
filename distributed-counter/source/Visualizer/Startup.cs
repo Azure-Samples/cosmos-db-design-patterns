@@ -38,10 +38,22 @@ namespace DistributedCounterDashboard
         private static DistributedCounterManagementService InitializeDistributedCounterManagementServiceAsync(IConfiguration configuration)
         {
 
-            string endpoint = configuration["CosmosUri"];
+            string endpoint = configuration["CosmosUri"] ?? string.Empty;
             string key = configuration["CosmosKey"] ?? string.Empty;
             string databaseName = configuration["CosmosDatabase"];
             string containerName = configuration["CosmosContainer"];
+
+            // Default to the local Azure Cosmos DB emulator when nothing is configured, so the site
+            // runs with zero setup once the emulator is started (`docker compose up` from the repo
+            // root). In Azure, azd sets CosmosUri to the provisioned account.
+            if (string.IsNullOrWhiteSpace(endpoint))
+            {
+                endpoint = "https://localhost:8081";
+                if (string.IsNullOrEmpty(key))
+                {
+                    key = "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==";
+                }
+            }
 
             DistributedCounterManagementService dcms =  new DistributedCounterManagementService(endpoint,key,databaseName,containerName);
 

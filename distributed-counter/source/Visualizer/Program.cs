@@ -32,6 +32,11 @@ namespace DistributedCounterDashboard
             })
             .ConfigureWebHostDefaults(webBuilder =>
             {
+                // Serve the Blazor framework static assets (e.g. _framework/blazor.server.js) in ALL
+                // environments. Without this they are only served in Development, so a published /
+                // deployed (Production) build returns 404 for blazor.server.js and the interactive
+                // dashboard never connects.
+                webBuilder.UseStaticWebAssets();
                 webBuilder.UseStartup<Startup>();
             });
     }
