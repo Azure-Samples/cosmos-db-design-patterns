@@ -1,0 +1,13 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: cosmos-db-design-patterns-patch-api
+metadata:
+  template: cosmos-db-design-patterns-patch-api
+# azd deploys the interactive web front end to App Service. The console app under source/Console is
+# an optional local driver you can run with `dotnet run` against the same provisioned (keyless)
+# Cosmos DB account.
+services:
+  web:
+    project: ./source/Website
+    language: dotnet
+    host: appservice

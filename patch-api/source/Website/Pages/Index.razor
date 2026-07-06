@@ -1,0 +1,321 @@
+@page "/"
+@using Cosmos.PatchApi
+@using System.Diagnostics
+@implements IAsyncDisposable
+@inject PatchOrderService Svc
+
+<div class="page">
+    <header>
+        <h1>Patch API — partial document update</h1>
+        <p class="tagline">
+            One <strong>order</strong> document is updated by several services that each own a
+            <strong>different field</strong>: payment sets <code>paymentStatus</code>, shipping sets
+            <code>shippingStatus</code>, analytics increments <code>viewCount</code>, merchandising appends
+            <code>tags</code>. With <strong>Patch</strong> each service sends only its
+            <em>operation</em> — it never reads the whole document, so updates are cheaper and two services
+            editing different fields can't overwrite each other.
+        </p>
+    </header>
+
+    @if (_preparing)
+    {
+        <div class="info-banner"><span class="spinner"></span> Preparing &mdash; creating the container and seeding the order&hellip;</div>
+    }
+    else if (_initError is not null)
+    {
+        <div class="error-banner"><strong>Couldn't start.</strong> @_initError</div>
+    }
+
+    <div class="columns-2">
+        <section class="panel">
+            <h2>The order document <span class="muted">(live)</span></h2>
+            @if (_order is null)
+            {
+                <p class="empty">Loading&hellip;</p>
+            }
+            else
+            {
+                <div class="doc">
+                    <div class="doc-row"><span class="k">id</span><span class="v mono">@_order.Id</span></div>
+                    <div class="doc-row"><span class="k">customer</span><span class="v">@_order.Customer</span></div>
+                    <div class="doc-row"><span class="k">product</span><span class="v">@_order.Product <span class="amt">$@_order.Amount</span></span></div>
+                    <div class="doc-row owned payment"><span class="k">paymentStatus <em>payment</em></span><span class="v">@_order.PaymentStatus</span></div>
+                    <div class="doc-row owned shipping"><span class="k">shippingStatus <em>shipping</em></span><span class="v">@_order.ShippingStatus</span></div>
+                    <div class="doc-row owned shipping"><span class="k">trackingNumber <em>shipping</em></span><span class="v mono">@(_order.TrackingNumber ?? "—")</span></div>
+                    <div class="doc-row owned analytics"><span class="k">viewCount <em>analytics</em></span><span class="v">@_order.ViewCount</span></div>
+                    <div class="doc-row owned merch"><span class="k">tags <em>merchandising</em></span><span class="v">@(_order.Tags.Count == 0 ? "[]" : string.Join(", ", _order.Tags))</span></div>
+                </div>
+                @if (_lastOp is not null)
+                {
+                    <div class="last-op">Last patch: <span class="mono">@_lastOp</span> <span class="pill ru">@_lastRu?.ToString("0.##") RU</span></div>
+                }
+            }
+        </section>
+
+        <section class="panel">
+            <h2>Patch operations <span class="muted">(each is one call, no read)</span></h2>
+            <div class="op-grid">
+                <button class="btn" @onclick='() => Do(() => Svc.SetPaymentStatusAsync("Paid"), "Set /paymentStatus = Paid")' disabled="@Busy">Set payment = Paid</button>
+                <button class="btn" @onclick='() => Do(() => Svc.SetShippingAsync("Shipped", "1Z-999-AA"), "Set /shippingStatus = Shipped, /trackingNumber")' disabled="@Busy">Set shipping = Shipped</button>
+                <button class="btn" @onclick='() => Do(() => Svc.IncrementViewsAsync(1), "Increment /viewCount by 1")' disabled="@Busy">+1 view count</button>
+                <button class="btn" @onclick='() => Do(() => Svc.AddTagAsync(NextTag()), "Add tag to /tags/-")' disabled="@Busy">Append a tag</button>
+                <button class="btn" @onclick='() => Do(() => Svc.RemoveTrackingAsync(), "Remove /trackingNumber")' disabled="@(Busy || _order?.TrackingNumber is null)">Remove tracking</button>
+                <button class="btn ghost" @onclick="ResetAsync" disabled="@Busy">Reset order</button>
+            </div>
+            <p class="op-help">
+                Set, Increment, Add-to-array and Remove are all Patch operations. The client sends just the
+                operation — never the whole document — so no read-modify-write is needed.
+            </p>
+        </section>
+    </div>
+
+    <section class="panel ru-panel">
+        <h2>Cost: Patch vs read-modify-write <span class="muted">(same change — mark the order paid)</span></h2>
+        <button class="btn primary" @onclick="CompareAsync" disabled="@Busy">Run the comparison</button>
+        @if (_cmp is not null)
+        {
+            <div class="ru-bars">
+                <div class="ru-line">
+                    <span class="ru-label">Patch <span class="muted">(1 op, no read)</span></span>
+                    <span class="ru-bar"><span class="fill good" style="width:@BarWidth(_cmp.PatchRu)"></span></span>
+                    <span class="ru-val">@_cmp.PatchRu.ToString("0.##") RU</span>
+                </div>
+                <div class="ru-line">
+                    <span class="ru-label">Read + full Replace</span>
+                    <span class="ru-bar"><span class="fill warn" style="width:@BarWidth(_cmp.ReadModifyWriteRu)"></span></span>
+                    <span class="ru-val">@_cmp.ReadRu.ToString("0.##") + @_cmp.ReplaceRu.ToString("0.##") = @_cmp.ReadModifyWriteRu.ToString("0.##") RU</span>
+                </div>
+            </div>
+            <div class="callout">
+                <strong>Honest note about the emulator.</strong> The emulator charges a flat ~1 RU per operation
+                <em>regardless of document size</em>, so here Patch's win is exactly the skipped read
+                (@_cmp.PatchRu.ToString("0.##") RU vs @_cmp.ReadModifyWriteRu.ToString("0.##") RU). In a real account, Patch
+                <em>also</em> avoids rewriting the whole document — so patching a small field of a large document costs
+                far less than replacing it. See
+                <a href="https://learn.microsoft.com/azure/cosmos-db/partial-document-update" target="_blank" rel="noopener">Partial document update</a>.
+            </div>
+        }
+    </section>
+
+    <section class="panel">
+        <h2>Concurrency: two services, different fields, at the same time</h2>
+        <p class="op-help">
+            Payment sets <code>paymentStatus = "Paid"</code> while shipping sets <code>shippingStatus = "Shipped"</code>.
+            They never touch the same field — yet both read-modify-write approaches still collide. Run all three
+            and compare the result, the conflicts, and the RU cost.
+        </p>
+        <div class="race-controls">
+            <button class="btn" @onclick="() => RunRaceAsync(RaceMode.ReadModifyWrite)" disabled="@Busy">Read-modify-write (no ETag)</button>
+            <button class="btn" @onclick="() => RunRaceAsync(RaceMode.ReadModifyWriteWithETag)" disabled="@Busy">Read-modify-write + ETag</button>
+            <button class="btn primary" @onclick="() => RunRaceAsync(RaceMode.Patch)" disabled="@Busy">Patch</button>
+        </div>
+        <div class="race-results race-3">
+            @RaceCard(_rmw, "Read-modify-write", "no ETag")
+            @RaceCard(_etag, "Read-modify-write + ETag", "IfMatchEtag")
+            @RaceCard(_patch, "Patch API", "field-level")
+        </div>
+        <div class="callout">
+            <strong>ETag makes it correct — but not free.</strong> Shipping only changed <code>shippingStatus</code>, yet
+            its <code>IfMatchEtag</code> replace still hit a <strong>412 conflict</strong>, because the ETag guards the
+            <em>whole document</em> — payment's write to a different field invalidated it. Shipping then had to re-read and
+            retry. Patch touches only its own field server-side, so it never conflicts and needs no retry loop.
+        </div>
+    </section>
+
+    <section class="panel timeline">
+        <h2>Activity timeline</h2>
+        <div class="log">
+            @foreach (LogEntry l in _timeline)
+            {
+                <div class="log-row @l.Level.ToString().ToLower()">
+                    <span class="log-time">@l.Timestamp.LocalDateTime.ToString("HH:mm:ss")</span>
+                    <span class="log-msg">@l.Message</span>
+                </div>
+            }
+            @if (_timeline.Count == 0) { <div class="empty">No activity yet.</div> }
+        </div>
+    </section>
+
+    <section class="panel why">
+        <h2>Why it matters</h2>
+        <ul>
+            <li><strong>No read-modify-write.</strong> Patch sends only the operation, so you skip the read round trip — fewer RUs and lower latency.</li>
+            <li><strong>No conflicts on different fields.</strong> Two services that own different fields patch concurrently without overwriting each other. An ETag would make read-modify-write correct too — but it guards the whole document, so those services still hit needless 412 conflicts and pay to re-read and retry. Patch never conflicts.</li>
+            <li><strong>Cheaper on large documents.</strong> In production, patching one field costs far less than replacing the whole document (the emulator flattens this to ~1 RU).</li>
+            <li><strong>Rich operations, atomically.</strong> <code>Set</code>, <code>Increment</code>, <code>Add</code> (array append), <code>Remove</code> — and multiple operations in one patch apply all-or-nothing.</li>
+        </ul>
+    </section>
+</div>
+
+@code {
+    private Order? _order;
+    private double? _lastRu;
+    private string? _lastOp;
+    private RuComparison? _cmp;
+    private RaceResult? _rmw;
+    private RaceResult? _etag;
+    private RaceResult? _patch;
+    private IReadOnlyList<LogEntry> _timeline = Array.Empty<LogEntry>();
+
+    private bool _preparing = true;
+    private bool _busy;
+    private string? _initError;
+    private CancellationTokenSource? _cts;
+    private int _tagIndex;
+
+    private static readonly string[] TagChoices = { "gift", "priority", "fragile", "giftwrap", "expedite" };
+
+    private bool Busy => _busy || !Svc.IsReady;
+
+    private string NextTag() => TagChoices[_tagIndex++ % TagChoices.Length];
+
+    private static string BarWidth(double ru) => $"{Math.Min(100, ru / 2.0 * 100):0}%";
+
+    private RenderFragment RaceCard(RaceResult? r, string title, string subtitle) => @<div class="race-card @(r is null ? "" : r.AnyLost ? "bad" : r.ConflictCount > 0 ? "warn" : "good")">
+        <h3>@title <span class="muted">@subtitle</span></h3>
+        @if (r is null)
+        {
+            <p class="empty">Not run yet.</p>
+        }
+        else
+        {
+            <div class="race-field @(r.PaymentLost ? "lost" : "kept")">paymentStatus = <strong>@r.PaymentStatus</strong> @(r.PaymentLost ? "✗ lost" : "✓")</div>
+            <div class="race-field @(r.ShippingLost ? "lost" : "kept")">shippingStatus = <strong>@r.ShippingStatus</strong> @(r.ShippingLost ? "✗ lost" : "✓")</div>
+            <div class="race-metrics">
+                <span class="metric @(r.ConflictCount > 0 ? "bad" : "")">@r.ConflictCount conflict@(r.ConflictCount == 1 ? "" : "s")</span>
+                <span class="metric">@r.TotalRu.ToString("0.##") RU</span>
+            </div>
+            <div class="race-verdict @(r.AnyLost ? "bad" : r.ConflictCount > 0 ? "warn" : "good")">@RaceVerdict(r)</div>
+        }
+    </div>;
+
+    private static string RaceVerdict(RaceResult r) => r.Mode switch
+    {
+        RaceMode.ReadModifyWrite when r.AnyLost => "An update was LOST — the second full replace overwrote the first.",
+        RaceMode.ReadModifyWriteWithETag when r.ConflictCount > 0 => "Correct — but a needless 412 conflict forced a re-read + retry (extra RUs).",
+        RaceMode.Patch => "Both preserved — each patch touched only its own field. No conflict, no retry.",
+        _ => r.AnyLost ? "An update was lost." : "Both preserved.",
+    };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        try
+        {
+            await Svc.EnsureStartedAsync();
+        }
+        catch (Exception ex)
+        {
+            _initError = ex.Message;
+            _preparing = false;
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        var sw = Stopwatch.StartNew();
+        while (!Svc.IsReady && sw.Elapsed < TimeSpan.FromSeconds(30))
+        {
+            await Task.Delay(300);
+        }
+
+        Svc.Changed += OnChanged;
+        _preparing = false;
+        await RefreshAsync();
+        await InvokeAsync(StateHasChanged);
+
+        _cts = new CancellationTokenSource();
+        _ = RefreshLoopAsync(_cts.Token);
+    }
+
+    private void OnChanged() => _ = InvokeAsync(async () => { await RefreshAsync(); StateHasChanged(); });
+
+    private async Task RefreshLoopAsync(CancellationToken token)
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(1000));
+        while (await timer.WaitForNextTickAsync(token))
+        {
+            await RefreshAsync();
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task RefreshAsync()
+    {
+        try
+        {
+            (_order, _) = await Svc.GetOrderAsync();
+            _timeline = Svc.Timeline();
+        }
+        catch { /* transient; retry next tick */ }
+    }
+
+    private async Task Do(Func<Task<double>> op, string name)
+    {
+        _busy = true;
+        try
+        {
+            _lastRu = await op();
+            _lastOp = name;
+            await RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            _initError = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task CompareAsync()
+    {
+        _busy = true;
+        try
+        {
+            _cmp = await Svc.CompareUpdateAsync();
+            await RefreshAsync();
+        }
+        finally { _busy = false; }
+    }
+
+    private async Task RunRaceAsync(RaceMode mode)
+    {
+        _busy = true;
+        try
+        {
+            RaceResult result = await Svc.RunRaceAsync(mode);
+            switch (mode)
+            {
+                case RaceMode.ReadModifyWrite: _rmw = result; break;
+                case RaceMode.ReadModifyWriteWithETag: _etag = result; break;
+                default: _patch = result; break;
+            }
+            await RefreshAsync();
+        }
+        finally { _busy = false; }
+    }
+
+    private async Task ResetAsync()
+    {
+        _busy = true;
+        try
+        {
+            await Svc.ResetAsync();
+            _cmp = null; _rmw = null; _etag = null; _patch = null; _lastOp = null; _lastRu = null; _tagIndex = 0;
+            await RefreshAsync();
+        }
+        finally { _busy = false; }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        Svc.Changed -= OnChanged;
+        if (_cts is not null)
+        {
+            await _cts.CancelAsync();
+            _cts.Dispose();
+        }
+    }
+}
