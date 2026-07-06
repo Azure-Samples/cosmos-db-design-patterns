@@ -1,10 +1,10 @@
 namespace Cosmos.VectorSearch;
 
 /// <summary>
-/// A small, hand-written movie catalog used to seed the sample. The plots are deliberately varied
-/// across genres so that semantic (meaning-based) search results are easy to see — a query like
-/// "space battle with aliens" should surface the sci-fi films even though it shares no keywords
-/// with their titles.
+/// A small, <b>fictional</b> movie catalog (hand-written for this sample &mdash; these are not real
+/// films) used to seed the demo. The plots are deliberately varied across genres so that semantic
+/// (meaning-based) search results are easy to see &mdash; a query like "space battle with aliens"
+/// should surface the sci-fi films even though it shares no keywords with their titles.
 /// </summary>
 public static class MovieCatalog
 {
